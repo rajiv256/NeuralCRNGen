@@ -1,5 +1,5 @@
 class CRN:
-    def __init__(self, reactants=[], products=[], rate_constant=[],
+    def __init__(self, reactants=[], products=[], rate_constant='1.0',
                  reversible=False):
         self.rs = reactants
         # also handles the case where there are no products
