@@ -5,9 +5,10 @@ import numpy as np
 
 
 class MonomialODE:
-    def __init__(self, lhs='', rhs=['a', 'b']):
+    def __init__(self, lhs='', rhs=['a', 'b'], parity=1):
         self.lhs = lhs
         self.rhs = rhs
+        self.parity = parity
 
     def __str__(self):
         return f"""d{self.lhs}/dt = {''.join(self.rhs)} """
@@ -26,7 +27,7 @@ class MonomialODE:
         """
         :return: A [] of two multinomials
         """
-        dr = utils.convert_expr_to_dual_rail(self.rhs)
+        dr = utils.convert_expr_to_dual_rail(self.rhs, self.parity)
         # An example dual_rail variable looks as follows:
         # {'pos': ['ap|bp', 'an|bn'], 'neg': ['ap|bn', 'an|bp']}
         pos = MultinomialODE(
@@ -65,6 +66,10 @@ class MultinomialODE:
 
 
 class Variable:
+    """
+    Vector variable
+    """
+
     def __init__(self, symbol='', dimensions=[]):
         self.symbol = symbol
         self.dims = dimensions
@@ -74,7 +79,7 @@ class Variable:
 
     def vectorize(self):
         """
-        :return:An np.array of dtype str. 
+        :return: A np array of dtype str.
         """
         print("-->", self.dims)
         dim_indices = [list(range(1, d + 1)) for d in self.dims]
@@ -96,31 +101,32 @@ class Variable:
 
 
 class ODESystem:
-    def __init__(self, lhs=Variable(), rhs=[Variable()]):
+    """
+    For ODEs with RHSs that can be represented as vector-jacobians.
+    """
+
+    def __init__(self, lhs=Variable(), rhs=[Variable()], parity=1):
         """Takes in a set of multinomials and saves them in a compressed
         matrix form."""
         self.lhs = lhs
         self.rhs = rhs
+        self.parity = parity
 
     def dual_rail_crn(self):
         lhs_vec = self.lhs.vectorize()
+
         rhs_vec_list = [r.vectorize() for r in self.rhs]
         rhs_vec = rhs_vec_list[0]
         for i in range(1, len(rhs_vec_list)):
             rhs_vec = utils.np_matmul_str_matrices_2d(rhs_vec, rhs_vec_list[i])
-        # rhs_vec
-        # [['T11z1+T12z2' 'T11z1+T12z2']
-        #  ['T21z1+T22z2' 'T21z1+T22z2']]
-        # lhs_vec
-        # [['z1'] ['z2']]
+
         multinomials = []
         for i in range(lhs_vec.shape[0]):
             for j in range(lhs_vec.shape[1]):  # Assumption that it is all 2D
                 multinomials.append(MultinomialODE(
-                    [MonomialODE(lhs=lhs_vec[i, j], rhs=splt_item.split('|'))
-                        for splt_item in rhs_vec[i, j].split('+')]))
-        for m in multinomials:
-            print(m)
+                    [MonomialODE(lhs=lhs_vec[i, j], rhs=splt_item.split('|'),
+                                 parity=self.parity)
+                     for splt_item in rhs_vec[i, j].split('+')]))
 
         # Remember that each monomial returns a multinomial in dual-rail
         dual_rail_multinomials = []
@@ -135,25 +141,10 @@ class ODESystem:
 
 
 if __name__ == '__main__':
-    # m = MonomialODE('x1p',
-    #                 ['y1p', 'z1n'])
-    # m2 = MonomialODE('x1p', ['y1n', 'z1p'])
-    # print(m._to_catalytic_crn())
-    # mm = MultinomialODE([m, m2])
-    # for crn in mm._to_catalytic_crn():
-    #     print(crn)
-    # for x in list(itertools.product(*[[1, 2], [3, 4]])):
-    #     print(x)
-    # var = Variable(symbol='a', dimensions=[2, 2])
-    # print(var)
-    #
-    # x = np.array([['a', 'b'],
-    #           ['c', 'd']], dtype=str)
-    # y = np.array([['e', 'f'],
-    #               ['g', 'h']], dtype=str)
-    # print(utils.np_matmul_str_matrices_2d(x, y))
-    ode = ODESystem(lhs=Variable('z', dimensions=[2]),
-                    rhs=[Variable('T', dimensions=[2, 2]), Variable('z', [2])])
-    crns = ode.dual_rail_crn()  # for c in crns:  #     print(c)
-    for c in crns:
+    print("forward z")
+    ode = ODESystem(lhs=Variable(symbol='z', dimensions=[2]),
+                    rhs=[Variable(symbol='P', dimensions=[2, 2]),
+                         Variable(symbol='z', dimensions=[2])], parity=-1)
+    crn = ode.dual_rail_crn()
+    for c in crn:
         print(c)
