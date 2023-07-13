@@ -1,53 +1,25 @@
+import src.ode as ode
 import itertools
 import re
 import numpy as np
+from src.reaction import Species
+from src.ode import Scalar
 
 
-def convert_var_to_chem(x):
-    return x.upper()
+def convert_dual_scalar_to_species(var: Scalar):
+    varname = var.name
+    spname = varname[0].upper() + varname[1:]  # z1p --> Z1p
+    return Species(name=spname)
 
 
-def convert_chem_to_var(x):
-    return x.lower()
+def convert_species_to_dual_scalar(sp: Species):
+    spname = sp.name
+    varname = spname[0].lower() + spname[1:]  # Z1p --> z1p
+    return Scalar(name=varname)
 
 
-def tuple_to_string(tuple):
-    return ''.join([str(x) for x in tuple])
-
-# DEPRECATED: Use `np_matmul_str_matrices_2d
-# def np_vecjac_str_matrices_2d(x, y):
-#     """
-#     Calculates the vector jacobian product
-#     :param x: 2D np  array of type str
-#     :param y: 2D np array of type str
-#     :return: 2D np array
-#     """
-#     assert x.ndim == 2  # 2d matrices
-#     assert y.ndim == 2  # have to be a 2d matrix
-#     assert x.shape[1] == y.shape[0]  # #cols of x = #rows of y
-#     print(x, y)
-#     xrows = x.shape[0]
-#     cols = x.shape[1]
-#     ycols = y.shape[1]
-#
-#     # Broadcasting
-#     if ycols == 1:
-#         y = np.repeat(y, xrows, axis=1)
-#
-#     res = np_create_empty_string_array_2d(xrows, ycols)
-#     plus = np.core.defchararray.add('+', np_create_empty_string_array_2d(xrows,
-#                                                                          ycols))
-#     bar = np.core.defchararray.add('|', np_create_empty_string_array_2d(xrows,
-#                                                                         ycols))
-#
-#     for k in range(cols):
-#         # Broadcasting bro. Look it up.
-#         temp = np.core.defchararray.add(x[:, k].reshape(cols, 1), bar)
-#         temp = np.core.defchararray.add(temp, y[k, :].reshape(1, cols))
-#         res = np.core.defchararray.add(res, temp)
-#         if k != cols - 1:
-#             res = np.core.defchararray.add(res, plus)
-#     return res
+def tuple_to_string(t):
+    return ''.join([str(x) for x in t])
 
 
 def np_matmul_str_matrices_2d(x, y):
@@ -81,7 +53,7 @@ def np_matmul_str_matrices_2d(x, y):
                                                                          ycols))
     bar = np.core.defchararray.add('|', np_create_empty_string_array_2d(xrows,
                                                                         ycols))
-    plus_boolean = np.ones((xrows, ycols))*True
+    plus_boolean = np.ones((xrows, ycols)) * True
 
     for k in range(cols):
         # New xrows, ycols matrix by repeating a col of x
@@ -96,9 +68,9 @@ def np_matmul_str_matrices_2d(x, y):
         prod = np.where(ytemp == '0', '', prod)
         prod = np.where(xtemp == '0', '', prod)
         res = np.core.defchararray.add(res, prod)
-        plus_updated = np.where(res=='', '', plus)
-        plus_updated = np.where(prod=='', '', plus_updated)
-        if k != cols-1:
+        plus_updated = np.where(res == '', '', plus)
+        plus_updated = np.where(prod == '', '', plus_updated)
+        if k != cols - 1:
             res = np.core.defchararray.add(res, plus_updated)
     return res
 
@@ -108,31 +80,31 @@ def np_create_empty_string_array_2d(nrows, ncols, default_str=''):
     return np.array(l, dtype=str)
 
 
-def convert_scalar_to_dual_rail(symbol=''):
+def convert_scalar_to_dual_rail(scalar: Scalar):
     return {
-        'pos': [symbol + 'p'],
-        'neg': [symbol + 'n']
+        'pos': [Scalar(name=scalar.name + globals.POS_SUFFIX)],
+        'neg': [Scalar(name=scalar.name + globals.NEG_SUFFIX)],
     }
 
 
-def convert_expr_to_dual_rail(symbols=['a', 'b'], parity=1):
+def convert_expr_to_dual_rail(scalars=[Scalar()], parity=1):
     """
     Converts a polynomial expression of scalars into the dual-rail format
     based on the parity.
-    :param symbols: scalar symbols
+    :param scalars: scalar symbols
     :param parity: parity of -1 represents the negative sign. Anything else
     represents the poisitive sign
     :return: Returns
     """
-    assert len(symbols) > 0
-    ret = convert_scalar_to_dual_rail(symbols[0])
-    for symbol in symbols[1:]:
-        currvar = convert_scalar_to_dual_rail(symbol)
+    assert len(scalars) > 0
+    ret = convert_scalar_to_dual_rail(scalars[0])
+    for symbol in scalars[1:]:
+        currscalar = convert_scalar_to_dual_rail(symbol)
         ret = {
-            'pos': meld(ret['pos'], currvar['pos']) + meld(ret['neg'],
-                                                           currvar['neg']),
-            'neg': meld(ret['pos'], currvar['neg']) + meld(ret['neg'],
-                                                           currvar['pos'])
+            'pos': meld(ret['pos'], currscalar['pos']) + meld(ret['neg'],
+                                                           currscalar['neg']),
+            'neg': meld(ret['pos'], currscalar['neg']) + meld(ret['neg'],
+                                                           currscalar['pos'])
         }
 
     # Reverse the parity
@@ -153,22 +125,25 @@ def meld(a=['l', 'm'], b=['n', 'o', 'p']):
     ret = []
     for x, y in cartesian:
         # Handles mult with 0
-        if x=='0' or y=='0':
+        if x == '0' or y == '0':
             continue
-        elif (x=='1' and y!='1') or (x!='1' and y=='1'):
+        elif (x == '1' and y != '1') or (x != '1' and y == '1'):
             ret += [x]
         else:
             ret.append(x + '|' + y)
     return ret
 
 
-if __name__ == '__main__':
-    a = np.array([['a1', 'a2']], dtype=str)
-    dfdp = np.array(
-        [
-            ['z1', 'z2', '0', '0'],
-            ['0', '0', 'z1', 'z2']
-        ]
-    )
-    prod = np_matmul_str_matrices_2d(a, dfdp)
-    print(prod)
+def clean(s, sep=' '):
+    s = s.strip()  # removes leading and trailing commas
+    s = sep.join(s.split(sep))  # removes extra separators
+    s = globals.SPACE.join(s.split(globals.SPACE))  # removes extra spaces
+
+
+def print_crn(crn, title=''):
+    print(title + '\n')
+    ret = []
+    for r in crn:
+        print(r)
+        ret += r.assign_concentrations()
+    return ret
