@@ -4,6 +4,8 @@ import re
 import numpy as np
 from src.reaction import Species
 from src.ode import Scalar
+import src.algebra as algebra
+from src.algebra import Scalar, Term, Expression
 
 
 def convert_dual_scalar_to_species(var: Scalar):
@@ -20,6 +22,46 @@ def convert_species_to_dual_scalar(sp: Species):
 
 def tuple_to_string(t):
     return ''.join([str(x) for x in t])
+
+
+def np_create_empty_scalar_array(rows, cols, default=Scalar()):
+    l = [[default for j in range(cols)] for i in range(rows)]
+    return np.array(l)
+
+
+def np_matmult_scalar_matrices_2d(x, y):
+    """
+    :param x: np array of type Scalar and by extension of type Term and
+    Expression
+    :param y: same as x
+    :return: same as x and y
+    """
+    assert x.ndim == 2
+    assert y.ndim == 2
+    assert x.shape[1] == y.shape[0]
+    xrows = x.shape[0]
+    cols = x.shape[1]
+    ycols = y.shape[1]
+
+    # Initialize ret
+    ret = []
+    for xrow in range(xrows):
+        ret.append([])
+        for ycol in range(ycols):
+            ret[xrow].append(Expression())
+
+    for xrow in range(xrows):
+        for ycol in range(ycols):
+            for col in range(cols):
+                ret[xrow][ycol] = algebra.add_expressions(
+                    ret[xrow][ycol],
+                    algebra.mult_expressions(x[xrow][col], y[col][ycol])
+                )
+                for i in range(xrows):
+                    print(' '.join([str(r) for r in ret[i]]))
+                print('------------')
+    ret = np.array(ret, dtype=Expression)
+    return ret
 
 
 def np_matmul_str_matrices_2d(x, y):

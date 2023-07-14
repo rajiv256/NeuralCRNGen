@@ -13,6 +13,10 @@ class Species:
     def __str__(self):
         return self.name
 
+    def to_scalar_name(self):
+        scalar = self.name
+        return scalar.lower()
+
 
 class Reaction:
     def __init__(self, reactants=[Species()], products=[Species()],

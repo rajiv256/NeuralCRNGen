@@ -3,205 +3,170 @@ import itertools
 import numpy as np
 
 import utils
-from src.reaction import Reaction, Species
+from src.algebra import DualRail, Scalar, Term, Expression
+from src.reaction import Reaction
 from vars import globals
 
 
-def transpose_variable(x):
-    xT = Variable(
-        symbol=x.symbol + "T", dimensions=reversed(x.dims),
-        data=x.vectorize().transpose().tolist()
+class Matrix2D:
+    def __init__(self, symbol='', dims=[0, 0], data=None):
+        assert len(dims) == 2  # Only 2D matrices allowed
+        self.symbol = symbol
+        self.dims = dims
+        # If `data` is given, the matrix conversion proceeds solely through that
+        # data. Otherwise, we create matrix normally with indices.
+        self.data = data
+
+    def matrix(self):
+        if self.data is not None:
+            mat = np.array(self.data, dtype=str)
+            return mat
+        # If the matrix is a column vector, then give it just the indices and
+        # no cartesian product is required.
+        if self.dims[-1] == 1:
+            indices = [str(i) for i in range(1, 1+self.dims[0])]
+        else:
+            indices = [list(range(1, d + 1)) for d in self.dims]
+            indices = itertools.product(*indices)
+            indices = [utils.tuple_to_string(t) for t in indices]
+        scalars = np.array(
+            [Scalar(name=self.symbol + index) for index in indices]
         )
-    return xT
+        # If it is a 1D, convert it into 2D column matrix
+        reshape_dims = self.dims
+        mat = scalars.reshape(reshape_dims)
+        return mat
+
+    def __str__(self):
+        mat = self.matrix()
+        return str(mat)
+
+
+def transpose_matrix(mat):
+    matT = Matrix2D(
+        symbol=mat.symbol + "T", dims=reversed(mat.dims),
+        data=mat.matrix().transpose().tolist()
+    )
+    return matT
 
 
 def create_dfdtheta(D, prefix='x'):
-    """Creates a dfdtheta style array. Very niche function.
-    """
-    xvars = [Species(name=prefix + str(i)) for i in range(1, D + 1)]  # x1 x2
-    # x3 ... xD
-    zero = '0'
-    xs = np.core.defchararray.add(zero, np.zeros((D, D ** 2), dtype=str))
-    for i in range(xs.shape[0]):
-        xs[i, D * i:D * i + D] = xvars
-    return xs.tolist()
-
-
-class MonomialODE:
-    def __init__(self, lhs=Scalar(), rhs=[Scalar()], parity=1):
-        self.lhs = lhs
-        self.rhs = rhs
-        self.parity = parity
-
-    def __str__(self):
-        return f"""d{self.lhs.name}/dt = 
-        {''.join([r.name for r in self.rhs])}"""
-
-    def catalytic_crn(self):
-        """
-        :rtype: Reaction
-        """
-        crn = Reaction(
-            reactants=[utils.convert_dual_scalar_to_species(sc) for sc in
-                       self.rhs],
-            products=[utils.convert_dual_scalar_to_species(sc) for sc in
-                      [self.lhs] + self.rhs], rate_constant=1.0,
-            reversible=False
-        )
-        return crn
-
-    def dual_rail(self):
-        """
-        :return: A [] of two multinomials
-        """
-        dr = utils.convert_expr_to_dual_rail(self.rhs, self.parity)
-        # An example dual_rail variable looks as follows:
-        # {'pos': ['ap|bp', 'an|bn'], 'neg': ['ap|bn', 'an|bp']}
-        pos = MultinomialODE(
-            monomials=[MonomialODE(
-                lhs=self.lhs + globals.POS_SUFFIX, rhs=rs.split('|')
-                ) for rs in dr['pos']]
-        )
-        neg = MultinomialODE(
-            monomials=[MonomialODE(
-                lhs=self.lhs + globals.NEG_SUFFIX, rhs=rs.split('|')
-                ) for rs in dr['neg']]
-        )
-        return [pos, neg]
+    xvars = [Scalar(name=prefix + str(i)) for i in range(1, D + 1)]
+    xs = np.array(
+        [[Scalar(name=globals.ZERO) for j in range(D ** 2)] for i in range(D)]
+    )
+    xs = xs.tolist()
+    for i in range(len(xs)):
+        xs[i][D * i:(D + 1) * i] = xvars
+    return xs
 
 
 class MultinomialODE:
-    def __init__(self, monomials=[]):
-        assert len(monomials) > 0
-        assert sum([m.lhs.name != monomials[0].lhs.name for m in monomials]) == 0
-        self.lhs = monomials[0]
-        self.multi_rhs = [m.rhs for m in monomials]
-        self.monomials = monomials
+    def __init__(self, lhs=Scalar(), rhs=Expression()):
+        self.lhs = lhs
+        self.rhs = rhs
 
     def __str__(self):
-        return f"""d({self.lhs.name})/dt =
-         {'+'.join([''.join(rhs.name) for rhs in self.multi_rhs])}"""
-
-    def catalytic_crn(self):
-        crn = [m.catalytic_crn() for m in self.monomials]
-        return crn
-
-    def dual_rail(self):
-        """
-        :return:A [] of multinomials
-        """
-        ret = []
-        for m in self.monomials:
-            ret += m.dual_rail()
-        return ret
+        return f"""d{str(self.lhs)}/dt = {str(self.rhs)}"""
 
 
-class Variable:
-    """
-    Vector variable
-    """
-
-    def __init__(self, symbol='', dimensions=[], data=None):
-        self.symbol = symbol
-        self.dims = dimensions
-        self.data = data
-
-    def __str__(self):
-        print(self.symbol)
-
-    def vectorize(self):
-        """
-        :return: A np array of dtype str.
-        """
-        if self.data is not None:
-            vect = np.array(self.data, dtype=str)
-            return vect
-
-        print("-->", self.dims)
-        dim_indices = [list(range(1, d + 1)) for d in self.dims]
-        concatenated_dims = itertools.product(*dim_indices)
-        final_dims = np.array(
-            [utils.tuple_to_string(t) for t in concatenated_dims], dtype=str
+class MonomialODE(MultinomialODE):
+    def __init__(self, lhs=Scalar(), rhs=Term(), parity=1):
+        self.lhs = lhs
+        self.rhs = rhs
+        self.parity = parity
+        super().__init__(
+            lhs=lhs, rhs=Expression(terms=[self.rhs])
         )
-        # If it is a list, make it a column vector, otherwise keep it the same.
-        if len(self.dims) == 1:
-            reshape_dims = self.dims + [1]
-        else:
-            reshape_dims = self.dims
-        final_dims = final_dims.reshape(reshape_dims)
-        vect = np.core.defchararray.add(self.symbol, final_dims)
-        return vect
 
     def __str__(self):
-        var = self.vectorize()
-        return str(var)
+        return f"""d{str(self.lhs)}/dt = {str(self.rhs)}"""
 
 
-class Matrix2D:
-    def __init__(self, data=[['']]):
-        self.data = data
+def monomial_dual_rail(mono, parity=1):
+    lhs_dr = mono.lhs.dual_rail()
+    rhs_dr = mono.rhs.dual_rail()
+    if parity == 1:
+        ret = [MultinomialODE(lhs_dr.pos, rhs_dr[0].pos),
+               MultinomialODE(lhs_dr.neg, rhs_dr[0].neg)]
+    if parity == -1:
+        ret = [MultinomialODE(lhs_dr.pos, rhs_dr[0].neg),
+               MultinomialODE(lhs_dr.neg, rhs_dr[0].pos)]
+    return ret
 
-    def __str__(self):
-        for row in self.data:
-            print(globals.SPACE.join(row))
 
-    def _to_numpy_array(self):
-        return np.array(self.data, dtype=str)
+def multinomial_dual_rail(multi, parity=1):
+    ret = []
+    for term in multi.rhs.terms:
+        ret += monomial_dual_rail(
+            MonomialODE(lhs=multi.lhs, rhs=term), parity=parity
+        )
+    return ret
+
+
+def monomial_catalytic_crn(mono):
+    """Convert a monomial expression to a catalyic crn
+    :returns --> Reaction type
+    """
+    print("mono", str(mono))
+    crn = Reaction(
+        reactants=[utils.convert_dual_scalar_to_species(sc) for sc in
+                   mono.rhs._scalars()],
+        products=[utils.convert_dual_scalar_to_species(sc) for sc in
+                  [mono.lhs] + mono.rhs._scalars()], rate_constant=1.0,
+        reversible=False
+    )
+    return crn
+
+
+def multinomial_catalytic_crn(multi):
+    crn = []
+    for term in multi.rhs.terms:
+        m = MonomialODE(multi.lhs, term)
+        crn += [monomial_catalytic_crn(m)]
+    return crn
 
 
 class ODESystem:
-    """
-    For ODEs with RHSs that can be represented as vector-jacobians.
-    """
-
-    def __init__(self, lhs=Variable(), rhs=[Variable()], parity=1):
-        """Takes in a set of multinomials and saves them in a compressed
-        matrix form."""
+    def __init__(self, lhs=Matrix2D(), rhs=[Matrix2D()], parity=1):
         self.lhs = lhs
         self.rhs = rhs
         self.parity = parity
 
     def dual_rail_crn(self):
-        lhs_vec = self.lhs.vectorize()
+        lhs_mat = self.lhs.matrix()
+        rhs_mat_list = [r.matrix() for r in self.rhs]
+        rhs_mat = rhs_mat_list[0]
 
-        rhs_vec_list = [r.vectorize() for r in self.rhs]
-        rhs_vec = rhs_vec_list[0]
-        for i in range(1, len(rhs_vec_list)):
-            print(rhs_vec, rhs_vec_list[i])
-            rhs_vec = utils.np_matmul_str_matrices_2d(rhs_vec, rhs_vec_list[i])
+        for i in range(1, len(rhs_mat_list)):
+            rhs_mat = utils.np_matmult_scalar_matrices_2d(
+                rhs_mat, rhs_mat_list[i]
+            )
         multinomials = []
-        for i in range(lhs_vec.shape[0]):
-            for j in range(lhs_vec.shape[1]):  # Assumption that it is all 2D
-                # Added support for trailing + issue in np_matmul_str_matrices_2d
+        for i in range(lhs_mat.shape[0]):
+            for j in range(lhs_mat.shape[1]):
+                print(str(lhs_mat[i, j]), str(rhs_mat[i, j]))
                 multinomials.append(
                     MultinomialODE(
-                        [MonomialODE(
-                            lhs=lhs_vec[i, j], rhs=splt_item.split('|'),
-                            parity=self.parity
-                            ) for splt_item in rhs_vec[i, j].split('+') if
-                            splt_item is not '']
+                        lhs=lhs_mat[i, j], rhs=rhs_mat[i, j]
                     )
                 )
-
-        # Remember that each monomial returns a multinomial in dual-rail
-        dual_rail_multinomials = []
-        for mn in multinomials:
-            dual_rail_multinomials += mn.dual_rail()
-
+        ret = []
+        for item in multinomials:
+            ret += multinomial_dual_rail(item, parity=self.parity)
         crn = []
-        for mn in dual_rail_multinomials:
-            crn += mn.catalytic_crn()
-
+        for mn in ret:
+            crn += multinomial_catalytic_crn(mn)
         return crn
 
 
 if __name__ == '__main__':
-    print("forward z")
     ode = ODESystem(
-        lhs=Variable(symbol='z', dimensions=[2]),
-        rhs=[Variable(symbol='P', dimensions=[2, 2]),
-             Variable(symbol='z', dimensions=[2])], parity=-1
-        )
+        lhs=Matrix2D(symbol='z', dims=[2, 1]),
+        rhs=[Matrix2D(symbol='p', dims=[2, 2]),
+             Matrix2D(symbol='z', dims=[2, 1])],
+        parity=-1
+    )
     crn = ode.dual_rail_crn()
     for c in crn:
         print(c)
