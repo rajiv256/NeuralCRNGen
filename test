@@ -1,0 +1,152 @@
+/Users/rajiv/Desktop/PhD/neural-ode/NeuralCRNGen/venv/bin/python /Users/rajiv/Desktop/PhD/neural-ode/NeuralCRNGen/main.py
+CRN for Z Forward
+1.0, P11p + Z1p --> Z1p + P11p + Z1p
+1.0, P11m + Z1m --> Z1p + P11m + Z1m
+1.0, P11p + Z1m --> Z1m + P11p + Z1m
+1.0, P11m + Z1p --> Z1m + P11m + Z1p
+1.0, P12p + Z2p --> Z1p + P12p + Z2p
+1.0, P12m + Z2m --> Z1p + P12m + Z2m
+1.0, P12p + Z2m --> Z1m + P12p + Z2m
+1.0, P12m + Z2p --> Z1m + P12m + Z2p
+1.0, P21p + Z1p --> Z2p + P21p + Z1p
+1.0, P21m + Z1m --> Z2p + P21m + Z1m
+1.0, P21p + Z1m --> Z2m + P21p + Z1m
+1.0, P21m + Z1p --> Z2m + P21m + Z1p
+1.0, P22p + Z2p --> Z2p + P22p + Z2p
+1.0, P22m + Z2m --> Z2p + P22m + Z2m
+1.0, P22p + Z2m --> Z2m + P22p + Z2m
+1.0, P22m + Z2p --> Z2m + P22m + Z2p
+-----------------
+{":P11m => vars['P'][1, 1, 2]",
+ ":P11p => vars['P'][1, 1, 1]",
+ ":P12m => vars['P'][1, 2, 2]",
+ ":P12p => vars['P'][1, 2, 1]",
+ ":P21m => vars['P'][2, 1, 2]",
+ ":P21p => vars['P'][2, 1, 1]",
+ ":P22m => vars['P'][2, 2, 2]",
+ ":P22p => vars['P'][2, 2, 1]",
+ ":Z1m => vars['Z'][1, 2]",
+ ":Z1p => vars['Z'][1, 1]",
+ ":Z2m => vars['Z'][2, 2]",
+ ":Z2p => vars['Z'][2, 1]"}
+CRN for Z Backprop
+1.0, P11p + Z1m --> Z1p + P11p + Z1m
+1.0, P11m + Z1p --> Z1p + P11m + Z1p
+1.0, P11p + Z1p --> Z1m + P11p + Z1p
+1.0, P11m + Z1m --> Z1m + P11m + Z1m
+1.0, P12p + Z2m --> Z1p + P12p + Z2m
+1.0, P12m + Z2p --> Z1p + P12m + Z2p
+1.0, P12p + Z2p --> Z1m + P12p + Z2p
+1.0, P12m + Z2m --> Z1m + P12m + Z2m
+1.0, P21p + Z1m --> Z2p + P21p + Z1m
+1.0, P21m + Z1p --> Z2p + P21m + Z1p
+1.0, P21p + Z1p --> Z2m + P21p + Z1p
+1.0, P21m + Z1m --> Z2m + P21m + Z1m
+1.0, P22p + Z2m --> Z2p + P22p + Z2m
+1.0, P22m + Z2p --> Z2p + P22m + Z2p
+1.0, P22p + Z2p --> Z2m + P22p + Z2p
+1.0, P22m + Z2m --> Z2m + P22m + Z2m
+-----------------
+{":P11m => vars['P'][1, 1, 2]",
+ ":P11p => vars['P'][1, 1, 1]",
+ ":P12m => vars['P'][1, 2, 2]",
+ ":P12p => vars['P'][1, 2, 1]",
+ ":P21m => vars['P'][2, 1, 2]",
+ ":P21p => vars['P'][2, 1, 1]",
+ ":P22m => vars['P'][2, 2, 2]",
+ ":P22p => vars['P'][2, 2, 1]",
+ ":Z1m => vars['Z'][1, 2]",
+ ":Z1p => vars['Z'][1, 1]",
+ ":Z2m => vars['Z'][2, 2]",
+ ":Z2p => vars['Z'][2, 1]"}
+CRN for Adjoint Backprop
+1.0, A1p + P11p --> A1p + A1p + P11p
+1.0, A1m + P11m --> A1p + A1m + P11m
+1.0, A1p + P11m --> A1m + A1p + P11m
+1.0, A1m + P11p --> A1m + A1m + P11p
+1.0, A2p + P21p --> A1p + A2p + P21p
+1.0, A2m + P21m --> A1p + A2m + P21m
+1.0, A2p + P21m --> A1m + A2p + P21m
+1.0, A2m + P21p --> A1m + A2m + P21p
+1.0, A1p + P12p --> A2p + A1p + P12p
+1.0, A1m + P12m --> A2p + A1m + P12m
+1.0, A1p + P12m --> A2m + A1p + P12m
+1.0, A1m + P12p --> A2m + A1m + P12p
+1.0, A2p + P22p --> A2p + A2p + P22p
+1.0, A2m + P22m --> A2p + A2m + P22m
+1.0, A2p + P22m --> A2m + A2p + P22m
+1.0, A2m + P22p --> A2m + A2m + P22p
+-----------------
+{":A1m => vars['A'][1, 2]",
+ ":A1p => vars['A'][1, 1]",
+ ":A2m => vars['A'][2, 2]",
+ ":A2p => vars['A'][2, 1]",
+ ":P11m => vars['P'][1, 1, 2]",
+ ":P11p => vars['P'][1, 1, 1]",
+ ":P12m => vars['P'][1, 2, 2]",
+ ":P12p => vars['P'][1, 2, 1]",
+ ":P21m => vars['P'][2, 1, 2]",
+ ":P21p => vars['P'][2, 1, 1]",
+ ":P22m => vars['P'][2, 2, 2]",
+ ":P22p => vars['P'][2, 2, 1]"}
+CRN for Gradient Backprop
+1.0, A1p + Z1p --> G11p + A1p + Z1p
+1.0, A1m + Z1m --> G11p + A1m + Z1m
+1.0, A1p + Z1m --> G11m + A1p + Z1m
+1.0, A1m + Z1p --> G11m + A1m + Z1p
+1.0, A1p + Z2p --> G12p + A1p + Z2p
+1.0, A1m + Z2m --> G12p + A1m + Z2m
+1.0, A1p + Z2m --> G12m + A1p + Z2m
+1.0, A1m + Z2p --> G12m + A1m + Z2p
+1.0, A2p + Z1p --> G21p + A2p + Z1p
+1.0, A2m + Z1m --> G21p + A2m + Z1m
+1.0, A2p + Z1m --> G21m + A2p + Z1m
+1.0, A2m + Z1p --> G21m + A2m + Z1p
+1.0, A2p + Z2p --> G22p + A2p + Z2p
+1.0, A2m + Z2m --> G22p + A2m + Z2m
+1.0, A2p + Z2m --> G22m + A2p + Z2m
+1.0, A2m + Z2p --> G22m + A2m + Z2p
+-----------------
+{":A1m => vars['A'][1, 2]",
+ ":A1p => vars['A'][1, 1]",
+ ":A2m => vars['A'][2, 2]",
+ ":A2p => vars['A'][2, 1]",
+ ":G11m => vars['G'][1, 1, 2]",
+ ":G11p => vars['G'][1, 1, 1]",
+ ":G12m => vars['G'][1, 2, 2]",
+ ":G12p => vars['G'][1, 2, 1]",
+ ":G21m => vars['G'][2, 1, 2]",
+ ":G21p => vars['G'][2, 1, 1]",
+ ":G22m => vars['G'][2, 2, 2]",
+ ":G22p => vars['G'][2, 2, 1]",
+ ":Z1m => vars['Z'][1, 2]",
+ ":Z1p => vars['Z'][1, 1]",
+ ":Z2m => vars['Z'][2, 2]",
+ ":Z2p => vars['Z'][2, 1]"}
+{":A1m => vars['A'][1, 2]",
+ ":A1p => vars['A'][1, 1]",
+ ":A2m => vars['A'][2, 2]",
+ ":A2p => vars['A'][2, 1]",
+ ":G11m => vars['G'][1, 1, 2]",
+ ":G11p => vars['G'][1, 1, 1]",
+ ":G12m => vars['G'][1, 2, 2]",
+ ":G12p => vars['G'][1, 2, 1]",
+ ":G21m => vars['G'][2, 1, 2]",
+ ":G21p => vars['G'][2, 1, 1]",
+ ":G22m => vars['G'][2, 2, 2]",
+ ":G22p => vars['G'][2, 2, 1]",
+ ":P11m => vars['P'][1, 1, 2]",
+ ":P11p => vars['P'][1, 1, 1]",
+ ":P12m => vars['P'][1, 2, 2]",
+ ":P12p => vars['P'][1, 2, 1]",
+ ":P21m => vars['P'][2, 1, 2]",
+ ":P21p => vars['P'][2, 1, 1]",
+ ":P22m => vars['P'][2, 2, 2]",
+ ":P22p => vars['P'][2, 2, 1]",
+ ":Z1m => vars['Z'][1, 2]",
+ ":Z1p => vars['Z'][1, 1]",
+ ":Z2m => vars['Z'][2, 2]",
+ ":Z2p => vars['Z'][2, 1]"}
+{":Z2m => vars['Z'][2, 2]", ":P21p => vars['P'][2, 1, 1]", ":A1m => vars['A'][1, 2]", ":A1p => vars['A'][1, 1]", ":G12p => vars['G'][1, 2, 1]", ":G22m => vars['G'][2, 2, 2]", ":P21m => vars['P'][2, 1, 2]", ":P22m => vars['P'][2, 2, 2]", ":G21m => vars['G'][2, 1, 2]", ":G21p => vars['G'][2, 1, 1]", ":A2m => vars['A'][2, 2]", ":G22p => vars['G'][2, 2, 1]", ":Z1p => vars['Z'][1, 1]", ":P11p => vars['P'][1, 1, 1]", ":A2p => vars['A'][2, 1]", ":G11m => vars['G'][1, 1, 2]", ":P11m => vars['P'][1, 1, 2]", ":P22p => vars['P'][2, 2, 1]", ":Z1m => vars['Z'][1, 2]", ":Z2p => vars['Z'][2, 1]", ":P12m => vars['P'][1, 2, 2]", ":G11p => vars['G'][1, 1, 1]", ":G12m => vars['G'][1, 2, 2]", ":P12p => vars['P'][1, 2, 1]"}
+
+Process finished with exit code 0

@@ -19,7 +19,7 @@ class Matrix2D:
 
     def matrix(self):
         if self.data is not None:
-            mat = np.array(self.data, dtype=str)
+            mat = np.array(self.data)
             return mat
         # If the matrix is a column vector, then give it just the indices and
         # no cartesian product is required.
@@ -35,6 +35,7 @@ class Matrix2D:
         # If it is a 1D, convert it into 2D column matrix
         reshape_dims = self.dims
         mat = scalars.reshape(reshape_dims)
+        self.data = mat.tolist()
         return mat
 
     def __str__(self):
@@ -44,20 +45,25 @@ class Matrix2D:
 
 def transpose_matrix(mat):
     matT = Matrix2D(
-        symbol=mat.symbol + "T", dims=reversed(mat.dims),
+        symbol=mat.symbol + "T", dims=list(reversed(mat.dims)),
         data=mat.matrix().transpose().tolist()
     )
     return matT
 
 
 def create_dfdtheta(D, prefix='x'):
-    xvars = [Scalar(name=prefix + str(i)) for i in range(1, D + 1)]
-    xs = np.array(
-        [[Scalar(name=globals.ZERO) for j in range(D ** 2)] for i in range(D)]
-    )
-    xs = xs.tolist()
-    for i in range(len(xs)):
-        xs[i][D * i:(D + 1) * i] = xvars
+    xs = []
+
+    for i in range(D):
+        for j in range(D**2):
+            if len(xs) <= i:
+                xs.append([])
+            if D*i <= j < (i+1)*D:
+                xs[i].append(Scalar(name=prefix + str(j-D*i + 1)))
+            else:
+                xs[i].append(Expression())
+
+    xs = np.array(xs)
     return xs
 
 
@@ -108,7 +114,6 @@ def monomial_catalytic_crn(mono):
     """Convert a monomial expression to a catalyic crn
     :returns --> Reaction type
     """
-    print("mono", str(mono))
     crn = Reaction(
         reactants=[utils.convert_dual_scalar_to_species(sc) for sc in
                    mono.rhs._scalars()],
@@ -145,7 +150,6 @@ class ODESystem:
         multinomials = []
         for i in range(lhs_mat.shape[0]):
             for j in range(lhs_mat.shape[1]):
-                print(str(lhs_mat[i, j]), str(rhs_mat[i, j]))
                 multinomials.append(
                     MultinomialODE(
                         lhs=lhs_mat[i, j], rhs=rhs_mat[i, j]

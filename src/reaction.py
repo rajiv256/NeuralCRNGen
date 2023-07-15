@@ -28,17 +28,16 @@ class Reaction:
         self.reversible = reversible
 
     def __str__(self):
-        return f"{self.k}, {'+'.join([r.name for r in self.rs])} -->" \
-               f" {'+'.join([p.name for p in self.ps])}"
+        return f"{self.k}, {' + '.join([r.name for r in self.rs])} -->" \
+               f" {' + '.join([p.name for p in self.ps])}"
 
     def assign_concentrations(self):
         concentrations = []
+        # TODO: Assumption that variables are represented by using the letter.
         for r in self.rs:
-            concentrations.append(f''':{r.name} => vars['{r.name}']\
-                {str(suffix2index(r.name[1:]))}''')
+            concentrations.append(f''':{r.name} => vars["{r.name[0]}"]{str(suffix2index(r.name[1:]))}''')
         for p in self.ps:
-            concentrations.append(f''':{p.name} => vars['{p.name}']\
-                {str(suffix2index(p.name[1:]))}''')
+            concentrations.append(f''':{p.name} => vars["{p.name[0]}"]{str(suffix2index(p.name[1:]))}''')
         return concentrations
 
 

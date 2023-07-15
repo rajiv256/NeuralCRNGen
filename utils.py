@@ -1,9 +1,6 @@
-import src.ode as ode
 import itertools
-import re
 import numpy as np
 from src.reaction import Species
-from src.ode import Scalar
 import src.algebra as algebra
 from src.algebra import Scalar, Term, Expression
 
@@ -36,8 +33,8 @@ def np_matmult_scalar_matrices_2d(x, y):
     :param y: same as x
     :return: same as x and y
     """
-    assert x.ndim == 2
-    assert y.ndim == 2
+    assert x.ndim == 2  # 2D matrix
+    assert y.ndim == 2  # 2D matrix
     assert x.shape[1] == y.shape[0]
     xrows = x.shape[0]
     cols = x.shape[1]
@@ -57,69 +54,8 @@ def np_matmult_scalar_matrices_2d(x, y):
                     ret[xrow][ycol],
                     algebra.mult_expressions(x[xrow][col], y[col][ycol])
                 )
-                for i in range(xrows):
-                    print(' '.join([str(r) for r in ret[i]]))
-                print('------------')
     ret = np.array(ret, dtype=Expression)
     return ret
-
-
-def np_matmul_str_matrices_2d(x, y):
-    """
-    Simulates the multiplication of two 2D matrices
-    NOTE: Might contain trailing +++++
-    :param x: 2d np array of type str
-    :param y: 2d np array of type str
-    :return: 2d np array of type str
-
-    Example:
-    x: np.array([['a1', 'a2']], dtype=str)
-    y: np.array(
-        [
-            ['z1', 'z2', '0', '0'],
-            ['0', '0', 'z1', 'z2']
-        ]
-    )
-    result: [['a1|z1+' 'a1|z2+' 'a2|z1' 'a2|z2']]
-    """
-    assert x.ndim == 2
-    assert y.ndim == 2
-    assert x.shape[1] == y.shape[0]
-
-    xrows = x.shape[0]
-    ycols = y.shape[1]
-    cols = x.shape[1]
-
-    res = np_create_empty_string_array_2d(xrows, ycols)
-    plus = np.core.defchararray.add('+', np_create_empty_string_array_2d(xrows,
-                                                                         ycols))
-    bar = np.core.defchararray.add('|', np_create_empty_string_array_2d(xrows,
-                                                                        ycols))
-    plus_boolean = np.ones((xrows, ycols)) * True
-
-    for k in range(cols):
-        # New xrows, ycols matrix by repeating a col of x
-        xtemp = np.repeat(x[:, k].reshape(-1, 1), ycols, axis=1)
-        # New xrows, ycols matrix by repeating a row of y
-        ytemp = np.repeat(y[k, :].reshape(1, -1), xrows, axis=0)
-
-        prod = np.core.defchararray.add(xtemp, bar)
-        prod = np.core.defchararray.add(prod, ytemp)
-
-        # If one of the multiplicands is zero, prod is zero
-        prod = np.where(ytemp == '0', '', prod)
-        prod = np.where(xtemp == '0', '', prod)
-        res = np.core.defchararray.add(res, prod)
-        plus_updated = np.where(res == '', '', plus)
-        plus_updated = np.where(prod == '', '', plus_updated)
-        if k != cols - 1:
-            res = np.core.defchararray.add(res, plus_updated)
-    return res
-
-
-def np_create_empty_string_array_2d(nrows, ncols, default_str=''):
-    l = [[default_str for j in range(ncols)] for i in range(nrows)]
-    return np.array(l, dtype=str)
 
 
 def convert_scalar_to_dual_rail(scalar: Scalar):
@@ -158,24 +94,6 @@ def convert_expr_to_dual_rail(scalars=[Scalar()], parity=1):
     return ret
 
 
-def meld(a=['l', 'm'], b=['n', 'o', 'p']):
-    """
-    Calculates the cartesian product of strings by annealing the products
-    together.
-    """
-    cartesian = itertools.product(a, b)
-    ret = []
-    for x, y in cartesian:
-        # Handles mult with 0
-        if x == '0' or y == '0':
-            continue
-        elif (x == '1' and y != '1') or (x != '1' and y == '1'):
-            ret += [x]
-        else:
-            ret.append(x + '|' + y)
-    return ret
-
-
 def clean(s, sep=' '):
     s = s.strip()  # removes leading and trailing commas
     s = sep.join(s.split(sep))  # removes extra separators
@@ -183,9 +101,15 @@ def clean(s, sep=' '):
 
 
 def print_crn(crn, title=''):
-    print(title + '\n')
     ret = []
+    print(title)
     for r in crn:
-        print(r)
         ret += r.assign_concentrations()
+        print(r)
+    print('-----------------')
     return ret
+
+
+def print_doubly_nested_list(l):
+    for x in l:
+        print('; '.join([str(y) for y in x]))
