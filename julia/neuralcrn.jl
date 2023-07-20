@@ -593,11 +593,10 @@ end
 
 # Dataset 
 
-# train = create_linearly_separable_dataset!(100, linear, threshold=0.0)
-# val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
-train = create_annular_rings_dataset!(100, 1.0)
-val = create_annular_rings_dataset!(20, 1.0)
+train = create_linearly_separable_dataset!(100, linear, threshold=0.0)
 val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
+# train = create_annular_rings_dataset!(100, 1.0)
+# val = create_annular_rings_dataset!(20, 1.0)
 
 
 
