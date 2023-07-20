@@ -546,9 +546,6 @@ function crn_final_layer_update(vars, eta, tspan)
     end
 end
 
-train = create_linearly_separable_dataset!(100, linear, threshold=0.0)
-val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
-
 
 function _dualsymbol2value(sym, mat)
     # Strip the symbol prefix
@@ -567,6 +564,16 @@ function _dualsymbol2value(sym, mat)
 end
 
 
+function _convert_dualsymbol2index(sym)
+    sym = sym[2:end]
+    suffix = sym[end]  # p or m 
+    index_str = sym[1:end-1]  # index string
+    indices = [c-'0' for c in index_str]  # indices resulting
+    @assert length(indices) == 2
+    return indices
+end
+
+
 function dissipate_and_annihilate(vars, tspan)
     ss = species(rn_annihilation_reactions)
     uvalues = [vars[_convert_species2var(sp)] for sp in ss]
@@ -581,6 +588,19 @@ function dissipate_and_annihilate(vars, tspan)
     end
 end
 
+
+################################################################################################################################################################################################################################################################################################################
+
+# Dataset 
+
+# train = create_linearly_separable_dataset!(100, linear, threshold=0.0)
+# val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
+train = create_annular_rings_dataset!(100, 1.0)
+val = create_annular_rings_dataset!(20, 1.0)
+val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
+
+
+
 # Tracking 
 DIMS = 2
 TRACK_EVERY = 10
@@ -591,24 +611,41 @@ PRECISION_DIGITS = 4
 LR = 0.001
 accuracy = 0.0
 
-
-
 # Set params correctly
 params = params_orig
 params = custom_struct_round(params, precision_digits=PRECISION_DIGITS)
 
 crn_tracking = Dict()
 
-vars = Dict(
-            "Z1p" => 0, "Z1m" => 0, "Z2p" => 0, "Z2m" => 0,
-            "P11p" => max(0, params[1]), "P12p" => max(0, params[2]), "P21p" => max(0, params[3]), "P22p" => max(0, params[4]),
-            "P11m" => max(0, -params[1]), "P12m" => max(0, -params[2]), "P21m" => max(0, -params[3]), "P22m" => max(0, -params[4]),
-            "W1p" => max(0, params[7]), "W1m" => max(0, -params[7]), "W2p" => max(0, params[8]), "W2m" => max(0, -params[8]),
-        )
+# Get the CRNs that contain all possible species to initiate vars
+comprehensive_crns = [rn_dual_node_fwd, rn_dual_backprop, rn_weight_update, rn_final_layer_update]
+
+# Initiate the vars dict 
+vars = Dict()
+default_value = 0.0
+
+# Initialize the vars variables
+for crn in comprehensive_crns
+crn_species = species(crn)
+for s in crn_species
+    get!(vars, _convert_species2var(s), default_value)
+end
+end
+
+# Assign the values to the `P` species
+Pspecies = [k for k in keys(vars) if startswith(k, "P")]
+for psp in Pspecies
+indices = _convert_dualsymbol2index(psp)
+@assert length(indices) == 2  # indices must be of length 2
+
+# The first DIMS^2 elements in the `params` array
+vars[psp] = params[indices[1]*DIMS + indices[2]]
+end
+
 
 for epoch in 1:EPOCHS  
-    epoch_loss = 0.0
-    for i in 1:length(train)
+epoch_loss = 0.0
+for i in 1:length(train)
          
         x, y = get_one(train, i)
         x = augment(x, DIMS-length(x))

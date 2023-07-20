@@ -17,11 +17,11 @@ function linear(x1, x2)
 end
 
 function bilinear(x1, x2)
-    return x1*x2
+    return x1 * x2
 end
 
 function mytanh(x1, x2)
-    return tanh(2*x1 + 3*x2)
+    return tanh(2 * x1 + 3 * x2)
 end
 
 CLASSES = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
@@ -39,7 +39,7 @@ function create_iris_dataset(feature_indices=[1, 3], classes=["Iris-setosa", "Ir
             for fi in feature_indices
                 push!(feature, parse(Float64, convert(String, row[fi])))
             end
-            append!(dataset, [feature, row[end]]) 
+            append!(dataset, [feature, row[end]])
             push!(inputs, feature)
             push!(targets, row[end])
         end
@@ -71,7 +71,7 @@ function plot_iris_dataset(dataset=[])
     plot()
     for data in dataset
         scatter!(data)
-    end 
+    end
 end
 
 
@@ -90,7 +90,7 @@ function create_dataset!(n, yfunc)
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end
-    return dataset;
+    return dataset
 end
 
 function create_linearly_separable_dataset!(n, yfunc; threshold=1.0)
@@ -111,8 +111,8 @@ function create_linearly_separable_dataset!(n, yfunc; threshold=1.0)
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end
-    print("nneg: ", nneg, " npos: ", length(dataset)-nneg)
-    return dataset;
+    print("nneg: ", nneg, " npos: ", length(dataset) - nneg)
+    return dataset
 end
 
 
@@ -129,10 +129,10 @@ function create_annular_rings_dataset!(n, r)
             nneg += 1
         end
         # Leaving some space between annular rings
-        if norm([x1, x2]) > r && norm([x1, x2]) < 1.5*r
+        if norm([x1, x2]) > r && norm([x1, x2]) < 1.5 * r
             continue
         end
-        
+
         data_item = Vector{Float64}()
         append!(data_item, [abs(x1), abs(x2), y])
         data_item = reshape(data_item, (length(data_item), 1))
