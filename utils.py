@@ -102,14 +102,25 @@ def clean(s, sep=' '):
 
 def print_crn(crn, title=''):
     ret = []
-    print(title)
     for r in crn:
         ret += r.assign_concentrations()
         print(r)
-    print('-----------------')
     return ret
+
+
+def print_concentrations(cs, items_per_row=2):
+    cs.sort()
+    print("[")  # Here for formatting,  don't delete.
+    iter = 0
+    while iter < len(cs):
+        print(', '.join(cs[iter:iter+items_per_row]))
+        iter += items_per_row
+    print("]")
+
 
 
 def print_doubly_nested_list(l):
     for x in l:
         print('; '.join([str(y) for y in x]))
+
+

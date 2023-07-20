@@ -9,8 +9,12 @@ from vars import globals
 
 
 class Matrix2D:
-    def __init__(self, symbol='', dims=[0, 0], data=None):
-        assert len(dims) == 2  # Only 2D matrices allowed
+    def __init__(self, symbol='', dims=[], data=None):
+        """
+        `data` is a listoflist of algebra.Scalars
+        """
+        if data is None:
+            assert len(dims) == 2  # Only 2D matrices allowed
         self.symbol = symbol
         self.dims = dims
         # If `data` is given, the matrix conversion proceeds solely through that
@@ -20,6 +24,9 @@ class Matrix2D:
     def matrix(self):
         if self.data is not None:
             mat = np.array(self.data)
+            if mat.ndim != 2:
+                assert len(self.dims) == 2
+                mat = mat.reshape(self.dims)
             return mat
         # If the matrix is a column vector, then give it just the indices and
         # no cartesian product is required.
@@ -133,7 +140,7 @@ def multinomial_catalytic_crn(multi):
 
 
 class ODESystem:
-    def __init__(self, lhs=Matrix2D(), rhs=[Matrix2D()], parity=1):
+    def __init__(self, lhs=Matrix2D(dims=[0, 0]), rhs=[Matrix2D(dims=[0,0])], parity=1):
         self.lhs = lhs
         self.rhs = rhs
         self.parity = parity
