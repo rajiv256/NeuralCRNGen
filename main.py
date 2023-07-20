@@ -21,9 +21,14 @@ def print_dual_dot_crn(a="a", b="b", y="y", D=2):
     utils.print_crn(dotcrn, title='NA')
     print("end\n\n")
 
+
+def _get_indices_from_dims(dims=[]):
+    assert len(dims) <= 2
+
+    # Used for Ep, Em etc.,
+    if len(dims) == 0:
+        return ['']
     
-def print_gradient_update_crn(k1="k1", k2="k2", P = "P", G="G", dims=[], title=''):
-    assert len(dims) <= 2 and len(dims) > 0
     if len(dims) == 1:
         d1 = dims[0]
         indices = [str(x) for x in range(1, d1 + 1)]
@@ -32,6 +37,11 @@ def print_gradient_update_crn(k1="k1", k2="k2", P = "P", G="G", dims=[], title='
         d2 = dims[1]
         pair_indices = list(itertools.product(range(1, d1+1), range(1, d2+1)))
         indices = [str(x) + str(y) for x, y in pair_indices]
+    return indices
+
+    
+def print_gradient_update_crn(k1="k1", k2="k2", P = "P", G="G", dims=[], title=''):
+    indices = _get_indices_from_dims(dims)
     print(f"{title} = @reaction_network {title}  begin")
     for index in indices:
         print(f"{k1}, {G}{index}p --> {P}{index}m")
@@ -40,6 +50,37 @@ def print_gradient_update_crn(k1="k1", k2="k2", P = "P", G="G", dims=[], title='
     for index in indices:
         print(f"{k2}, {G}{index}p --> 0")
         print(f"{k2}, {G}{index}m --> 0")
+    print("end\n\n")
+
+
+def get_annihilation_reactions(d={"W": [2]}):
+    ret = []
+    for k in d:
+        dims = d[k]
+        indices = _get_indices_from_dims(dims)
+        for index in indices:
+            ret += [f"1.0, {k}{index}p + {k}{index}m --> 0"]
+    return ret
+
+
+def get_degradation_reactions(d={"G": [2, 2]}):
+    ret = []
+    for k in d:
+        dims = d[k]
+        indices = _get_indices_from_dims(dims)
+        for index in indices:
+            ret += [f"1.0, {k}{index}p --> 0"]
+            ret += [f"1.0, {k}{index}m --> 0"]
+    return ret
+
+
+def print_annihilation_degradation_crn(ann={}, degr={}, title="rn_annihilation_reactions"):
+    ret = []
+    ret += get_annihilation_reactions(ann)
+    ret += get_degradation_reactions(degr)
+    print(f"{title}= @reaction_network {title} begin")
+    for r in ret:
+        print(r)
     print("end\n\n")
 
 
@@ -103,5 +144,16 @@ if __name__ == '__main__':
     print("\n\n")
     print_dual_dot_crn()
 
-    print_gradient_update_crn(title="rn_gradient_update", dims=[2, 2])
-    print_gradient_update_crn(title="rn_final_layer_update", P="W", G="M", dims=[2])
+    print_gradient_update_crn(title="rn_gradient_update", dims=[D, D])
+    print_gradient_update_crn(title="rn_final_layer_update", P="W", G="M", dims=[D])
+    print_annihilation_degradation_crn(
+        ann={
+            "W": [D],
+        },
+        degr={
+            "G": [D, D],
+            "M": [D],
+            "A": [D],
+            "E": []
+        }
+    )

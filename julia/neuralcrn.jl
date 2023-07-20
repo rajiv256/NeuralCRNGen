@@ -288,7 +288,7 @@ function mult(a, b; max_val=100.0)
 end
 
 
-function _convert_dot2var(s, subA, subB)
+function _convert_dotvar(s, subA, subB)
      ret = s 
      ret = replace(ret, "(t)" => "")
      ret = replace(ret, "A" => subA)
@@ -311,23 +311,23 @@ function subtract(ap, am, bp, bm; max_val=100.0, default=0.0)
 end
 
 
-function dot2(vars, subA, Aspecies, subB, Bspecies; max_val=100.00, reltol=1e-8, abstol=1e-8, default=0.0)
-    dot2ss = species(rn_dual_dot2)
+function dot(vars, subA, Aspecies, subB, Bspecies; max_val=100.00, reltol=1e-8, abstol=1e-8, default=0.0)
+    dotss = species(rn_dual_dot)
 
     # Initial concentration values
-    varkeys = [_convert_dot2var(string(sp), subA, subB)  for sp in dot2ss]
+    varkeys = [_convert_dotvar(string(sp), subA, subB)  for sp in dotss]
     uvalues = [get(vars, k, default) for k in varkeys]
     @show varkeys
     @show uvalues
-    u = Pair.(dot2ss, uvalues)
+    u = Pair.(dotss, uvalues)
 
     # solve the ODE
     p = []
-    sol = simulate_reaction_network(rn_dual_dot2, u, p, tspan=(0.0, max_val), reltol=reltol, abstol=abstol)
+    sol = simulate_reaction_network(rn_dual_dot, u, p, tspan=(0.0, max_val), reltol=reltol, abstol=abstol)
 
     # Collect the outputs
-    yp = sol[end][get_index_of("Yp", dot2ss)]
-    ym = sol[end][get_index_of("Ym", dot2ss)]
+    yp = sol[end][get_index_of("Yp", dotss)]
+    ym = sol[end][get_index_of("Ym", dotss)]
     y = [yp ym]
     return y 
 end
@@ -359,7 +359,7 @@ function crn_node_forward(vars, tspan, y; reltol=1e-8, abstol=1e-8, precision=4,
     Wspecies = [sp for sp in keys(vars) if startswith(sp, "W")]
     
     
-    yhat = dot2(vars, "Z", Zspecies, "W", Wspecies) 
+    yhat = dot(vars, "Z", Zspecies, "W", Wspecies) 
 
     e = subtract(yhat[1], yhat[2], y[1], y[2])
     @show yhat
@@ -546,8 +546,7 @@ function crn_final_layer_update(vars, eta, tspan)
     end
 end
 
-train = create_linearly_separable_dataset!(100, linear, threshold=0.0)
-val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
+
 
 
 function _dualsymbol2value(sym, mat)
@@ -581,8 +580,12 @@ function dissipate_and_annihilate(vars, tspan)
     end
 end
 
+train = create_annular_rings_dataset(100, 1.0)
+val = create_annular_rings_dataset(20, 1.0)
+
+
 # Tracking 
-DIMS = 2
+DIMS = 3
 TRACK_EVERY = 10
 crn_epoch_losses = []
 EPOCHS = 10
@@ -591,20 +594,36 @@ PRECISION_DIGITS = 4
 LR = 0.001
 accuracy = 0.0
 
-
-
 # Set params correctly
 params = params_orig
 params = custom_struct_round(params, precision_digits=PRECISION_DIGITS)
 
 crn_tracking = Dict()
 
-vars = Dict(
-            "Z1p" => 0, "Z1m" => 0, "Z2p" => 0, "Z2m" => 0,
-            "P11p" => max(0, params[1]), "P12p" => max(0, params[2]), "P21p" => max(0, params[3]), "P22p" => max(0, params[4]),
-            "P11m" => max(0, -params[1]), "P12m" => max(0, -params[2]), "P21m" => max(0, -params[3]), "P22m" => max(0, -params[4]),
-            "W1p" => max(0, params[7]), "W1m" => max(0, -params[7]), "W2p" => max(0, params[8]), "W2m" => max(0, -params[8]),
-        )
+# Get the CRNs that contain all possible species to initiate vars
+comprehensive_crns = [rn_dual_node_fwd, rn_dual_backprop, rn_weight_update, rn_final_layer_update]
+
+# Initiate the vars dict 
+vars = Dict()
+default_value = 0.0
+
+# Initialize the vars variables
+for crn in comprehensive_crns
+    crn_species = species(crn)
+    for s in crn_species
+        get!(vars, _convert_species2var(s), default_value)
+    end
+end
+
+# Assign the values to the `P` species
+Pspecies = [k for k in keys(vars) if startswith(k, "P")]
+for psp in Pspecies
+    indices = _convert_dualsymbol2index(psp)
+    @assert length(indices) == 2  # indices must be of length 2
+
+    # The first DIMS^2 elements in the `params` array
+    vars[psp] = params[indices[1]*DIMS + indices[2]]
+end
 
 for epoch in 1:EPOCHS  
     epoch_loss = 0.0
