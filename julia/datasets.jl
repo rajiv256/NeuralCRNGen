@@ -93,7 +93,7 @@ function create_dataset!(n, yfunc)
     return dataset
 end
 
-function create_linearly_separable_dataset!(n, yfunc; threshold=1.0)
+function create_linearly_separable_dataset(n, yfunc; threshold=1.0)
     dataset = []
     nneg = 0
     for i in 1:n
@@ -117,7 +117,7 @@ end
 
 
 # This is a classification dataset with nonlinearly separable data
-function create_annular_rings_dataset!(n, r)
+function create_annular_rings_dataset(n, r)
     dataset = []
     nneg = 0
     for i in 1:n
