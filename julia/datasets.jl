@@ -134,11 +134,10 @@ function create_annular_rings_dataset(n, r)
         end
         
         data_item = Vector{Float64}()
-        append!(data_item, [abs(x1), abs(x2), y])
+        append!(data_item, [x1, x2, y])
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end
-    print("nneg: ", nneg)
     Random.shuffle!(dataset)
     return dataset
 end

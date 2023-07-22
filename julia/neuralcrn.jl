@@ -22,7 +22,7 @@ using IterTools;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactions.jl")
+include("reactions3D.jl")
 
 
 function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
@@ -388,7 +388,7 @@ end
 
 
 function crn_node_forward(vars, tspan, y; reltol=1e-8, abstol=1e-8, precision=4, D=2)
-    println("============= CRN FORWARD STEP =====================")
+    # println("============= CRN FORWARD STEP =====================")
     # Get the species in the order in which the function `species` retrieves them
     sps = get_species_array(rn_dual_node_fwd)
     
@@ -404,16 +404,14 @@ function crn_node_forward(vars, tspan, y; reltol=1e-8, abstol=1e-8, precision=4,
     end
     
     yhat = dot(vars, "Z", "W") 
-
+    @show yhat, yhat[1]-yhat[2]
     vars["Op"] = yhat[1]
     vars["Om"] = yhat[2]
     vars["Yp"] = y[1]
     vars["Ym"] = y[2]
-    @show "before output annihilation", vars["Op"], vars["Om"]
     crn_output_annihilation(vars, tspan)
-    @show "after output annih ", vars["Op"], vars["Om"]
     crn_create_error_species(vars, tspan)
-    println("============= END CRN FORWARD STEP ===============")
+    # println("============= END CRN FORWARD STEP ===============")
 end
 
 function _form_vector(vars, prefix)
@@ -638,6 +636,7 @@ end
 
 function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0))
     acc = 0
+    epoch_loss = 0.0
     for i in 1:length(dataset)
          
         x, y = get_one(dataset, i)
@@ -650,6 +649,8 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0))
         
         yvec = [y 1-y] # threshold could be 0.5 now.
         crn_node_forward(varscopy, (0.0, 1.0), yvec, D=DIMS)
+        err = [varscopy["Ep"] varscopy["Em"]]
+        epoch_loss += 0.5*(err[1]-err[2])^2
         output = 0.0
         if varscopy["Op"] > varscopy["Om"]
             output = 1.0
@@ -659,22 +660,22 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0))
         end
     end
     @show "Accuracy: ", acc/length(dataset)
-    return acc/length(dataset)
+    return (epoch_loss/length(dataset))
 end
 
-# train = create_annular_rings_dataset(100, 1.0)
-# val = create_annular_rings_dataset(50, 1.0)
+train = create_annular_rings_dataset(100, 1.0)
+val = create_annular_rings_dataset(50, 1.0)
 # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
 # val = create_linearly_separable_dataset(50, linear, 0.0)
 
 
 # Tracking 
-DIMS = 2
+DIMS = 3
 TRACK_EVERY = 10
 crn_epoch_losses = []
 crn_epoch_train_accs = []
 crn_epoch_val_accs = []
-EPOCHS = 40
+EPOCHS = 20
 params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
 PRECISION_DIGITS = 4
 LR = 0.001
@@ -687,7 +688,7 @@ params = custom_struct_round(params, precision_digits=PRECISION_DIGITS)
 crn_tracking = Dict()
 
 # Get the CRNs that contain all possible species to initiate vars
-comprehensive_crns = [rn_dual_node_fwd, rn_dual_backprop, rn_param_update, rn_final_layer_update]
+comprehensive_crns = [rn_dual_node_fwd, rn_dual_backprop, rn_final_layer_update, rn_param_update]
 
 # Initiate the vars dict 
 vars = Dict()
@@ -752,12 +753,17 @@ for epoch in 1:EPOCHS
         # Loss add 
         epoch_loss += 0.5*(err[1] - err[2])^2 # err simulates (yhat - y) and in dual-rail notation
         
+        @show epoch_loss
+
+
+
         #####  BACKPROPAGATION 
         crn_backpropagation_step(vars, (0.0, 1.0), D=DIMS)
 
         ##### Parameter update 
-        crn_param_update(vars, LR, (0.0, 2.0))
-        crn_final_layer_update(vars, LR, (0.0, 2.0))
+        crn_final_layer_update(vars, LR, (0.0, 10.0))
+        crn_param_update(vars, LR, (0.0, 10.0))
+        
 
         # Tracking
         Pspecies = [k for k in keys(vars) if startswith(k, "P")]
@@ -838,8 +844,8 @@ for i in eachindex(val)
     else
         push!(incorrect, x_orig)  # Add to the incorrect scatter plot
     end
-
-    println(exp, "  ", y, " ", output)
+    println("x: ", x_orig)
+    println("outclass: ", exp, "  target: ", y, " ", output)
 end
 println("Acc: ", length(acc)/length(val))
 plt2 = plot()
