@@ -141,7 +141,7 @@ rn_dual_mult = @reaction_network rn_dual_mult begin
 end
 
 
-rn_gradient_update = @reaction_network rn_gradient_update begin
+rn_param_update = @reaction_network rn_param_update begin
     k1, G11p --> P11m
     k1, G11m --> P11p
     k1, G12p --> P12m
@@ -178,7 +178,7 @@ rn_gradient_update = @reaction_network rn_gradient_update begin
     k2, G32m --> 0
     k2, G33p --> 0
     k2, G33m --> 0
-end
+end k1 k2
 
 
 rn_final_layer_update = @reaction_network rn_final_layer_update begin
@@ -194,7 +194,7 @@ rn_final_layer_update = @reaction_network rn_final_layer_update begin
     k2, M2m --> 0
     k2, M3p --> 0
     k2, M3m --> 0
-end
+end k1 k2
 
 
 rn_annihilation_reactions = @reaction_network rn_annihilation_reactions begin
@@ -233,8 +233,11 @@ rn_annihilation_reactions = @reaction_network rn_annihilation_reactions begin
     1.0, A3m --> 0
     1.0, Ep --> 0
     1.0, Em --> 0
+    1.0, Op --> 0
+    1.0, Om --> 0
+    1.0, Yp --> 0
+    1.0, Ym --> 0
 end
-
 
 
 rn_dual_mult = @reaction_network begin
@@ -245,7 +248,6 @@ rn_dual_mult = @reaction_network begin
     1.0, Yp --> 0
     1.0, Ym --> 0
 end
-
 
 
 rn_dual_dot = @reaction_network begin
@@ -265,6 +267,7 @@ rn_dual_dot = @reaction_network begin
     1.0, Ym --> 0
 end
 
+
 rn_dual_subtract = @reaction_network rn_dual_subtract begin
     1.0, Ap --> Yp
     1.0, Am --> Ym
@@ -272,9 +275,36 @@ rn_dual_subtract = @reaction_network rn_dual_subtract begin
     1.0, Bm --> Yp
 end
 
+
 rn_dual_add = @reaction_network begin
     1.0, Ap --> Yp
     1.0, Bp --> Yp
     1.0, Am --> Ym
     1.0, Bm --> Ym
+end
+
+
+rn_output_annihilation = @reaction_network rn_output_annihilation begin
+    100.0, Op + Om --> 0
+end
+
+
+rn_create_error_species = @reaction_network rn_create_error_species begin
+    1.0, Op + Ym --> Ep + Op + Ym
+    1.0, Om + Yp --> Em + Op + Ym
+end
+
+rn_dual_binary_scalar_mult = @reaction_network rn_dual_binary_scalar_mult begin
+    1.0, Ep + S1p --> P1p + Ep + S1p
+    1.0, Ep + S1m --> P1m + Ep + S1m
+    1.0, Ep + S2p --> P2p + Ep + S2p
+    1.0, Ep + S2m --> P2m + Ep + S2m
+    1.0, Ep + S3p --> P3p + Ep + S3p
+    1.0, Ep + S3m --> P3m + Ep + S3m
+    1.0, Em + S1p --> P1m + Em + S1p 
+    1.0, Em + S1m --> P1p + Em + S1m
+    1.0, Em + S2p --> P2m + Em + S2p 
+    1.0, Em + S2m --> P2p + Em + S2m
+    1.0, Em + S3p --> P3m + Em + S3p 
+    1.0, Em + S3m --> P3p + Em + S3m
 end

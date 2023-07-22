@@ -139,6 +139,7 @@ function create_annular_rings_dataset(n, r)
         push!(dataset, data_item)
     end
     print("nneg: ", nneg)
+    Random.shuffle!(dataset)
     return dataset
 end
 
