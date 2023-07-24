@@ -139,6 +139,7 @@ if __name__ == '__main__':
         )
     bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
     bwd_g_crn = bwd_g_ode.dual_rail_crn()
+    lcs = list(set(utils.print_crn(bwd_g_crn, title="CRN for Gradients")))
     print("end")
 
     print("\n\n")

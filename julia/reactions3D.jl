@@ -125,6 +125,42 @@ rn_dual_backprop = @reaction_network rn_dual_backprop begin
     1.0, A3m + P33m --> A3p + A3m + P33m
     1.0, A3p + P33m --> A3m + A3p + P33m
     1.0, A3m + P33p --> A3m + A3m + P33p
+    1.0, A1p + Z1p --> G11p + A1p + Z1p
+    1.0, A1m + Z1m --> G11p + A1m + Z1m
+    1.0, A1p + Z1m --> G11m + A1p + Z1m
+    1.0, A1m + Z1p --> G11m + A1m + Z1p
+    1.0, A1p + Z2p --> G12p + A1p + Z2p
+    1.0, A1m + Z2m --> G12p + A1m + Z2m
+    1.0, A1p + Z2m --> G12m + A1p + Z2m
+    1.0, A1m + Z2p --> G12m + A1m + Z2p
+    1.0, A1p + Z3p --> G13p + A1p + Z3p
+    1.0, A1m + Z3m --> G13p + A1m + Z3m
+    1.0, A1p + Z3m --> G13m + A1p + Z3m
+    1.0, A1m + Z3p --> G13m + A1m + Z3p
+    1.0, A2p + Z1p --> G21p + A2p + Z1p
+    1.0, A2m + Z1m --> G21p + A2m + Z1m
+    1.0, A2p + Z1m --> G21m + A2p + Z1m
+    1.0, A2m + Z1p --> G21m + A2m + Z1p
+    1.0, A2p + Z2p --> G22p + A2p + Z2p
+    1.0, A2m + Z2m --> G22p + A2m + Z2m
+    1.0, A2p + Z2m --> G22m + A2p + Z2m
+    1.0, A2m + Z2p --> G22m + A2m + Z2p
+    1.0, A2p + Z3p --> G23p + A2p + Z3p
+    1.0, A2m + Z3m --> G23p + A2m + Z3m
+    1.0, A2p + Z3m --> G23m + A2p + Z3m
+    1.0, A2m + Z3p --> G23m + A2m + Z3p
+    1.0, A3p + Z1p --> G31p + A3p + Z1p
+    1.0, A3m + Z1m --> G31p + A3m + Z1m
+    1.0, A3p + Z1m --> G31m + A3p + Z1m
+    1.0, A3m + Z1p --> G31m + A3m + Z1p
+    1.0, A3p + Z2p --> G32p + A3p + Z2p
+    1.0, A3m + Z2m --> G32p + A3m + Z2m
+    1.0, A3p + Z2m --> G32m + A3p + Z2m
+    1.0, A3m + Z2p --> G32m + A3m + Z2p
+    1.0, A3p + Z3p --> G33p + A3p + Z3p
+    1.0, A3m + Z3m --> G33p + A3m + Z3m
+    1.0, A3p + Z3m --> G33m + A3p + Z3m
+    1.0, A3m + Z3p --> G33m + A3m + Z3p
 end
 
 
@@ -198,9 +234,6 @@ end k1 k2
 
 
 rn_annihilation_reactions = @reaction_network rn_annihilation_reactions begin
-    1.0, W1p + W1m --> 0
-    1.0, W2p + W2m --> 0
-    1.0, W3p + W3m --> 0
     1.0, G11p --> 0
     1.0, G11m --> 0
     1.0, G12p --> 0
@@ -285,7 +318,7 @@ end
 
 
 rn_output_annihilation = @reaction_network rn_output_annihilation begin
-    100.0, Op + Om --> 0
+    1.0, Op + Om --> 0
 end
 
 

@@ -12,6 +12,8 @@ using ColorSchemes;
 
 include("utils.jl")
 
+rng = MersenneTwister(1)
+
 function linear(x1, x2)
     return x1 + x2
 end
@@ -75,7 +77,6 @@ function plot_iris_dataset(dataset=[])
 end
 
 
-rng = MersenneTwister(256)
 
 # This creates a regression dataset.
 function create_dataset!(n, yfunc)
@@ -134,7 +135,7 @@ function create_annular_rings_dataset(n, r)
         end
         
         data_item = Vector{Float64}()
-        append!(data_item, [x1, x2, y])
+        append!(data_item, [abs(x1), abs(x2), y])
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end

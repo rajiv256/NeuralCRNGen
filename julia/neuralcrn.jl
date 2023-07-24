@@ -146,7 +146,7 @@ function aug_dynamics!(du, u, theta, t)
     
     @assert size(dgrads) == (1, dims^2)
     
-    for i in 1:length(dgrads)
+    for i in eachindex(dgrads)
         du[offset+i] = dgrads[i]
     end
     offset += length(dgrads)
@@ -272,7 +272,7 @@ end
 
 
 # simulates multiplication of two scalars
-function mult(a, b; max_val=100.0)
+function mult(a, b; max_val=40.0)
     # a: [ap, am]   b: [bp, bm]
 
     u = [:Ap => a[1], :Am => a[2], :Bp => b[1], :Bm => b[2], :Yp => 0, :Ym => 0]
@@ -306,7 +306,7 @@ function _convert_dotvar(s, subA, subB)
 end
 
 
-function subtract(ap, am, bp, bm; max_val=100.0, default=0.0)
+function subtract(ap, am, bp, bm; max_val=40.0, default=0.0)
     u = [
         :Ap => ap, :Am => am, :Bp => bp, :Bm => bm, 
         :Yp => default, :Ym => default
@@ -322,7 +322,7 @@ function subtract(ap, am, bp, bm; max_val=100.0, default=0.0)
 end
 
 
-function dot(vars, subA, subB; max_val=100.00, reltol=1e-8, abstol=1e-8, default=0.0)
+function dot(vars, subA, subB; max_val=40.0, reltol=1e-8, abstol=1e-8, default=0.0)
     dotss = species(rn_dual_dot)
 
     # Initial concentration values
@@ -360,14 +360,9 @@ function crn_output_annihilation(vars, tspan)
     u = Pair.(ss, uvalues)
     p = []
     sol = simulate_reaction_network(rn_output_annihilation, u, p, tspan=tspan)
-    
+    return sol
     # Update the output values
-    for i in eachindex(ss)
-        sp = string(ss[i])
-        if startswith(sp, "O")
-            vars[_convert_species2var(sp)] = sol[end][i]
-        end
-    end
+
 end
 
 
@@ -375,19 +370,12 @@ function crn_create_error_species(vars, tspan)
     u = _generate_u(vars, rn_create_error_species)
     p = []
     sol = simulate_reaction_network(rn_create_error_species, u, p, tspan=tspan)
-
-    ss = species(rn_create_error_species)
-    # Update the error values
-    for i in eachindex(ss)
-        sp = string(ss[i])
-        if startswith(sp, "E")
-            vars[_convert_species2var(sp)] = sol[end][i]
-        end
-    end
+    return sol
+    
 end
 
 
-function crn_node_forward(vars, tspan, y; reltol=1e-8, abstol=1e-8, precision=4, D=2)
+function crn_node_forward(vars, tspan, y; precision=4, D=2)
     # println("============= CRN FORWARD STEP =====================")
     # Get the species in the order in which the function `species` retrieves them
     sps = get_species_array(rn_dual_node_fwd)
@@ -397,22 +385,22 @@ function crn_node_forward(vars, tspan, y; reltol=1e-8, abstol=1e-8, precision=4,
     u = Pair.(species(rn_dual_node_fwd), uvalues)
     p = []  # All the reactions have unit rate constant, stays empty
     
-    sol = simulate_reaction_network(rn_dual_node_fwd, u, p, tspan=tspan, reltol=reltol, abstol=abstol)
-
-    for sp in sps
-        vars[sp] = sol[end][get_index_of(sp, sps)]
-    end
-    
-    yhat = dot(vars, "Z", "W") 
-    @show yhat, yhat[1]-yhat[2]
-    vars["Op"] = yhat[1]
-    vars["Om"] = yhat[2]
-    vars["Yp"] = y[1]
-    vars["Ym"] = y[2]
-    crn_output_annihilation(vars, tspan)
-    crn_create_error_species(vars, tspan)
+    sol = simulate_reaction_network(rn_dual_node_fwd, u, p, tspan=tspan)
+    return sol 
     # println("============= END CRN FORWARD STEP ===============")
 end
+
+
+function _print_vars(vars, prefix; title="")
+    println("Title: ", title, " | Prefix: ", prefix)
+    Pspecies = [k for k in keys(vars) if startswith(k, prefix)]
+    sort!(Pspecies)
+    for psp in Pspecies
+        print(psp, ": ", vars[psp], " | ")
+    end
+    println("-------------")
+end
+
 
 function _form_vector(vars, prefix)
     names = [] 
@@ -440,27 +428,6 @@ function _form_vector(vars, prefix)
     return mat
 end
 
-
-function _init_variables(prefix, data)
-    # Note: Data here is not provided in dual_rail
-    dims = size(data)
-    @assert length(dims) == 2
-    suffixes = []
-    rows = dims[1]
-    cols = dims[2]
-    values = []
-    for row in 1:rows
-        for col in 1:cols
-            p = max(0, data[row, col])
-            m = max(0, -data[row, col])
-            push!(suffixes, string(prefix, string(row), string(col), "p"))
-            push!(values, p)
-            push!(suffixes, string(prefix, string(row), string(col), "m"))
-            push!(values, m)
-        end
-    end
-    return Dict(Pair.(suffixes, values))
-end
 
 
 function _create_symbol_matrix(prefix, dims)
@@ -512,7 +479,7 @@ function crn_dual_binary_scalar_mult(vars, subS, subP, tspan)
 
     u = Pair.(ss, uvalues)
     p = []
-
+    
     sol = simulate_reaction_network(rn_dual_binary_scalar_mult, u, p, tspan=tspan)
     
     # Assign the values to products
@@ -536,7 +503,9 @@ function crn_backpropagation_step(vars, tspan; bias=0.01, reltol=1e-8, abstol=1e
 
     # Assigns the adjoint variables 
     crn_dual_binary_scalar_mult(vars, "W", "A", tspan)
-    
+    _print_vars(vars, "O", title="outputs")
+    _print_vars(vars, "E", title="Errors")
+    _print_vars(vars, "A", title="Adjoints..whytf are they so bad.")
     ss = species(rn_dual_backprop)
 
     # Initializes the gradients 
@@ -548,6 +517,7 @@ function crn_backpropagation_step(vars, tspan; bias=0.01, reltol=1e-8, abstol=1e
     p = []
     
     sol = simulate_reaction_network(rn_dual_backprop, u, p, tspan=tspan, reltol=reltol, abstol=abstol) # CHECK
+    return sol
 end
 
 
@@ -563,14 +533,8 @@ function crn_param_update(vars, eta, tspan)
     p = [k1, k2]
     
     sol = simulate_reaction_network(rn_param_update, u, p, tspan=tspan)
-
-    Pspecies = [_convert_species2var(sp) for sp in ss if startswith(string(sp), "P")]
-
-
-    # Update the parameter values
-    for psp in Pspecies
-        vars[psp] = sol[end][get_index_of(psp, ss)]
-    end
+    return sol
+    
 end
 
 
@@ -585,11 +549,7 @@ function crn_final_layer_update(vars, eta, tspan)
     p = [k1, k2]
     
     sol = simulate_reaction_network(rn_final_layer_update, u, p, tspan=tspan)
-    
-    Wspecies = [_convert_species2var(sp) for sp in ss if startswith(string(sp), "W")]
-    for wsp in Wspecies
-        vars[wsp] = sol[end][get_index_of(wsp, ss)]
-    end
+    return sol
 end
 
 
@@ -626,21 +586,17 @@ function dissipate_and_annihilate(vars, tspan)
     p = []
 
     sol = simulate_reaction_network(rn_annihilation_reactions, u, p, tspan=tspan)
-
-    for i in eachindex(ss)
-        sym = _convert_species2var(ss[i])
-        vars[sym] = sol[end][i]
-    end
+    return sol
+    
 end
 
 
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0))
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3)
     acc = 0
     epoch_loss = 0.0
     for i in 1:length(dataset)
-         
         x, y = get_one(dataset, i)
-        x = augment(x, DIMS-length(x))
+        x = augment(x, dims-length(x))
 
         Zspecies = [k for k in keys(varscopy) if startswith(k, "Z")]
         for zsp in Zspecies 
@@ -648,7 +604,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0))
         end
         
         yvec = [y 1-y] # threshold could be 0.5 now.
-        crn_node_forward(varscopy, (0.0, 1.0), yvec, D=DIMS)
+        crn_node_forward(varscopy, (0.0, 1.0), yvec, D=dims)
         err = [varscopy["Ep"] varscopy["Em"]]
         epoch_loss += 0.5*(err[1]-err[2])^2
         output = 0.0
@@ -659,9 +615,47 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0))
             acc += 1
         end
     end
-    @show "Accuracy: ", acc/length(dataset)
-    return (epoch_loss/length(dataset))
+    _print_vars(varscopy, "Z", title="Inside calculate_accuracy")
+    epoch_loss /= length(dataset)
+    return epoch_loss
 end
+
+
+function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3)
+    aug_x = []
+    reg_x = []
+
+    for i in eachindex(dataset)
+        x, y = get_one(dataset, i)
+        
+        x = augment(x, dims-length(x))
+        elem = []
+        append!(elem, x)
+        push!(elem, y)
+        push!(reg_x, elem)
+        
+        Zspecies = [k for k in keys(varscopy) if startswith(k, "Z")]
+        for zsp in Zspecies 
+            varscopy[zsp] = _dualsymbol2value(zsp, x)
+        end
+        
+        yvec = [y 1-y]
+        crn_node_forward(varscopy, (0.0, 1.0), yvec, D=dims)
+        push!(
+            aug_x, [
+                varscopy["Z1p"]-varscopy["Z1m"],
+                varscopy["Z2p"]-varscopy["Z2m"],
+                varscopy["Z3p"]-varscopy["Z3m"],
+                yvec[1]-yvec[2]
+            ]
+        )
+    end
+    plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
+    plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4))
+    png(plt_state1, "before_aug.png")
+    png(plt_state2, "after_aug.png")
+end
+
 
 train = create_annular_rings_dataset(100, 1.0)
 val = create_annular_rings_dataset(50, 1.0)
@@ -730,7 +724,7 @@ for wsp in Wspecies
     end
 end    
 
-
+crn_epoch_val_losses = []
 for epoch in 1:EPOCHS  
     epoch_loss = 0.0
     
@@ -739,7 +733,7 @@ for epoch in 1:EPOCHS
         x, y = get_one(train, i)
         x = augment(x, DIMS-length(x))
 
-        println("epoch: ", epoch, " i: ", i, " x: ", x, " y: ", y, "\n===========")
+        @show epoch, i, x, y
 
         Zspecies = [k for k in keys(vars) if startswith(k, "Z")]
         for zsp in Zspecies 
@@ -747,23 +741,64 @@ for epoch in 1:EPOCHS
         end
         
         yvec = [y 1-y] # threshold could be 0.5 now.
-        crn_node_forward(vars, (0.0, 1.0), yvec, D=DIMS)
+        sol = crn_node_forward(vars, (0.0, 1.0), yvec, D=DIMS)
+
+        species_dual_node_fwd = species(rn_dual_node_fwd)
+        for i in eachindex(species_dual_node_fwd)
+            vars[_convert_species2var(species_dual_node_fwd[i])] = sol[end][i]
+        end
+    
+        yhat = dot(vars, "Z", "W")
+        
+        vars["Op"] = yhat[1]
+        vars["Om"] = yhat[2]
+        vars["Yp"] = yvec[1]
+        vars["Ym"] = yvec[2]
+        
+        # sol = crn_output_annihilation(vars, (0.0, 1.0))
+        species_output_annihilation = species(rn_output_annihilation)
+        for i in eachindex(species_output_annihilation)
+            sp = string(species_output_annihilation[i])
+            if startswith(sp, "O")
+                vars[_convert_species2var(sp)] = sol[end][i]
+            end
+        end
+        sol = crn_create_error_species(vars, (0.0, 1.0))
+        species_create_error_species = species(rn_create_error_species)
+        # Update the error values
+        for i in eachindex(species_create_error_species)
+            sp = string(species_create_error_species[i])
+            if startswith(sp, "E")
+                vars[_convert_species2var(sp)] = sol[end][i]
+            end
+        end
         err = [vars["Ep"] vars["Em"]]
 
         # Loss add 
         epoch_loss += 0.5*(err[1] - err[2])^2 # err simulates (yhat - y) and in dual-rail notation
-        
-        @show epoch_loss
-
-
 
         #####  BACKPROPAGATION 
-        crn_backpropagation_step(vars, (0.0, 1.0), D=DIMS)
-
+        sol = crn_backpropagation_step(vars, (0.0, 1.0), D=DIMS)
+        # Update the gradient values
+        Gspecies = [_convert_species2var(sp) for sp in species(rn_dual_backprop) if startswith(string(sp), "G")]
+        for i in eachindex(Gspecies)
+            vars[Gspecies[i]] = sol[end][i]
+        end
         ##### Parameter update 
-        crn_final_layer_update(vars, LR, (0.0, 10.0))
-        crn_param_update(vars, LR, (0.0, 10.0))
+        sol = crn_final_layer_update(vars, LR, (0.0, 1.0))
+        species_final_layer_update = species(rn_final_layer_update)
+        Wspecies = [_convert_species2var(sp) for sp in species_final_layer_update if startswith(string(sp), "W")]
+        for wsp in Wspecies
+            vars[wsp] = sol[end][get_index_of(wsp, species_final_layer_update)]
+        end
         
+        sol = crn_param_update(vars, LR, (0.0, 1.0))
+        species_param_update = species(rn_param_update)
+        Pspecies = [_convert_species2var(sp) for sp in species_param_update if startswith(string(sp), "P")]
+        # Update the parameter values
+        for psp in Pspecies
+            vars[psp] = sol[end][get_index_of(psp, species_param_update)]
+        end
 
         # Tracking
         Pspecies = [k for k in keys(vars) if startswith(k, "P")]
@@ -785,72 +820,88 @@ for epoch in 1:EPOCHS
         for gsp in Gspecies
             vars[gsp] = 0.0
         end
-        dissipate_and_annihilate(vars, (0.0, 10.0))
+        sol = dissipate_and_annihilate(vars, (0.0, 1.0))
+        species_d_and_a = species(rn_annihilation_reactions)
+        for i in eachindex(species_d_and_a)
+            sym = _convert_species2var(species_d_and_a[i])
+            vars[sym] = sol[end][i]
+        end
     end
-    
-    trainvarscopy = copy(vars)
-    train_acc = calculate_accuracy(train, trainvarscopy, tspan=(0.0, 1.0))
-    
-    valvarscopy = copy(vars)
-    val_acc = calculate_accuracy(val, valvarscopy, tspan=(0.0, 1.0))
-    
-    push!(crn_epoch_train_accs, train_acc)
-    push!(crn_epoch_val_accs, val_acc)
-
     epoch_loss /= length(train)
     push!(crn_epoch_losses, epoch_loss)
 
     plt = plot(crn_epoch_losses)
     png(plt, "crn_losses.png")
-
-    plt_train = plot(crn_epoch_train_accs)
-    plt_val = plot(crn_epoch_val_accs)
-    png(plt_train, "crn_epoch_train_accuracies.png")
-    png(plt_val, "crn_epoch_val_accuracies.png")
     
+    
+    epoch_val_loss = 0.0
+    for i in 1:length(val)
+         
+        x, y = get_one(train, i)
+        x = augment(x, DIMS-length(x))
+
+
+        Zspecies = [k for k in keys(vars) if startswith(k, "Z")]
+        for zsp in Zspecies 
+            vars[zsp] = _dualsymbol2value(zsp, x)
+        end
+        
+        yvec = [y 1-y] # threshold could be 0.5 now.
+        crn_node_forward(vars, (0.0, 1.0), yvec, D=DIMS)
+        err = [vars["Ep"] vars["Em"]]
+
+        # Loss add 
+        epoch_val_loss += 0.5*(err[1] - err[2])^2
+        sol = dissipate_and_annihilate(vars, (0.0, 1.0))
+    end
+    epoch_val_loss /= length(val)
+    push!(crn_epoch_val_losses, epoch_val_loss)
+    valplt = plot(crn_epoch_val_losses)
+    png(valplt, "crn_epoch_val_losses.png")
 end
 
-acc = []
-class_0 = []
-class_1 = []
-incorrect = []
-for i in eachindex(val)
-    x, y = get_one(val, i)
-    x_orig = x
-    if y == 0.0
-        push!(class_0, x)
-    elseif y == 1.0
-        push!(class_1, x)
-    end
 
-    x = augment(x, DIMS-length(x))
+# acc = []
+# class_0 = []
+# class_1 = []
+# incorrect = []
+# for i in eachindex(val)
+#     x, y = get_one(val, i)
+#     x_orig = x
+#     if y == 0.0
+#         push!(class_0, x)
+#     elseif y == 1.0
+#         push!(class_1, x)
+#     end
+
+#     x = augment(x, DIMS-length(x))
     
-    Zspecies = [k for k in keys(vars) if startswith(k, "Z")]
-    for zsp in Zspecies 
-        vars[zsp] = _dualsymbol2value(zsp, x)
-    end
-    yvec = [y 1-y] # threshold could be 0.5 now.
+#     Zspecies = [k for k in keys(vars) if startswith(k, "Z")]
+#     for zsp in Zspecies 
+#         vars[zsp] = _dualsymbol2value(zsp, x)
+#     end
+#     yvec = [y 1-y] # threshold could be 0.5 now.
     
 
-    crn_node_forward(vars, (0.0, 1.0), yvec, D=DIMS)
-    output = vars["Op"]-vars["Om"]
-    exp = 0.0
-    if output > 0
-        exp = 1.0
-    end
+#     crn_node_forward(vars, (0.0, 1.0), yvec, D=DIMS)
+#     output = vars["Op"]-vars["Om"]
+#     exp = 0.0
+#     if output > 0
+#         exp = 1.0
+#     end
     
-    if exp == y
-        push!(acc, 1)
-    else
-        push!(incorrect, x_orig)  # Add to the incorrect scatter plot
-    end
-    println("x: ", x_orig)
-    println("outclass: ", exp, "  target: ", y, " ", output)
-end
-println("Acc: ", length(acc)/length(val))
-plt2 = plot()
-plt2 = scatter!(getindex.(class_0, 1), getindex.(class_0, 2), markercolor=:green, markershape=:cross, ms=6.0, label="class 0")
-plt2 = scatter!(getindex.(class_1, 1), getindex.(class_1, 2), markercolor=:blue, ms=6.0, label="class 1")
-plt2 = scatter!(getindex.(incorrect, 1), getindex.(incorrect, 2), markercolor=:red, markershape=:x, legend=false, ms=4.0)
+#     if exp == y
+#         push!(acc, 1)
+#     else
+#         push!(incorrect, x_orig)  # Add to the incorrect scatter plot
+#     end
+#     println("x: ", x_orig)
+#     println("outclass: ", exp, "  target: ", y, " ", output)
+# end
+# println("Acc: ", length(acc)/length(val))
+# plt2 = plot()
+# plt2 = scatter!(getindex.(class_0, 1), getindex.(class_0, 2), markercolor=:green, markershape=:cross, ms=6.0, label="class 0")
+# plt2 = scatter!(getindex.(class_1, 1), getindex.(class_1, 2), markercolor=:blue, ms=6.0, label="class 1")
+# plt2 = scatter!(getindex.(incorrect, 1), getindex.(incorrect, 2), markercolor=:red, markershape=:x, legend=false, ms=4.0)
 
-png(plt2, "predictions.png")
+# png(plt2, "predictions.png")

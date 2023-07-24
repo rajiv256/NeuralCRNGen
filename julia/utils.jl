@@ -15,7 +15,7 @@ using ColorSchemes;
 function simulate_reaction_network(network, u0, p;tspan=(0.0, 1.0), rate=1.0, reltol=1e-8, abstol=1e-8, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, p)
-    sol = solve(oprob, Rodas4(), reltol=reltol, abstol=abstol, kwargs...)
+    sol = solve(oprob, Rodas5(), adaptive=false, dt=1e-3, kwargs...) #TODO: HECK THIS
     return sol
 end
 
