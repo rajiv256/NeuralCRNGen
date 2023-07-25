@@ -12,10 +12,10 @@ using ColorSchemes;
 
 
 # Simulate a custom ODE
-function simulate_reaction_network(network, u0, p;tspan=(0.0, 1.0), rate=1.0, reltol=1e-8, abstol=1e-8, kwargs...)
+function simulate_reaction_network(network, u0, p;tspan=(), rate=1.0, reltol=1e-8, abstol=1e-8, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, p)
-    sol = solve(oprob, Rodas4(), reltol=reltol, abstol=abstol, kwargs...)
+    sol = solve(oprob, Tsit5(), reltol=1e-8, abstol=1e-8, kwargs...)
     return sol
 end
 
@@ -88,3 +88,65 @@ function generate_annihilation_reactions(vars)
     end
 end
 
+
+function get_index_of(prefix, vec)
+    ret = []
+    for i in eachindex(vec)
+        vec_i = vec[i]
+        if startswith("$vec_i", prefix)
+            push!(ret, i)
+        end
+    end
+    
+    @assert length(ret) == 1 "Prefix: $prefix, vec: $vec"
+    return ret[1]
+end
+
+
+function get_species_array(rn)
+    ret = []
+    for s in species(rn)
+        push!(ret, replace(string(s), "(t)" => ""))
+    end
+    return ret
+end
+
+
+function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
+    theta = randn(dims^2)
+    for i in eachindex(theta)
+        theta[i] = round(theta[i], digits=precision)
+    end
+    
+    params = []
+    append!(params, theta)
+    push!(params, t0)
+    push!(params, t1)
+    w = randn(dims)
+    for i in eachindex(w)
+        w[i] = round(w[i], digits=precision)
+    end
+    append!(params, w)
+    return params
+end
+
+# Adds `k` zeroes to the end of the column matrix `u`
+function augment(x, k=1) # Verified!
+    ret = copy(x)
+    for i in 1:k
+        ret = vcat(ret, 0.0)
+    end
+    return ret
+end
+
+
+function sequester_params(p, dims)
+    theta = zeros(dims, dims)
+    for i in 1:dims^2
+        theta[(i-1)÷dims + 1, (i-1)%dims + 1] = p[i]
+    end
+    t0 = p[dims^2 + 1]
+    t1 = p[dims^2 + 2]
+    w = p[dims^2+3:end]
+    return theta, t0, t1, w
+end

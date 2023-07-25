@@ -14,18 +14,21 @@ using Catalyst;
 rn_dual_node_fwd = @reaction_network begin
     1.0, P11p + Z1p --> Z1p + P11p + Z1p
     1.0, P11m + Z1m --> Z1p + P11m + Z1m
-    1.0, P11p + Z1m --> Z1m + P11p + Z1m
-    1.0, P11m + Z1p --> Z1m + P11m + Z1p
     1.0, P12p + Z2p --> Z1p + P12p + Z2p
     1.0, P12m + Z2m --> Z1p + P12m + Z2m
+
+    1.0, P11p + Z1m --> Z1m + P11p + Z1m
+    1.0, P11m + Z1p --> Z1m + P11m + Z1p
     1.0, P12p + Z2m --> Z1m + P12p + Z2m
     1.0, P12m + Z2p --> Z1m + P12m + Z2p
+    
     1.0, P21p + Z1p --> Z2p + P21p + Z1p
     1.0, P21m + Z1m --> Z2p + P21m + Z1m
-    1.0, P21p + Z1m --> Z2m + P21p + Z1m
-    1.0, P21m + Z1p --> Z2m + P21m + Z1p
     1.0, P22p + Z2p --> Z2p + P22p + Z2p
     1.0, P22m + Z2m --> Z2p + P22m + Z2m
+
+    1.0, P21p + Z1m --> Z2m + P21p + Z1m
+    1.0, P21m + Z1p --> Z2m + P21m + Z1p
     1.0, P22p + Z2m --> Z2m + P22p + Z2m
     1.0, P22m + Z2p --> Z2m + P22m + Z2p
 end
@@ -161,17 +164,15 @@ rn_final_layer_update = @reaction_network rn_final_layer_update begin
 end k1 k2
 
 
-rn_annihilation_reactions = @reaction_network rn_annihilation_reactions begin
+rn_dissipate_reactions = @reaction_network rn_annihilation_reactions begin
     1.0, G12m --> 0
     1.0, A1p --> 0
     1.0, A2p --> 0
     1.0, G11m --> 0
     1.0, A2m --> 0
-    1.0, W2p + W2m --> 0
     1.0, M2m --> 0
     1.0, G21p --> 0
     1.0, M2p --> 0
-    1.0, W1p + W1m --> 0
     1.0, M1p --> 0
     1.0, G22m --> 0
     1.0, G22p --> 0
@@ -186,16 +187,20 @@ rn_annihilation_reactions = @reaction_network rn_annihilation_reactions begin
     1.0, Om --> 0
     1.0, Yp --> 0
     1.0, Ym --> 0
+    1.0, Z1p --> 0
+    1.0, Z1m --> 0
+    1.0, Z2p --> 0
+    1.0, Z2m --> 0
 end
 
 rn_output_annihilation = @reaction_network rn_output_annihilation begin
-    100.0, Op + Om --> 0
+    1.0, Op + Om --> 0
 end
 
 
 rn_create_error_species = @reaction_network rn_create_error_species begin
     1.0, Op + Ym --> Ep + Op + Ym
-    1.0, Om + Yp --> Em + Op + Ym
+    1.0, Om + Yp --> Em + Om + Yp
 end
 
 rn_dual_binary_scalar_mult = @reaction_network rn_dual_binary_scalar_mult begin
