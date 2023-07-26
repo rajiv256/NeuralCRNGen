@@ -138,6 +138,45 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 ############################################################
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
+    acc = 0
+    epoch_loss = 0.0
+    for i in 1:length(dataset)
+        x, y = get_one(dataset, i)
+        x = augment(x, dims - length(x))
+
+        for zi in eachindex(x)
+            d = _index1Dvar("Z", zi, x[zi], dims=dims)
+            for (k, v) in d
+                varscopy[k] = v
+            end
+        end
+
+        yvec = [y 1 - y] # threshold could be 0.5 now.
+        crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
+        varscopy["Yp"] = yvec[1]
+        varscopy["Ym"] = yvec[2]
+
+        # Forward stage
+        crn_dual_node_fwd(varscopy, tspan=tspan)
+
+        # Calculate yhat            
+        yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
+        @show yhat, yhat[1]-yhat[2]
+        varscopy["Op"] = yhat[1]
+        varscopy["Om"] = yhat[2]
+        
+        output = 0.0
+        if varscopy["Op"] > varscopy["Om"]
+            output = 1.0
+        end
+        if output == y
+            acc += 1
+        end
+    end
+    return acc/length(dataset)
+end
+
 
 function dissipate_and_annihilate(vars, tspan)
     ss = species(rn_dissipate_reactions)
@@ -326,10 +365,11 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
             println("=================EPOCH: $epoch | ITERATION: $i ==============")
             x, y = get_one(train, i)
             x = augment(x, dims-length(x))
-            yvec = [0.0 0.0]
-            if y == 1.0
-                yvec = [1.0 0.0]
-            end
+            # yvec = [0.0 0.0]
+            # if y == 1.0
+            #     yvec = [1.0 0.0]
+            # end
+            yvec = [y 1-y]
 
             node_params = one_step_node(x, y, node_params, LR, dims)
 
@@ -412,6 +452,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
         trplt = plot(tr_losses)
         png(trplt, "training_losses.png")
     end
+    return vars    
 end
 
 function neuralcrn(;DIMS=2)
@@ -420,9 +461,11 @@ function neuralcrn(;DIMS=2)
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
     
     println("===============================")
-    crn_main(params_orig, train, val, EPOCHS=5, tspan=(0.0, 1.0))
+    vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0))
     
+    @show calculate_accuracy(val, copy(vars), dims=2)
 end
 
 neuralcrn()
+
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
