@@ -22,7 +22,7 @@ using IterTools;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactions2D.jl")
+include("reactions3D.jl")
 include("neuralode.jl")
 
 
@@ -34,7 +34,7 @@ end
 
 
 # Verified: @show _index2param("P", 3, -3.0)
-function _index2Dvar(sym, index, val; dims=2)
+function _index2Dvar(sym, index, val; dims=3)
     second = (index-1)%dims + 1
     first = (index-1)÷dims + 1
     return Dict(
@@ -44,7 +44,7 @@ function _index2Dvar(sym, index, val; dims=2)
 end
 
 
-function _index1Dvar(sym, index, val; dims=2)
+function _index1Dvar(sym, index, val; dims=3)
     return Dict(
         "$sym$(index)p"=> max(0.0, val),
         "$sym$(index)m"=> max(0.0, -val)
@@ -138,7 +138,55 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 ############################################################
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
+
+
+function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3)
+    aug_x = []
+    reg_x = []
+
+    for i in eachindex(dataset)
+        x, y = get_one(dataset, i)
+
+        x = augment(x, dims - length(x))
+        yvec = [y 1 - y]
+        for zi in eachindex(x)
+            d = _index1Dvar("Z", zi, x[zi], dims=dims)
+            for (k, v) in d
+                varscopy[k] = v
+            end
+        end
+        varscopy["Yp"] = yvec[1]
+        varscopy["Ym"] = yvec[2]
+        elem = []
+        append!(elem, x)
+        push!(elem, y)
+        push!(reg_x, elem)
+        
+
+        crn_node_forward(varscopy, (0.0, 1.0), yvec, D=dims)
+
+        yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
+        @show yhat, yhat[1] - yhat[2]
+        varscopy["Op"] = yhat[1]
+        varscopy["Om"] = yhat[2]
+        
+        push!(
+            aug_x, [
+                varscopy["Z1p"] - varscopy["Z1m"],
+                varscopy["Z2p"] - varscopy["Z2m"],
+                varscopy["Z3p"] - varscopy["Z3m"],
+                yvec[1] - yvec[2]
+            ]
+        )
+    end
+    plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
+    plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4))
+    png(plt_state1, "before_aug.png")
+    png(plt_state2, "after_aug.png")
+end
+
+
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3)
     acc = 0
     epoch_loss = 0.0
     for i in 1:length(dataset)
@@ -156,9 +204,6 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
         crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
         varscopy["Yp"] = yvec[1]
         varscopy["Ym"] = yvec[2]
-
-        # Forward stage
-        crn_dual_node_fwd(varscopy, tspan=tspan)
 
         # Calculate yhat            
         yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
@@ -323,7 +368,7 @@ end
 
 
 
-function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0))
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0))
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -365,10 +410,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
             println("=================EPOCH: $epoch | ITERATION: $i ==============")
             x, y = get_one(train, i)
             x = augment(x, dims-length(x))
-            # yvec = [0.0 0.0]
-            # if y == 1.0
-            #     yvec = [1.0 0.0]
-            # end
+            
             yvec = [y 1-y]
 
             node_params = one_step_node(x, y, node_params, LR, dims)
@@ -455,17 +497,21 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
     return vars    
 end
 
-function neuralcrn(;DIMS=2)
-    train = create_linearly_separable_dataset(100, linear, threshold=0.0)
-    val = create_linearly_separable_dataset(40, linear, threshold=0.0)
+function neuralcrn(;DIMS=3)
+    # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
+    # val = create_linearly_separable_dataset(40, linear, threshold=0.0)
+    train = create_annular_rings_dataset(100, 1.0)
+    val = create_annular_rings_dataset(40, 1.0)
+
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
     
     println("===============================")
-    vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0))
+    vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, tspan=(0.0, 1.0))
     
-    @show calculate_accuracy(val, copy(vars), dims=2)
+    @show calculate_accuracy(val, copy(vars), dims=3)
+    plot_augmented_state(copy(vars), val)
 end
 
-neuralcrn()
+neuralcrn(DIMS=3)
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")

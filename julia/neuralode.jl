@@ -22,7 +22,6 @@ using IterTools;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactions2D.jl")
 
 
 function f(z, theta)
@@ -214,6 +213,9 @@ function predict(x, p)
 end
 
 function one_step_node(x, y, params, LR, dims)
+    if y == 0.0
+        y = -1  # CHECK. To be compatible with neuralcrn.jl
+    end
     println("=======ODE==================")
     println("ODE | Input: $x | Target: $y")
     println("params before | ", params)
@@ -287,11 +289,13 @@ function node_main(params, train, val; dims=2, EPOCHS=10, LR=0.001)
 end
 
 
-function neuralode(; DIMS=2)
-    train = create_linearly_separable_dataset(100, linear, threshold=0.0)
-    val = create_linearly_separable_dataset(40, linear, threshold=0.0)
+function neuralode(; DIMS=3)
+    # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
+    # val = create_linearly_separable_dataset(40, linear, threshold=0.0)
+    train = create_annular_rings_dataset(100, 1.0)
+    val = create_annular_rings_dataset(40, 1.0)
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-    node_main(params_orig, train, val)
+    node_main(params_orig, train, val, dims=DIMS)
 end
 
 # neuralode()
