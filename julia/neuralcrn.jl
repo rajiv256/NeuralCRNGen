@@ -157,9 +157,6 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
         varscopy["Yp"] = yvec[1]
         varscopy["Ym"] = yvec[2]
 
-        # Forward stage
-        crn_dual_node_fwd(varscopy, tspan=tspan)
-
         # Calculate yhat            
         yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
         @show yhat, yhat[1]-yhat[2]
