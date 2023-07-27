@@ -163,7 +163,7 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3)
         push!(reg_x, elem)
         
 
-        crn_node_forward(varscopy, (0.0, 1.0), yvec, D=dims)
+        crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
 
         yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
         @show yhat, yhat[1] - yhat[2]
@@ -217,7 +217,15 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3)
         end
         if output == y
             acc += 1
+        else
+            sca = scatter!([x[1]], [x[2]], markercolor=:red, markershape=:x, legend=false, ms=4.0)
         end
+        if y == 0.0
+            sca = scatter!([x[1]], [x[2]], markercolor=:green, markershape=:cross, ms=6.0, label="class 0")
+        else
+            sca = scatter!([x[1]], [x[2]], markercolor=:blue, ms=6.0, label="class 1")
+        end
+        png(sca, "accuracy_plot.png")
     end
     return acc/length(dataset)
 end
@@ -368,7 +376,7 @@ end
 
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0))
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0))
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 

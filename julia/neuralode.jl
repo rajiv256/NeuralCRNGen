@@ -236,7 +236,7 @@ end
 
 # ################################################################# 
 
-function node_main(params, train, val; dims=2, EPOCHS=10, LR=0.001)
+function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001)
     # Begin the training process
     losses = []
     val_losses = []
@@ -264,30 +264,59 @@ function node_main(params, train, val; dims=2, EPOCHS=10, LR=0.001)
         end
         epoch_loss /= length(train)
         push!(losses, epoch_loss)
-        tr_png = plot(range(1, epoch), losses)
-        png(tr_png, "training_losses.png")
 
+        accuracy = 0.0
         val_epoch_loss = 0.0
+        before = []
+        after = []
+        yhats = []
         for i in eachindex(val)
             x, y = get_one(val, i)
 
             # Augment
             x = augment(x, dims - length(x))
 
+            before_tmp = []
+            append!(before_tmp, x)
+            push!(before_tmp, y)
+            push!(before, before_tmp)
+
             println("ODE | Input: $x | Target: $y")
             println("params before | ", params)
             z, yhat, loss, gradients = training_step(x, y, params)
+
+            after_tmp = []
+            append!(after_tmp, z)
+            push!(after_tmp, y)
+            push!(after, after_tmp)
+
+        
             val_epoch_loss += loss
             println("params | ", params)
+            push!(yhats, [yhat, y])
+            if yhat >= 1.5  # 1.0 is the threshold
+                exp = 1.0
+            else
+                exp = 0.0
+            end
+            if exp == y
+                accuracy += 1
+            end
 
         end
+        beforeplt = scatter3d(getindex.(before, 1), getindex.(before, 2), getindex.( before, 3), group=getindex.(before, 4))
+        afterplot = scatter3d(getindex.(after, 1), getindex.(after, 2), getindex.(after, 3), group=getindex.(after, 4))
+        png(beforeplt, "before.png")
+        png(afterplot, "after.png")
+        println("accuracy: ", accuracy/length(val))
         val_epoch_loss /= length(val)
         push!(val_losses, val_epoch_loss)
-        val_png = plot(range(1, epoch), val_losses)
-        png(val_png, "validation_losses.png")
+        lossplts = plot([val_losses])
+        png(lossplts, "lossplts.png")
+        yhatplt = scatter(getindex.(yhats, 1), group=getindex.(yhats, 2))
+        png(yhatplt, "yhats.png")
     end
 end
-
 
 function neuralode(; DIMS=3)
     # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
@@ -295,8 +324,8 @@ function neuralode(; DIMS=3)
     train = create_annular_rings_dataset(100, 1.0)
     val = create_annular_rings_dataset(40, 1.0)
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-    node_main(params_orig, train, val, dims=DIMS)
+    node_main(params_orig, train, val, dims=DIMS, EPOCHS=6)
 end
 
-# neuralode()
+neuralode()
 
