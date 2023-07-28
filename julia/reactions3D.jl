@@ -328,16 +328,16 @@ rn_create_error_species = @reaction_network rn_create_error_species begin
 end
 
 rn_dual_binary_scalar_mult = @reaction_network rn_dual_binary_scalar_mult begin
-    1.0, Ep + S1p --> P1p + Ep + S1p
-    1.0, Ep + S1m --> P1m + Ep + S1m
-    1.0, Ep + S2p --> P2p + Ep + S2p
-    1.0, Ep + S2m --> P2m + Ep + S2m
-    1.0, Ep + S3p --> P3p + Ep + S3p
-    1.0, Ep + S3m --> P3m + Ep + S3m
-    1.0, Em + S1p --> P1m + Em + S1p
-    1.0, Em + S1m --> P1p + Em + S1m
-    1.0, Em + S2p --> P2m + Em + S2p
-    1.0, Em + S2m --> P2p + Em + S2m
-    1.0, Em + S3p --> P3m + Em + S3p
-    1.0, Em + S3m --> P3p + Em + S3m
+    1.0, Ep + S1p --> P1p + Ep
+    1.0, Ep + S1m --> P1m + Ep
+    1.0, Ep + S2p --> P2p + Ep
+    1.0, Ep + S2m --> P2m + Ep
+    1.0, Ep + S3p --> P3p + Ep 
+    1.0, Ep + S3m --> P3m + Ep 
+    1.0, Em + S1p --> P1m + Em 
+    1.0, Em + S1m --> P1p + Em 
+    1.0, Em + S2p --> P2m + Em 
+    1.0, Em + S2m --> P2p + Em 
+    1.0, Em + S3p --> P3m + Em 
+    1.0, Em + S3m --> P3p + Em 
 end

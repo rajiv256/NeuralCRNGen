@@ -54,18 +54,26 @@ end
 
 
 # Final feedforward layer similar to a perceptron
-function forward_ffnet(z, w)
+function forward_ffnet(z, w; threshold=nothing)
     yhat = dot(w, z) # Verified!
+    # CHECK: Thinking of the final layer as a binary perceptron 
+    # Now I have to use 1.0 as the threshold when testing
+    println("ODE | yhat at t=T: $yhat")
+    # if yhat >= threshold
+    #     yhat = 1.0
+    # else
+    #     yhat = -1.0
+    # end
     return yhat
 end
 
 
-function forward_step(u0, theta, w, tspan)
+function forward_step(u0, theta, w, tspan; threshold=nothing)
     # Output from the neural ode
     node_out = forward_node(u0, theta, tspan)
     # Extracting hidden state
     z = node_out.u[end][1:length(u0)]
-    yhat = forward_ffnet(z, w)
+    yhat = forward_ffnet(z, w, threshold=threshold)
     return (z, yhat)
 end
 
@@ -142,7 +150,7 @@ function backpropagation_step(s0, theta, tspan)
 end
 
 
-function training_step(x, y, p)
+function training_step(x, y, p; threshold=nothing)
     """
     Args:
         x: augmented input
@@ -157,7 +165,8 @@ function training_step(x, y, p)
     
     # Forward & Hidden state calculation
     println("ODE | w at t=0 | ", w)
-    z, yhat = forward_step(x, theta, w, tspan)
+    z, yhat = forward_step(x, theta, w, tspan, threshold=threshold)
+
     z = reshape(z, (dims, 1)) # Make z a row-vector
     println("ODE | z at t=T | ", z)
     # Loss
@@ -205,17 +214,7 @@ function training_step(x, y, p)
 end
 
 
-function predict(x, p)
-    theta, t0, t1, w = sequester_params(p, length(x))
-    tspan = (t0, t1)
-    z, yhat = forward_step(x, theta, w, tspan) #TODO: Check tspan
-    return yhat
-end
-
 function one_step_node(x, y, params, LR, dims)
-    if y == 0.0
-        y = -1  # CHECK. To be compatible with neuralcrn.jl
-    end
     println("=======ODE==================")
     println("ODE | Input: $x | Target: $y")
     println("params before | ", params)
@@ -236,20 +235,21 @@ end
 
 # ################################################################# 
 
-function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001)
+function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=nothing)
     # Begin the training process
     losses = []
     val_losses = []
     for epoch in 1:EPOCHS
         epoch_loss = 0.0
         for i in eachindex(train)
+            println("=========EPOCH: $epoch | ITERATION: $i ===========")
             x, y = get_one(train, i)
 
             # Augment
             x = augment(x, dims-length(x))
             println("ODE | Input: $x | Target: $y")
             println("params before | ", params)
-            z, yhat, loss, gradients = training_step(x, y, params)
+            z, yhat, loss, gradients = training_step(x, y, params, threshold=threshold)
             epoch_loss += loss
 
             # Parameter update
@@ -275,7 +275,15 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001)
 
             # Augment
             x = augment(x, dims - length(x))
+            dims = length(x)
 
+            theta, t0, t1, w = sequester_params(params, dims)
+            tspan = (t0, t1)
+            @assert length(w) == dims
+
+            # Forward & Hidden state calculation
+            println("ODE | w at t=0 | ", w)
+            
             before_tmp = []
             append!(before_tmp, x)
             push!(before_tmp, y)
@@ -283,7 +291,9 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001)
 
             println("ODE | Input: $x | Target: $y")
             println("params before | ", params)
-            z, yhat, loss, gradients = training_step(x, y, params)
+            z, yhat = forward_step(x, theta, w, tspan, threshold=threshold)
+            loss = 0.5*(yhat-y)^2
+            class = convert(Float32, yhat >= threshold)
 
             after_tmp = []
             append!(after_tmp, z)
@@ -293,13 +303,13 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001)
         
             val_epoch_loss += loss
             println("params | ", params)
-            push!(yhats, [yhat, y])
-            if yhat >= 1.5  # 1.0 is the threshold
-                exp = 1.0
-            else
-                exp = 0.0
-            end
-            if exp == y
+            
+            yhats_tmp = []
+            append!(yhats_tmp, x)
+            push!(yhats_tmp, class)
+            push!(yhats, yhats_tmp)
+            
+            if class == y
                 accuracy += 1
             end
 
@@ -311,9 +321,9 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001)
         println("accuracy: ", accuracy/length(val))
         val_epoch_loss /= length(val)
         push!(val_losses, val_epoch_loss)
-        lossplts = plot([val_losses])
+        lossplts = plot([losses, val_losses], label=["trloss" "valloss"])
         png(lossplts, "lossplts.png")
-        yhatplt = scatter(getindex.(yhats, 1), group=getindex.(yhats, 2))
+        yhatplt = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
         png(yhatplt, "yhats.png")
     end
 end
@@ -321,10 +331,11 @@ end
 function neuralode(; DIMS=3)
     # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
     # val = create_linearly_separable_dataset(40, linear, threshold=0.0)
-    train = create_annular_rings_dataset(100, 1.0)
-    val = create_annular_rings_dataset(40, 1.0)
+    train = create_annular_rings_dataset(26, 1.0)
+    # val = create_annular_rings_dataset(60, 1.0)
+    val = train
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-    node_main(params_orig, train, val, dims=DIMS, EPOCHS=6)
+    node_main(params_orig, train, val, dims=DIMS, EPOCHS=50, threshold=0, LR=0.01)
 end
 
 neuralode()

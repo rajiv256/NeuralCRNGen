@@ -120,25 +120,32 @@ end
 function create_annular_rings_dataset(n, r)
     dataset = []
     nneg = 0
-    for i in 1:n
+    npos = 0
+    for i in 1:5*n
         x1 = convert(Float64, randn(rng, 1)[1]) # CHECK
         x2 = convert(Float64, randn(rng, 1)[1]) # CHECK
-        y = 1
+        
         if norm([x1, x2]) < r
-            y = 0
+            y = -1
+            if nneg >= n÷2
+                continue
+            end
             nneg += 1
-        end
-        # Leaving some space between annular rings
-        if norm([x1, x2]) > r && norm([x1, x2]) < 1.5 * r
+        elseif norm([x1, x2]) >= 1.5*r
+            y = 1
+            if npos >= n÷2
+                continue
+            end
+            npos += 1
+        else
             continue
         end
 
         data_item = Vector{Float64}()
-        append!(data_item, [abs(x1), abs(x2), y])
+        append!(data_item, [x1, x2, y])
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end
-    print("nneg: ", nneg)
     return dataset
 end
 
