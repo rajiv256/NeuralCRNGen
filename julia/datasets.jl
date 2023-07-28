@@ -125,8 +125,8 @@ function create_annular_rings_dataset(n, r)
         x1 = convert(Float64, randn(rng, 1)[1]) # CHECK
         x2 = convert(Float64, randn(rng, 1)[1]) # CHECK
         
-        if norm([x1, x2]) < r
-            y = -1
+        if norm([x1, x2]) < 0.3*r
+            y = 0
             if nneg >= n÷2
                 continue
             end
@@ -142,10 +142,11 @@ function create_annular_rings_dataset(n, r)
         end
 
         data_item = Vector{Float64}()
-        append!(data_item, [x1, x2, y])
+        append!(data_item, [abs(x1), x2, y])
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end
+    Random.shuffle!(dataset)
     return dataset
 end
 

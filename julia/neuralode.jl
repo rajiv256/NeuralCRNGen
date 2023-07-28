@@ -59,11 +59,7 @@ function forward_ffnet(z, w; threshold=nothing)
     # CHECK: Thinking of the final layer as a binary perceptron 
     # Now I have to use 1.0 as the threshold when testing
     println("ODE | yhat at t=T: $yhat")
-    # if yhat >= threshold
-    #     yhat = 1.0
-    # else
-    #     yhat = -1.0
-    # end
+    
     return yhat
 end
 
@@ -197,7 +193,7 @@ function training_step(x, y, p; threshold=nothing)
     
     gradients = backward.u[end][2*dims+1:end]
     gradients = reshape(gradients, size(gradients)[1])
-    println("ODE | Gradients at t=0 |  ", backward.u[end][2*dims+1:2*dims + dims^2])
+    
     
     # Note that gradients[end] already contains gradient for t0
     append!(gradients, dldt1) # gradient for t1
@@ -228,8 +224,9 @@ function one_step_node(x, y, params, LR, dims)
     params[dims^2+1] = 0.0
     params[dims^2+2] = 1.0
     println("params | ", params)
-    return params
     println("==============ODE END=============")
+    return params
+    
 end
 
 
@@ -251,7 +248,7 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
             println("params before | ", params)
             z, yhat, loss, gradients = training_step(x, y, params, threshold=threshold)
             epoch_loss += loss
-
+            
             # Parameter update
             println("ODE | gradients | ", gradients)
             for param_index in eachindex(gradients)
@@ -325,17 +322,19 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
         png(lossplts, "lossplts.png")
         yhatplt = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
         png(yhatplt, "yhats.png")
+        lossplts = plot(losses)
+        png(lossplts, "trainlossplts.png")
     end
 end
 
 function neuralode(; DIMS=3)
     # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
     # val = create_linearly_separable_dataset(40, linear, threshold=0.0)
-    train = create_annular_rings_dataset(26, 1.0)
-    # val = create_annular_rings_dataset(60, 1.0)
-    val = train
+    train = create_annular_rings_dataset(100, 1.0)
+    val = create_annular_rings_dataset(100, 1.0)  
+    # val = train   
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-    node_main(params_orig, train, val, dims=DIMS, EPOCHS=50, threshold=0, LR=0.01)
+    node_main(params_orig, train, val, dims=DIMS, EPOCHS=15, threshold=0.5, LR=0.01)
 end
 
 neuralode()
