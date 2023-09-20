@@ -5,6 +5,7 @@ using Pkg;
 # Pkg.add("Statistics")
 # Pkg.add("ColorSchemes")
 # Pkg.add("IterTools"); 
+# Pkg.add("NNlib")
 
 using DifferentialEquations;
 using Random;
@@ -19,6 +20,7 @@ using Statistics;
 using ColorSchemes;
 using Catalyst;
 using IterTools;
+using NNlib;
 
 include("datasets.jl")
 include("utils.jl")
@@ -57,7 +59,6 @@ end
 function forward_ffnet(z, w; threshold=nothing)
     yhat = dot(w, z) # Verified!
     # CHECK: Thinking of the final layer as a binary perceptron 
-    # Now I have to use 1.0 as the threshold when testing
     println("ODE | yhat at t=T: $yhat")
     
     return yhat
@@ -69,6 +70,7 @@ function forward_step(u0, theta, w, tspan; threshold=nothing)
     node_out = forward_node(u0, theta, tspan)
     # Extracting hidden state
     z = node_out.u[end][1:length(u0)]
+    
     yhat = forward_ffnet(z, w, threshold=threshold)
     return (z, yhat)
 end
@@ -164,6 +166,7 @@ function training_step(x, y, p; threshold=nothing)
     z, yhat = forward_step(x, theta, w, tspan, threshold=threshold)
 
     z = reshape(z, (dims, 1)) # Make z a row-vector
+
     println("ODE | z at t=T | ", z)
     # Loss
     loss = 0.5*(yhat-y)^2
@@ -194,7 +197,6 @@ function training_step(x, y, p; threshold=nothing)
     gradients = backward.u[end][2*dims+1:end]
     gradients = reshape(gradients, size(gradients)[1])
     
-    
     # Note that gradients[end] already contains gradient for t0
     append!(gradients, dldt1) # gradient for t1
     
@@ -206,6 +208,7 @@ function training_step(x, y, p; threshold=nothing)
         push!(gradients, wgrads[i])
     end
     println("ODE | Final layer gradients | ", wgrads)
+    println("ODE | Gradients at t=0 | ", gradients)
     return z, yhat, loss, gradients
 end
 
@@ -238,6 +241,7 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
     val_losses = []
     for epoch in 1:EPOCHS
         epoch_loss = 0.0
+        sleep(2)
         for i in eachindex(train)
             println("=========EPOCH: $epoch | ITERATION: $i ===========")
             x, y = get_one(train, i)
@@ -249,26 +253,25 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
             z, yhat, loss, gradients = training_step(x, y, params, threshold=threshold)
             epoch_loss += loss
             
-            # Parameter update
-            println("ODE | gradients | ", gradients)
             for param_index in eachindex(gradients)
                 params[param_index] -= LR * gradients[param_index]
             end
             params[dims^2+1] = 0.0
             params[dims^2+2] = 1.0
-            println("params | ", params)
-
+            println("params at t=0 after update | ", params)
         end
         epoch_loss /= length(train)
         push!(losses, epoch_loss)
-
+        lossplts = plot(losses)
+        png(lossplts, "trainlossplts.png")
         accuracy = 0.0
         val_epoch_loss = 0.0
         before = []
         after = []
         yhats = []
-        for i in eachindex(val)
-            x, y = get_one(val, i)
+        for v in eachindex(val)
+            println("=======VAL Epoch: $epoch | ITERATION: $v")
+            x, y = get_one(val, v)
 
             # Augment
             x = augment(x, dims - length(x))
@@ -280,7 +283,7 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
 
             # Forward & Hidden state calculation
             println("ODE | w at t=0 | ", w)
-            
+
             before_tmp = []
             append!(before_tmp, x)
             push!(before_tmp, y)
@@ -289,53 +292,58 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
             println("ODE | Input: $x | Target: $y")
             println("params before | ", params)
             z, yhat = forward_step(x, theta, w, tspan, threshold=threshold)
-            loss = 0.5*(yhat-y)^2
-            class = convert(Float32, yhat >= threshold)
-
+            loss = 0.5 * (yhat - y)^2
+        
+            class = math.ceil(yhat)
             after_tmp = []
             append!(after_tmp, z)
             push!(after_tmp, y)
             push!(after, after_tmp)
 
-        
+
             val_epoch_loss += loss
             println("params | ", params)
-            
+
             yhats_tmp = []
             append!(yhats_tmp, x)
             push!(yhats_tmp, class)
             push!(yhats, yhats_tmp)
-            
+
             if class == y
                 accuracy += 1
             end
-
         end
-        beforeplt = scatter3d(getindex.(before, 1), getindex.(before, 2), getindex.( before, 3), group=getindex.(before, 4))
-        afterplot = scatter3d(getindex.(after, 1), getindex.(after, 2), getindex.(after, 3), group=getindex.(after, 4))
+        if dims == 2
+            beforeplt = scatter(getindex.(before, 1), getindex.(before, 2), group=getindex.(before, 3))
+            afterplot = scatter(getindex.(after, 1), getindex.(after, 2), group=getindex.(after, 3))
+            yhatplt = scatter(getindex.(yhats, 1), getindex.(yhats, 2), group=getindex.(yhats, 3))
+        end
+        if dims==3
+            beforeplt = scatter3d(getindex.(before, 1), getindex.(before, 2), getindex.(before, 3), group=getindex.(before, 4))
+            afterplot = scatter3d(getindex.(after, 1), getindex.(after, 2), getindex.(after, 3), group=getindex.(after, 4))
+            yhatplt = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
+        end
         png(beforeplt, "before.png")
         png(afterplot, "after.png")
-        println("accuracy: ", accuracy/length(val))
-        val_epoch_loss /= length(val)
-        push!(val_losses, val_epoch_loss)
-        lossplts = plot([losses, val_losses], label=["trloss" "valloss"])
-        png(lossplts, "lossplts.png")
-        yhatplt = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
+        println("accuracy: ", accuracy / length(val))
+        
+        
         png(yhatplt, "yhats.png")
-        lossplts = plot(losses)
-        png(lossplts, "trainlossplts.png")
+
     end
+    
 end
 
 function neuralode(; DIMS=3)
     # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
     # val = create_linearly_separable_dataset(40, linear, threshold=0.0)
-    train = create_annular_rings_dataset(100, 1.0)
-    val = create_annular_rings_dataset(100, 1.0)  
+    train = create_annular_rings_dataset(150)
+    val = create_annular_rings_dataset(50)  
     # val = train   
+
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-    node_main(params_orig, train, val, dims=DIMS, EPOCHS=15, threshold=0.5, LR=0.01)
+    node_main(params_orig, train, val, dims=DIMS, EPOCHS=30, threshold=0.0, LR=0.001)
 end
 
-neuralode()
+# neuralode()
 

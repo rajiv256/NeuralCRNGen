@@ -1,4 +1,8 @@
-using Pkg; 
+# This file is used to run CRN operations
+
+
+
+using Pkg;
 # Pkg.add("ReactionNetworkImporters")
 # Pkg.add("Dictionaries")
 # Pkg.add("LaTeXStrings")
@@ -288,23 +292,16 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
         end
         
         push!(temp, output)
-        push!(preds2d, tmp)
+        push!(preds2d, temp)
         if output == y
             acc += 1
         end
-            # else
-        #     sca = scatter!([x[1]], [x[2]], markercolor=:red, markershape=:x, legend=false, ms=4.0)
-        # end
-        # if y == 0.0
-        #     sca = scatter!([x[1]], [x[2]], markercolor=:green, markershape=:cross, ms=6.0, label="class 0")
-        # else
-        #     sca = scatter!([x[1]], [x[2]], markercolor=:blue, ms=6.0, label="class 1")
-        
     end
     sca = scatter!(getindex.(preds2d, 1), getindex.(preds2d, 2), group=getindex.preds2d, 3)
     sca.title("$(acc/length(dataset))")
     png(sca, "accuracy_plot.png")
     println("Accuracy: $(acc/length(dataset))")
+    sleep(2)
     return acc/length(dataset)
 end
 
@@ -521,15 +518,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
             @show yhat, yhat[1]-yhat[2]
             
-
-
-            ###############################################################
-            # Create error species
-            # err = crn_subtract(yhat, yvec)
-            # vars["Ep"] = err[1]
-            # vars["Em"] = err[2]
-            # _print_vars(vars, "E", title="CRN | Error at t=T")
-            # crn_output_annihilation(vars, max_val=40.0)
             vars["Op"] = max(0, yhat[1] - yhat[2])
             vars["Om"] = max(0, yhat[2] - yhat[1])
             _print_vars(vars, "O", title="CRN | O at t=T")
@@ -541,22 +529,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             # Epoch loss function
             tr_epoch_loss += 0.5*(err[1]-err[2])^2
 
-            
-            # z = _form_vector(vars, "Z")
-            # w = _form_vector(vars, "W") 
-
-            ####################### 
-            # # Calculate the gradients of w and the adjoint
-            # wgrad = vcat([crn_mult(err, z[i, :]) for i in 1:dims])
-            # wgradsym = _create_symbol_matrix("M", (dims, 1))
-            # _assign_vars(vars, wgradsym, wgrad)
-            # _print_vars(vars, "M", title="CRN | Wgrads at t=T")
-
-            # # Calculate the adjoint at t=T1
-            # adj = vcat([crn_mult(err, w[i, :]) for i in 1:dims])
-            # adjsym = _create_symbol_matrix("A", (dims, 1)) 
-            # _assign_vars(vars, adjsym, adj)
-            # _print_vars(vars, "A", title="CRN | Adjoint at t=T")
             crn_dual_binary_scalar_mult(vars, "Z", "M", max_val=1.0)
             crn_dual_binary_scalar_mult(vars, "W", "A", max_val=1.0)
             
@@ -659,18 +631,18 @@ end
 function neuralcrn(;DIMS=3)
     # train = create_linearly_separable_dataset(100, linear, threshold=0.0)
     # val = create_linearly_separable_dataset(40, linear, threshold=0.0)
-    train = create_annular_rings_dataset(100, 1.0)
-    val = create_annular_rings_dataset(40, 1.0)
+    train = create_annular_rings_dataset(100)
+    val = create_annular_rings_dataset(40)
 
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
     
     println("===============================")
     vars = crn_main(params_orig, train, val, EPOCHS=6, dims=DIMS, tspan=(0.0, 1.0))
     
-    @show calculate_accuracy(val, copy(vars), dims=3, threshold=0.0)
+    @show calculate_accuracy(val, copy(vars), dims=DIMS, threshold=0.0)
     plot_augmented_state(copy(vars), val, threshold=0.0)
 end
 
-neuralcrn(DIMS=3)
+neuralcrn(DIMS=2)
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
