@@ -1,10 +1,5 @@
-using Pkg; 
-# Pkg.add("ReactionNetworkImporters")
-# Pkg.add("Dictionaries")
-# Pkg.add("LaTeXStrings")
-# Pkg.add("Statistics")
-# Pkg.add("ColorSchemes")
-# Pkg.add("IterTools"); 
+# This file is used to run CRN operations
+using Pkg;
 
 using DifferentialEquations;
 using Random;
@@ -22,371 +17,70 @@ using IterTools;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactions.jl")
+include("linear2D.jl")
+include("neuralode.jl")
 
 
-function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
-    theta = randn(dims^2)
-    for i in eachindex(theta)
-        theta[i] = round(theta[i], digits=precision)
-    end
-    w = randn(dims)
-    for i in eachindex(w)
-        w[i] = round(w[i], digits=precision)
-    end
-    params = []
-    append!(params, theta)
-    push!(params, t0)
-    push!(params, t1)
-    append!(params, w)
-    return params
-end
-
-# Adds `k` zeroes to the end of the column matrix `u`
-function augment(x, k=1) # Verified!
-    ret = copy(x)
-    for i in 1:k
-        ret = vcat(ret, 0.0)
-    end
-    return ret
-end
-
-# Reproducing the simple forward and backprop steps for hidden state.
-function f(z, theta)
-    """
-    Args:
-        u: hidden state
-        theta: resnet parameters of size [length(u), length(u)]
-    """
-    fmat = theta*z
-    @assert length(fmat)==length(z)
-    return fmat
-end
-
-
-function forward!(du, u, theta, t)
-    func = f(u, theta)
-    for i in eachindex(func)
-        du[i] = func[i]
-    end
-end
-
-
-# Calculates the final hidden state of the neural ode
-function forward_node(u0, theta, tspan)
-    
-    prob = ODEProblem(forward!, u0, tspan, theta)
-    sol = solve(prob, Tsit5(), reltol=1e-8, abstol=1e-8)
-    return sol
-end
-
-
-# Final feedforward layer similar to a perceptron
-function forward_ffnet(z, w)
-    yhat = dot(w, z) # Verified!
-    return yhat
-end
-
-
-function forward_step(u0, theta, w, tspan)
-    # Output from the neural ode
-    node_out = forward_node(u0, theta, tspan)
-    # Extracting hidden state
-    z = node_out.u[end][1:length(u0)]
-    yhat = forward_ffnet(z, w)
-    return (z, yhat)
-end
-
-
-function aug_dynamics!(du, u, theta, t)
-    dims = Int32(length(theta)÷sqrt(length(theta)))
-    
-    # Time dynamics for the hidden state
-    offset = 0
-    z = u[1:dims]
-    func = f(z, theta)
-    
-    @assert length(func) == dims
-    
-    for i in 1:dims
-        du[offset+i] = func[i]
-    end
-    
-    offset += dims
-    
-    
-    # Time dynamics for the adjoint
-    a = u[dims+1:2*dims]
-    a = reshape(a, (dims, 1))
-    
-    # ∂f/∂z = 𝜃
-    dfdz = theta 
-    @assert size(theta) == (dims, dims)
-    
-    dadt = reshape(-transpose(a)*dfdz, dims)
-    for i in 1:length(dadt)
-        du[offset+i] = dadt[i]
-    end
-    
-    offset += length(dadt)
-    @assert offset == 2*dims # offset after adding dzdt and dady
-   
-    
-    # Time dynamics for gradients
-    dfdtheta = zeros(dims, dims^2)
-    
-    for i in 1:dims
-        for j in 1:dims
-            dfdtheta[i, (i-1)*dims + j] = z[j]
-        end
-    end
-    
-    dgrads = -transpose(a)*dfdtheta
-    
-    @assert size(dgrads) == (1, dims^2)
-    
-    for i in 1:length(dgrads)
-        du[offset+i] = dgrads[i]
-    end
-    offset += length(dgrads)
-    
-    # Time dynamics of time(!!): Not used though sigh.
-    # TODO: Might wanna change this in future if things don't work
-    dfdt = zeros(dims, 1)
-    tgrads = -transpose(a)*dfdt
-    
-    @assert length(tgrads) == 1
-    
-    # currently not changing time!
-    du[offset+1] = 0 
-    
-end
-
-function backpropagation_step(s0, theta, tspan)
-    prob = ODEProblem(aug_dynamics!, s0, tspan, theta)
-    sol = solve(prob, Tsit5(), reltol=1e-8, abstol=1e-8)
-    return sol
-end
-
-function sequester_params(p, dims)
-    theta = zeros(dims, dims)
-    for i in 1:dims^2
-        theta[(i-1)÷dims + 1, (i-1)%dims + 1] = p[i]
-    end
-    t0 = p[dims^2 + 1]
-    t1 = p[dims^2 + 2]
-    w = p[dims^2+3:end]
-    return theta, t0, t1, w
-end
-
-function training_step(x, y, p)
-    """
-    Args:
-        x: augmented input
-        y: output 
-        p: parameters of the entire network
-    """
-    dims = length(x)
-    
-    theta, t0, t1, w = sequester_params(p, dims)
-    tspan = (t0, t1)
-    @assert length(w) == dims 
-    
-    # Forward & Hidden state calculation
-    println("ODE | w at t=0 | ", w)
-    z, yhat = forward_step(x, theta, w, tspan)
-    z = reshape(z, (dims, 1)) # Make z a row-vector
-    println("ODE | z at t=T | ", z)
-    # Loss
-    loss = 0.5*(yhat-y)^2
-    
-    # Adjoint calculation
-    a = (yhat-y)*w
-    a = reshape(a, (dims, 1))
-    println("ODE | yhat at t=T | ", yhat)
-    println("ODE | Adjoint at t=T | ", a)
-    
-    # Initial theta gradients
-    gtheta = zeros(dims^2, 1)
-    println("ODE | Gradients at t=T | ", gtheta)
-    
-    # Initial time gradients 
-    func = f(z, theta)
-
-    dldt1 = -transpose(a)*f(z, theta)
-    dldt1 = convert(Array{Float64}, dldt1)
-    
-    # Initial state for the reverse time ODE
-    s0 = vcat(z, a, gtheta, dldt1)
-    rtspan = reverse(tspan)
-    
-    backward = backpropagation_step(s0, theta, rtspan)
-    println("ODE | Adjoint at t=0 | ", backward.u[end][dims+1:2*dims])
-    
-    gradients = backward.u[end][2*dims+1:end]
-    gradients = reshape(gradients, size(gradients)[1])
-    println("ODE | Gradients at t=0 |  ", backward.u[end][2*dims+1:2*dims + dims^2])
-    
-    # Note that gradients[end] already contains gradient for t0
-    append!(gradients, dldt1) # gradient for t1
-    
-    # Gradients wrt w
-    wgrads = (yhat-y)*z
-    for i in eachindex(wgrads)
-        push!(gradients, wgrads[i])
-    end
-    println("ODE | Final layer gradients | ", wgrads)
-    return z, yhat, loss, gradients
-end
-
-
-function predict(x, p)
-    theta, t0, t1, w = sequester_params(p, length(x))
-    tspan = (t0, t1)
-    z, yhat = forward_step(x, theta, w, tspan) #TODO: Check tspan
-    return yhat
-end
-
-
-function get_index_of(prefix, vec)
-    ret = []
-    for i in eachindex(vec)
-        vec_i = vec[i]
-        if startswith("$vec_i", prefix)
-            push!(ret, i)
-        end
-    end
-    
-    @assert length(ret) == 1 "Prefix: $prefix, vec: $vec"
-    return ret[1]
-end
-
-function get_species_array(rn)
-    ret = []
-    for s in species(rn)
-        push!(ret, replace(string(s), "(t)" => ""))
-    end
+function _convert_species2var(sp)
+    ret = string(sp)
+    ret = replace(ret, "(t)" => "")
     return ret
 end
 
 
-# simulates multiplication of two scalars
-function mult(a, b; max_val=100.0)
-    # a: [ap, am]   b: [bp, bm]
-
-    u = [:Ap => a[1], :Am => a[2], :Bp => b[1], :Bm => b[2], :Yp => 0, :Ym => 0]
-    p = []
-    sol = simulate_reaction_network(rn_dual_mult, u, p, tspan=(0.0, max_val))
-
-    # Calculate value
-    ss = species(rn_dual_mult)
-
-    yp = sol[end][get_index_of("Yp", ss)]
-    ym = sol[end][get_index_of("Ym", ss)]
-    y = [yp ym]
-    return y    
+# Verified: @show _index2param("P", 3, -3.0)
+function _index2Dvar(sym, index, val; dims=3)
+    second = (index-1)%dims + 1
+    first = (index-1)÷dims + 1
+    return Dict(
+        "$(sym)$(first)$(second)p"=>max(0, val),
+        "$(sym)$(first)$(second)m"=>max(0, -val)
+    )
 end
 
 
-function _convert_dot2var(s, subA, subB)
-     ret = s 
-     ret = replace(ret, "(t)" => "")
-     ret = replace(ret, "A" => subA)
-     ret = replace(ret, "B" => subB)
-     return ret 
-end
+_index1Dvar(sym, index, val; dims=3) = Dict(
+        "$sym$(index)p" => max(0.0, val),
+        "$sym$(index)m" => max(0.0, -val)
+    )
 
-function subtract(ap, am, bp, bm; max_val=100.0, default=0.0)
-    u = [
-        :Ap => ap, :Am => am, :Bp => bp, :Bm => bm, :Yp => default, :Ym => default
-    ]
-    p = []
-    sol = simulate_reaction_network(rn_dual_subtract, u, p, tspan=(0.0, max_val))
-    
-    ss = species(rn_dual_subtract)
-    yp = sol[end][get_index_of("Yp", ss)]
-    ym = sol[end][get_index_of("Ym", ss)]
-    y = [yp ym] 
-    return y
+
+function _prepare_u(rn, vars)
+    ss = species(rn)
+    uvalues = [vars[_convert_species2var(sp)] for sp in ss]
+    u = Pair.(ss, uvalues)
+    return u
 end
 
 
-function dot2(vars, subA, Aspecies, subB, Bspecies; max_val=100.00, reltol=1e-8, abstol=1e-8, default=0.0)
-    dot2ss = species(rn_dual_dot2)
-
-    # Initial concentration values
-    varkeys = [_convert_dot2var(string(sp), subA, subB)  for sp in dot2ss]
-    uvalues = [get(vars, k, default) for k in varkeys]
-    @show varkeys
-    @show uvalues
-    u = Pair.(dot2ss, uvalues)
-
-    # solve the ODE
-    p = []
-    sol = simulate_reaction_network(rn_dual_dot2, u, p, tspan=(0.0, max_val), reltol=reltol, abstol=abstol)
-
-    # Collect the outputs
-    yp = sol[end][get_index_of("Yp", dot2ss)]
-    ym = sol[end][get_index_of("Ym", dot2ss)]
-    y = [yp ym]
-    return y 
-end
-
-
-function convert_to_dual_rail(x)
-    return (max(0, x), abs(min(0, x)))
-end
-
-
-function crn_node_forward(vars, tspan, y; reltol=1e-8, abstol=1e-8, precision=4, D=2)
-    # println("============= CRN FORWARD STEP =====================")
-    # Get the species in the order in which the function `species` retrieves them
-    sps = get_species_array(rn_dual_node_fwd)
-    
-    uvalues = [vars[sp] for sp in sps]
-    # Assigning initial values
-    u = Pair.(species(rn_dual_node_fwd), uvalues)
-    p = []  # All the reactions have unit rate constant, stays empty
-    
-    sol = simulate_reaction_network(rn_dual_node_fwd, u, p, tspan=tspan, reltol=reltol, abstol=abstol)
-
-    for sp in sps
-        vars[sp] = sol[end][get_index_of(sp, sps)]
+function _print_vars(vars, prefix; title="")
+    println(title, "---------------")
+    Xvars = [k for k in keys(vars) if startswith(k, prefix)]
+    sort!(Xvars)
+    for xvp in Xvars
+        if endswith(xvp, "p")
+            xvm = replace(xvp, "p"=>"m")
+            println("""$xvp: $(vars[xvp]) | $xvm: $(vars[xvm]) | $(vars[xvp]-vars[xvm])""")
+        end
     end
-    
-    # Calculate the dot product of Z and W. We also utilize `D` here
-    Zspecies = [sp for sp in keys(vars) if startswith(sp, "Z")]
-    Wspecies = [sp for sp in keys(vars) if startswith(sp, "W")]
-    
-    
-    yhat = dot2(vars, "Z", Zspecies, "W", Wspecies) 
-
-    e = subtract(yhat[1], yhat[2], y[1], y[2])
-    @show yhat
-    @show y
-    @show e
-    for wsp in Wspecies 
-        @show vars[wsp]
-    end
-
-    # @assert e[1] <= 100
-    # @assert e[2] <= 100
-    vars["Op"] = yhat[1]
-    vars["Om"] = yhat[2]
-    vars["Ep"] = e[1]
-    vars["Em"] = e[2]
-
-    # println("============= END CRN FORWARD STEP ===============")
+    println("---------------------")
 end
+
+
+function _filter_rn_species(ss; prefix="Z")
+    xs = filter(x->startswith(string(x), prefix), ss)
+    return xs
+end
+
 
 function _form_vector(vars, prefix)
-    names = [] 
+    names = []
     for name in keys(vars)
         if startswith(name, prefix)
             push!(names, name)
         end
     end
-    ps = [] 
+    ps = []
     ms = []
     for name in names
         if endswith(name, "p")
@@ -406,28 +100,6 @@ function _form_vector(vars, prefix)
 end
 
 
-function _init_variables(prefix, data)
-    # Note: Data here is not provided in dual_rail
-    dims = size(data)
-    @assert length(dims) == 2
-    suffixes = []
-    rows = dims[1]
-    cols = dims[2]
-    values = []
-    for row in 1:rows
-        for col in 1:cols
-            p = max(0, data[row, col])
-            m = max(0, -data[row, col])
-            push!(suffixes, string(prefix, string(row), string(col), "p"))
-            push!(values, p)
-            push!(suffixes, string(prefix, string(row), string(col), "m"))
-            push!(values, m)
-        end
-    end
-    return Dict(Pair.(suffixes, values))
-end
-
-
 function _create_symbol_matrix(prefix, dims)
     @assert length(dims) == 2
     symbols = []
@@ -437,7 +109,7 @@ function _create_symbol_matrix(prefix, dims)
         if cols == 1
             push!(symbols, string(prefix, string(row), "p"))
             push!(symbols, string(prefix, string(row), "m"))
-            continue; 
+            continue
         end
         for col in 1:cols
             push!(symbols, string(prefix, string(row), string(col), "p"))
@@ -449,13 +121,6 @@ function _create_symbol_matrix(prefix, dims)
     symbols = dropdims(symbols, dims=tuple(findall(size(symbols) .== 1)...))
     return symbols
 end
-    
-
-function _convert_species2var(sp)
-    ret = string(sp)
-    ret = replace(ret, "(t)"=>"")
-    return ret
-end
 
 
 function _assign_vars(vars, sym_matrix, val_matrix)
@@ -466,259 +131,541 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 
-function crn_backpropagation_step(vars, tspan; bias=0.01, reltol=1e-8, abstol=1e-8, D=2, default=0.0)
-    
-    z = _form_vector(vars, "Z")  # (D, 1) matrix
-    e = _form_vector(vars, "E")
-    w = _form_vector(vars, "W")
-    @show z
-    @show e
-    @show w
-    # Calculate output layer weight gradients
-    wgradsymbolmat = _create_symbol_matrix("M", (D, 1))
-    wgrad = vcat([mult(e, z[i, :]) for i in 1:D])
-    @show wgrad
-    @show wgradsymbolmat
-    _assign_vars(vars, wgradsymbolmat, wgrad)
+function crn_error_binary_scalar_mult(vars, subS, subP; max_val=40.0)
+    ss = species(rn_dual_binary_scalar_mult)
 
-    # Calculate the adjoint 
-    a = reshape(vcat([mult(e, w[i, :]) for i in 1:D]), size(wgrad))
-    
-    # Add the adjoint variables to var 
-    asymbolmat = _create_symbol_matrix("A", (D, 1))
-    _assign_vars(vars, asymbolmat, a)
+    # Convert species into the variables in vars
+    varkeys = [_convert_species2var(sp) for sp in ss]
+    varkeys = [replace(k, "S" => subS) for k in varkeys]
+    varkeys = [replace(k, "P" => subP) for k in varkeys]
 
-    ss = species(rn_dual_backprop)
-
-    # Initializes the gradients 
-    values = []
-    for sp in ss 
-        push!(values, get!(vars, _convert_species2var(sp), default))
-    end
-    u = Pair.(ss, values)
+    u = [get!(vars, k, 0.0) for k in varkeys]
     p = []
-    
-    sol = simulate_reaction_network(rn_dual_backprop, u, p, tspan=tspan, reltol=reltol, abstol=abstol) # CHECK
-    ss = species(rn_dual_backprop)
 
+    sol = simulate_reaction_network(rn_dual_binary_scalar_mult, u, p, tspan=(0.0, max_val))
+
+    # Update the value only if it is a product
+    for i in eachindex(ss)
+        sp = string(ss[i])
+
+        if startswith(sp, "P")  # It's a product species
+            varkey = varkeys[i]  # original variable name
+            vars[varkey] = sol[end][i]
+        end
+    end
+    _print_vars(vars, "$subP", title="CRN | $subP at t=T")
+end
+
+
+function crn_output_annihilation(vars; max_val=40.0)
+    ss = species(rn_output_annihilation)
+    u = [vars[_convert_species2var(sp)] for sp in ss]
+    p = []
+    sol = simulate_reaction_network(rn_output_annihilation, u, p, tspan=(0.0, max_val))
+
+    for i in eachindex(ss)
+        vars[_convert_species2var(ss[i])] = sol[end][i]
+    end
+    _print_vars(vars, "O", title="CRN | Output after annihilation at t=T")
+end
+
+
+function crn_create_error_species(vars)
+    # CHECK: Assuming that Y and O species are up to date
+    ss = species(rn_create_error_species)
+    u = [vars[_convert_species2var(sp)] for sp in ss]
+    p = []
+
+    # Due to the way in which `rn_create_error_species` is setup, the tspan has to be (0.0, 1.0)
+    sol = simulate_reaction_network(rn_create_error_species, u, p, tspan=(0.0,1.0))
+
+    for i in eachindex(ss)
+        vars[_convert_species2var(ss[i])] = sol[end][i]
+    end
+    _print_vars(vars, "E", title="CRN | Error species at t=T")
+end
+
+
+function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0)
+    aug_x = []
+    reg_x = []
+    yhats = []
+
+    for i in eachindex(dataset)
+        x, y = get_one(dataset, i)
+
+        x = augment(x, dims - length(x))
+        yvec = [y 1 - y]
+        for zi in eachindex(x)
+            d = _index1Dvar("Z", zi, x[zi], dims=dims)
+            for (k, v) in d
+                varscopy[k] = v
+            end
+        end
+        varscopy["Yp"] = yvec[1]
+        varscopy["Ym"] = yvec[2]
+        elem = []
+        append!(elem, x)
+        push!(elem, y)
+        push!(reg_x, elem)
+        
+        
+        crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
+
+        yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
+        @show yhat, yhat[1] - yhat[2]
+        varscopy["Op"] = yhat[1]
+        varscopy["Om"] = yhat[2]
+        
+        if yhat[1]-yhat[2] >= threshold
+            exp = 1.0
+        else
+            exp = 0.0
+        end
+        temp = []
+        append!(temp, x)
+        push!(temp, exp)
+        push!(yhats, temp)
+
+        push!(
+            aug_x, [
+                varscopy["Z1p"] - varscopy["Z1m"],
+                varscopy["Z2p"] - varscopy["Z2m"],
+                varscopy["Z3p"] - varscopy["Z3m"],
+                yvec[1] - yvec[2]
+            ]
+        )
+    end
+    plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
+    plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4))
+    png(plt_state1, "crn_before_aug.png")
+    png(plt_state2, "crn_after_aug.png")
+    pltyhats = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
+    png(pltyhats, "crn_yhats.png")
+end
+
+
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect])
+    acc = 0
+    preds2d = []
+    for i in 1:length(dataset)
+        x, y = get_one(dataset, i)
+        
+        temp = []
+        append!(temp, x)
+
+        x = augment(x, dims - length(x))
+
+        for zi in eachindex(x)
+            d = _index1Dvar("Z", zi, x[zi], dims=dims)
+            for (k, v) in d
+                varscopy[k] = v
+            end
+        end
+
+        yvec = [y 1 - y] # TODO: threshold could be 0.5 now.
+        crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
+        varscopy["Yp"] = yvec[1]
+        varscopy["Ym"] = yvec[2]
+
+        # Calculate yhat            
+        yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
+        @show yhat, yhat[1]-yhat[2]
+        varscopy["Op"] = yhat[1]
+        varscopy["Om"] = yhat[2]
+        
+        output = 0.0
+        if varscopy["Op"] - varscopy["Om"] >= threshold # TODO: CHECK BEFORE
+            output = 1.0
+        end
+        
+        # Casting a float into an integer
+        push!(temp, markers[convert(Int32, output)+1])
+        push!(temp, y)  # temp: x1 x2 output y
+
+        push!(preds2d, temp)
+        if output == y
+            acc += 1
+        end
+    end
+    # plot()
+    # Colors (index = 4) represent the original class the data point belongs to
+    # Shapes (index = 3) represent the predicted class of the data point 
+    sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), markershape=getindex.(preds2d, 3), group = getindex.(preds2d, 4))
+    png(sca, "julia/images/accuracy_plot.png")
+    println("Accuracy: $(acc/length(dataset))")
+    return acc/length(dataset)
+end
+
+
+function dissipate_and_annihilate(vars, tspan)
+    ss = species(rn_dissipate_reactions)
+    u = [vars[_convert_species2var(sp)] for sp in ss]
+    p = []
+
+    sol = simulate_reaction_network(rn_dissipate_reactions, u, p, tspan=tspan)
+    
+    for i in eachindex(ss)
+        vars[_convert_species2var(ss[i])] = sol[end][i]
+    end
 
 end
 
 
-function crn_weight_update(vars, eta, tspan)
-    
-    ss = species(rn_weight_update)
-    
-    uvalues = [vars[_convert_species2var(sp)] for sp in ss]
-    u = Pair.(ss, uvalues)
-    
-    k1 = eta/(1 + eta)
-    k2 = 1/(1 + eta)
-    p = [k1, k2]
-    
-    sol = simulate_reaction_network(rn_weight_update, u, p, tspan=tspan)
+function crn_param_update(vars, eta, tspan)
 
-    Pspecies = [_convert_species2var(sp) for sp in ss if startswith(string(sp), "P")]
+    ss = species(rn_gradient_update)
 
+    u = [vars[_convert_species2var(sp)] for sp in ss]
+    
+    k1 = eta / (1 + eta)
+    k2 = 1 / (1 + eta)
+    p = [k1 k2]
 
-    # Update the parameter values
-    for psp in Pspecies
-        vars[psp] = sol[end][get_index_of(psp, ss)]
+    sol = simulate_reaction_network(rn_gradient_update, u, p, tspan=tspan)
+    for i in eachindex(ss)
+        if startswith(string(ss[i]), "P")
+            vars[_convert_species2var(ss[i])] = sol[end][i]
+        end
     end
 end
 
 
 function crn_final_layer_update(vars, eta, tspan)
     ss = species(rn_final_layer_update)
-
-    uvalues = [vars[_convert_species2var(sp)] for sp in ss]
-    u = Pair.(ss, uvalues)
-
+    u = [vars[_convert_species2var(sp)] for sp in ss]
     k1 = eta / (1 + eta)
     k2 = 1 / (1 + eta)
     p = [k1, k2]
-    
     sol = simulate_reaction_network(rn_final_layer_update, u, p, tspan=tspan)
-    
-    Wspecies = [_convert_species2var(sp) for sp in ss if startswith(string(sp), "W")]
-    for wsp in Wspecies
-        vars[wsp] = sol[end][get_index_of(wsp, ss)]
-    end
-end
-
-
-function _dualsymbol2value(sym, mat)
-    # Strip the symbol prefix
-    sym = sym[2:end]
-    suffix = sym[end]  # p or m 
-    index_str = sym[1:end-1]  # index string
-    indices = [c-'0' for c in index_str]  # indices resulting
-    val = mat[indices...]
-    if suffix == 'p'
-        val = max(0, val)
-    end
-    if suffix == 'm'
-        val = max(0, -val)
-    end
-    return val 
-end
-
-
-function _convert_dualsymbol2index(sym)
-    sym = sym[2:end]
-    suffix = sym[end]  # p or m 
-    index_str = sym[1:end-1]  # index string
-    indices = [c-'0' for c in index_str]  # indices resulting
-    @assert length(indices) == 2
-    return indices
-end
-
-
-function dissipate_and_annihilate(vars, tspan)
-    ss = species(rn_annihilation_reactions)
-    uvalues = [vars[_convert_species2var(sp)] for sp in ss]
-    u = Pair.(ss, uvalues)
-    p = []
-
-    sol = simulate_reaction_network(rn_annihilation_reactions, u, p, tspan=tspan)
 
     for i in eachindex(ss)
-        sym = _convert_species2var(ss[i])
-        vars[sym] = sol[end][i]
+        if startswith(string(ss[i]), "W")
+            vars[_convert_species2var(ss[i])] = sol[end][i]
+        end
     end
 end
 
 
-################################################################################################################################################################################################################################################################################################################
+function crn_dual_backprop(vars, tspan; bias=0.01, reltol=1e-8, abstol=1e-8, D=2, default=0.0)
+    ss = species(rn_dual_backprop)
 
-# Dataset 
-
-train = create_linearly_separable_dataset!(100, linear, threshold=0.0)
-val = create_linearly_separable_dataset!(20, linear, threshold=0.0)
-# train = create_annular_rings_dataset!(100, 1.0)
-# val = create_annular_rings_dataset!(20, 1.0)
-
-
-
-# Tracking 
-DIMS = 2
-TRACK_EVERY = 10
-crn_epoch_losses = []
-EPOCHS = 10
-params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-PRECISION_DIGITS = 4
-LR = 0.001
-accuracy = 0.0
-
-# Set params correctly
-params = params_orig
-params = custom_struct_round(params, precision_digits=PRECISION_DIGITS)
-
-crn_tracking = Dict()
-
-# Get the CRNs that contain all possible species to initiate vars
-comprehensive_crns = [rn_dual_node_fwd, rn_dual_backprop, rn_weight_update, rn_final_layer_update]
-
-# Initiate the vars dict 
-vars = Dict()
-default_value = 0.0
-
-# Initialize the vars variables
-for crn in comprehensive_crns
-crn_species = species(crn)
-for s in crn_species
-    get!(vars, _convert_species2var(s), default_value)
-end
-end
-
-# Assign the values to the `P` species
-Pspecies = [k for k in keys(vars) if startswith(k, "P")]
-for psp in Pspecies
-indices = _convert_dualsymbol2index(psp)
-@assert length(indices) == 2  # indices must be of length 2
-
-# The first DIMS^2 elements in the `params` array
-vars[psp] = params[indices[1]*DIMS + indices[2]]
-end
-
-
-for epoch in 1:EPOCHS  
-epoch_loss = 0.0
-for i in 1:length(train)
-         
-        x, y = get_one(train, i)
-        x = augment(x, DIMS-length(x))
-
-        println("epoch: ", epoch, " i: ", i, " x: ", x, "\n===========")
-
-        Zspecies = [k for k in keys(vars) if startswith(k, "Z")]
-        for zsp in Zspecies 
-            @show zsp, x 
-            vars[zsp] = _dualsymbol2value(zsp, x)
-            @show vars[zsp]
-        end
-        
-        
-        crn_node_forward(vars, (0.0, 1.0), [y 1.0-y])
-
-        err = [vars["Ep"] vars["Em"]]
-        
-        # Loss add 
-        epoch_loss += 0.5*(err[1] - err[2])^2 # err simulates (yhat - y) and in dual-rail notation
-        crn_backpropagation_step(vars, (0.0, 1.0))
-        crn_weight_update(vars, LR, (0.0, 10.0))
-        crn_final_layer_update(vars, LR, (0.0, 10.0))
-
-        # Tracking
-        Pspecies = [k for k in keys(vars) if startswith(k, "P")]
-        for psp in Pspecies
-            get!(crn_tracking, psp, [])
-            push!(crn_tracking[psp], vars[psp])
-        end
-        Gspecies = [k for k in keys(vars) if startswith(k, "G")]
-        for gsp in Gspecies
-            get!(crn_tracking, gsp, [])
-            push!(crn_tracking[gsp], vars[gsp])
-        end
-        
-        # Zero the gradients
-        Mspecies = [k for k in keys(vars) if startswith(k, "M")]
-        for msp in Mspecies
-            vars[msp] = 0.0
-        end
-        for gsp in Gspecies
-            vars[gsp] = 0.0
-        end
-        dissipate_and_annihilate(vars, (0.0, 10.0))
-        
+    u = [vars[_convert_species2var(sp)] for sp in ss]
+    @assert length(u) == length(ss)
+    p = []
+    sol = simulate_reaction_network(rn_dual_backprop, u, p, tspan=tspan, reltol=reltol, abstol=abstol) # CHECK
+    for i in eachindex(ss)
+        vars[_convert_species2var(ss[i])] = sol[end][i]
     end
-    epoch_loss /= length(train)
-    push!(crn_epoch_losses, epoch_loss)
-    plt = plot(crn_epoch_losses)
-    png(plt, "crn_losses.png")
+end
+
+
+function crn_subtract(a, b; max_val=40.0, default=0.0)
+    u = [
+        :Ap => a[1], :Am => a[2], :Bp => b[1], :Bm => b[2],
+        :Yp => default, :Ym => default
+    ]
+    p = []
+    sol = simulate_reaction_network(rn_dual_subtract, u, p, tspan=(0.0, max_val))
+
+    ss = species(rn_dual_subtract)
+    yp = sol[end][get_index_of("Yp", ss)]
+    ym = sol[end][get_index_of("Ym", ss)]
+    y = [yp ym]
+    return y
+end
+
+
+function crn_mult(a, b; max_val=100.0)
+    # a: [ap, am]   b: [bp, bm]
+
+    u = [:Ap => a[1], :Am => a[2], :Bp => b[1], 
+        :Bm => b[2], :Yp => 0, :Ym => 0]
+    p = []
+    sol = simulate_reaction_network(rn_dual_mult, u, p, tspan=(0.0, max_val))
+
+    # Calculate value
+    ss = species(rn_dual_mult)
+
+    yp = sol[end][get_index_of("Yp", ss)]
+    ym = sol[end][get_index_of("Ym", ss)]
+    y = [yp ym]
+    return y    
+end
+
+
+function crn_dot(vars, subA, subB; max_val=40.0, reltol=1e-8, abstol=1e-8, default=0.0)
+    dotss = species(rn_dual_dot)
+
+    # Initial concentration values
+    varkeys = [_convert_species2var(sp) for sp in dotss]
+    varkeys = [replace(k, "A" => subA) for k in varkeys]
+    varkeys = [replace(k, "B" => subB) for k in varkeys]
+
+    uvalues = [get(vars, k, default) for k in varkeys]
+
+    u = Pair.(dotss, uvalues)
+
+    # solve the ODE
+    p = []
+    sol = simulate_reaction_network(rn_dual_dot, u, p, tspan=(0.0, max_val), reltol=reltol, abstol=abstol)
+
+    # Collect the outputs
+    yp = sol[end][get_index_of("Yp", dotss)]
+    ym = sol[end][get_index_of("Ym", dotss)]
+    y = [yp ym]
+    return y
+end
+
+
+function crn_dual_node_fwd(vars; tspan=(0.0, 1.0))
+   
+    ss = species(rn_dual_node_fwd)
+    u = [vars[_convert_species2var(sp)] for sp in species(rn_dual_node_fwd)]
+    p = []
     
-end
-
-acc = []
-for i in eachindex(val)
-    x, y = get_one(val, i)
-    x = augment(x, DIMS-length(x))
-    Zspecies = [k for k in keys(vars) if startswith(k, "Z")]
-    for zsp in Zspecies 
-        vars[zsp] = _dualsymbol2value(zsp, x)
+    sol = simulate_reaction_network(rn_dual_node_fwd, u, p, tspan=tspan)
+    for i in eachindex(u)
+        println(ss[i], " => ", sol[end][i])
     end
     
-    crn_node_forward(vars, (0.0, 1.0), [y 1.0-y])
-    output = vars["Op"] - vars["Om"]
-    exp = 0.0
-    if output > 0.0
-        exp = 1.0
+    for i in eachindex(ss)
+        if startswith(string(ss[i]), "Z")
+            vars[_convert_species2var(ss[i])] = sol[end][i]
+        end
     end
-    if exp == y
-        push!(acc, 1)
-    end
-    println(exp, "  ", y, " ", output)
+    _print_vars(vars, "Z", title="CRN | z at t=T |")
 end
-println("Acc: ", length(acc)/length(val))
 
 
+
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0))
+    # Initialize a dictionary to track concentrations of all the species
+    vars = Dict();
+
+    # Get all the involved CRNs and add their species to the vars
+    crns = [rn_dual_node_fwd, rn_dual_backprop, rn_gradient_update, rn_final_layer_update,
+    rn_dissipate_reactions]
+    for crn in crns
+        for sp in species(crn)
+            get!(vars, _convert_species2var(sp), 0.0)
+        end
+    end
+    
+    # Assign the values of the parameters
+    for param_index in 1:dims^2
+        d = _index2Dvar("P", param_index, params[param_index], dims=dims)
+        for (k,v) in d
+            vars[k] = v
+        end
+    end
+
+    # Adding time species, although we don't manipulate them now
+    vars["T0"] = 0.0
+    vars["T1"] = 1.0
+
+    # Assign the weight parameters
+    offset = dims^2 + 2  # 2 for t0 and t1
+    for param_index in (offset+1):length(params)
+        d = _index1Dvar("W", param_index-offset, params[param_index], dims=dims)
+        for (k,v) in d
+            vars[k] = v
+        end
+    end
+    
+    node_params = copy(params)
+
+    tr_losses = []
+    val_losses = []
+
+    # For parameter plot #TODO: Update it to more general tracking later.
+    # crn_tracking = Dictionary(["p11", "g11", "p12", "g12", "p21", "g21", "p22", "g22"], [[], [], [], [], [], [], [], []])
+    ode_p_plot = []
+    crn_p_plot = []
+
+    for epoch in 1:EPOCHS
+        tr_epoch_loss = 0.0
+        for i in eachindex(train)
+            println("========= EPOCH: $epoch | i: $i ===========")
+            
+            # Tracking parameter
+            push!(ode_p_plot, node_params[2])
+
+            x, y = get_one(train, i)
+            x = augment(x, dims-length(x))
+            
+            yvec = [y 1-y]
+            
+            node_params = one_step_node(x, y, node_params, LR, dims)
+            println("ODE | params | ", node_params)
+
+            
+            println("=============== CRN ==========================")
+            @show x, y
+            
+            # Tracking parameters
+            push!(crn_p_plot, vars["P12p"] - vars["P12m"])
+
+            for i in eachindex(x)
+                d = _index1Dvar("Z", i, x[i], dims=dims)
+                for (k,v) in d
+                    vars[k] = v
+                end
+            end
+            vars["Yp"] = yvec[1]
+            vars["Ym"] = yvec[2]
+
+            # Forward stage
+            crn_dual_node_fwd(vars, tspan=tspan)
+
+            # Calculate yhat            
+            yhat = crn_dot(vars, "Z", "W", max_val=40.0)
+            @show yhat, yhat[1]-yhat[2]
+            
+            vars["Op"] = max(0, yhat[1] - yhat[2])
+            vars["Om"] = max(0, yhat[2] - yhat[1])
+            _print_vars(vars, "O", title="CRN | O at t=T")
+            _print_vars(vars, "Y", title="CRN | Y at t=T")
+
+            # Assigns the vars[Ep] and vars[Em] variables
+            crn_create_error_species(vars)
+            err = [vars["Ep"] vars["Em"]]
+            ###############
+
+            # Epoch loss function
+            tr_epoch_loss += 0.5*(err[1]-err[2])^2
+
+            # Calculate the output layer gradients
+            crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
+
+            # Calculate the adjoint
+            crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
+            
+
+            #--------------- BACKPROPAGATION BEGIN ----------------#
+            
+            
+            # Backpropagate and calculate parameter gradients 
+            crn_dual_backprop(vars, tspan)
+            _print_vars(vars, "G", title="CRN | Gradients at t=0")
+            
+            # Update the final layer weights
+            crn_final_layer_update(vars, LR, (0.0, 40.0))
+            _print_vars(vars, "W", title="CRN | Final layer at t=0|")
+            
+            # Update the parameters
+            crn_param_update(vars, LR, (0.0, 40.0))
+            _print_vars(vars, "P", title="CRN | params at t=0|")
+            
+            # dissipate_and_annihilate(vars, (0.0, 10.0))
+            # _print_vars(vars, "G", title="CRN | Gradients after annihilation")
+            for k in keys(vars)
+                if startswith(k, "P") || startswith(k, "W")
+                    if endswith(k, "p")
+                        m = replace(k, "p"=>"m")
+                        tmp = vars[k]-vars[m]
+                        vars[k] = max(0, tmp)
+                        vars[m] = max(0, -tmp)
+                    end
+                else
+                    vars[k] = 0.0
+                end
+            end
+        end
+        tr_epoch_loss /= length(train)
+        push!(tr_losses, tr_epoch_loss)
+        
+
+        ###################################################
+        ################## VALIDATION #####################
+        val_epoch_loss = 0.0
+        for i in eachindex(val)
+            println("=========EPOCH: $epoch | ITERATION: $i ===========")
+            x, y = get_one(val, i)
+            x = augment(x, dims-length(x))
+            
+            yvec = [y 1-y]
+
+
+            println("===============CRN==========================")
+            @show x, y
+
+            for i in eachindex(x)
+                d = _index1Dvar("Z", i, x[i], dims=dims)
+                for (k,v) in d
+                    vars[k] = v
+                end
+            end
+            vars["Yp"] = yvec[1]
+            vars["Ym"] = yvec[2]
+
+            # Forward stage
+            crn_dual_node_fwd(vars, tspan=tspan)
+
+            # Calculate yhat            
+            yhat = crn_dot(vars, "Z", "W", max_val=40.0)
+            @show yhat, yhat[1]-yhat[2]
+           
+            vars["Op"] = max(0, yhat[1] - yhat[2])
+            vars["Om"] = max(0, yhat[2] - yhat[1])
+            _print_vars(vars, "O", title="CRN | O at t=T")
+            _print_vars(vars, "Y", title="CRN | Y at t=T")
+            crn_create_error_species(vars)
+            err = [vars["Ep"] vars["Em"]]
+        
+            # Epoch loss function
+            val_epoch_loss += 0.5*(err[1]-err[2])^2
+        end
+
+        val_epoch_loss /= length(val)
+        push!(val_losses, val_epoch_loss)
+
+        # Cancel the dual rail variables to prevent parameters from blowing up
+        for k in keys(vars)
+            if startswith(k, "P") || startswith(k, "W")
+                if endswith(k, "p")
+                    m = replace(k, "p" => "m")
+                    tmp = vars[k] - vars[m]
+                    vars[k] = max(0, tmp)
+                    vars[m] = max(0, -tmp)
+                end
+            else
+                vars[k] = 0.0
+            end
+        end
+
+        # Loss plots 
+        crn_lossesplt = plot([tr_losses], label=["train"])
+        png(crn_lossesplt, "julia/images/crn_lossplts.png")
+
+        # Parameter tracking 
+        p_plot = plot([ode_p_plot, crn_p_plot], label=["ode" "crn"])
+        png(p_plot, "julia/images/tracking/p.png")
+
+    end
+    return vars    
+end
+
+function neuralcrn(;DIMS=2)
+
+    open("neuralcrn.log", "w") do fileio  # Write to logs. 
+        redirect_stdout(fileio) do 
+            train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
+            val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
+            # train = create_annular_rings_dataset(100)
+            # val = create_annular_rings_dataset(40)
+
+            params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
+            println(params_orig)
+
+            
+            println("===============================")
+            vars = crn_main(params_orig, train_set, val_set, EPOCHS=6, dims=DIMS, tspan=(0.0, 1.0))
+            @show calculate_accuracy(val_set, copy(vars), dims=DIMS, threshold=0.5)
+        end
+    end
+end
+
+neuralcrn(DIMS=2)
+
+# _filter_rn_species(rn_dual_node_fwd, prefix="Z")
