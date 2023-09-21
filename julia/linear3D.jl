@@ -51,7 +51,6 @@ rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
 end
 
 
-
 rn_dual_backprop = @reaction_network rn_dual_backprop begin
     1.0, P11p + Z1m --> Z1p + P11p + Z1m
     1.0, P11m + Z1p --> Z1p + P11m + Z1p
@@ -164,7 +163,6 @@ rn_dual_backprop = @reaction_network rn_dual_backprop begin
 end
 
 
-
 rn_dual_mult = @reaction_network rn_dual_mult begin
     1.0, A1p + B1p --> Yp + A1p + B1p
     1.0, A1m + B1m --> Yp + A1m + B1m
@@ -273,7 +271,7 @@ rn_dissipate_reactions = @reaction_network rn_dissipate_reactions begin
 end
 
 
-rn_dual_mult = @reaction_network begin
+rn_dual_mult = @reaction_network rn_dual_dot begin
     1.0, Ap + Bp --> Yp + Ap + Bp
     1.0, Am + Bm --> Yp + Am + Bm
     1.0, Ap + Bm --> Ym + Ap + Bm
@@ -283,7 +281,7 @@ rn_dual_mult = @reaction_network begin
 end
 
 
-rn_dual_dot = @reaction_network begin
+rn_dual_dot = @reaction_network rn_dual_dot begin
     1.0, A1p + B1p --> Yp + A1p + B1p
     1.0, A1m + B1m --> Yp + A1m + B1m
     1.0, A2p + B2p --> Yp + A2p + B2p
@@ -309,7 +307,7 @@ rn_dual_subtract = @reaction_network rn_dual_subtract begin
 end
 
 
-rn_dual_add = @reaction_network begin
+rn_dual_add = @reaction_network rn_dual_add begin
     1.0, Ap --> Yp
     1.0, Bp --> Yp
     1.0, Am --> Ym

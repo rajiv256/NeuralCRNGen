@@ -59,7 +59,7 @@ end
 function forward_ffnet(z, w; threshold=nothing)
     yhat = dot(w, z) # Verified!
     # CHECK: Thinking of the final layer as a binary perceptron 
-    println("ODE | yhat at t=T: $yhat")
+    # println("ODE | yhat at t=T: $yhat")
     
     return yhat
 end
@@ -179,7 +179,7 @@ function training_step(x, y, p; threshold=nothing)
     
     # Initial theta gradients
     gtheta = zeros(dims^2, 1)
-    println("ODE | Gradients at t=T | ", gtheta)
+    println("ODE | Theta gradients at t=T | ", gtheta)
     
     # Initial time gradients 
     func = f(z, theta)
@@ -203,12 +203,12 @@ function training_step(x, y, p; threshold=nothing)
     # Gradients wrt w
     wgrads = (yhat-y)*z
     println("ODE | error: ", yhat-y)
-    println("ODE | wgrads, z: ", wgrads, z)
+    # println("ODE | wgrads, z: ", wgrads, z)
     for i in eachindex(wgrads)
         push!(gradients, wgrads[i])
     end
-    println("ODE | Final layer gradients | ", wgrads)
-    println("ODE | Gradients at t=0 | ", gradients)
+    println("ODE | M: Final layer gradients | ", wgrads)
+    println("ODE | G: Gradients at t=0 | ", gradients)
     return z, yhat, loss, gradients
 end
 
@@ -220,13 +220,11 @@ function one_step_node(x, y, params, LR, dims)
     z, yhat, loss, gradients = training_step(x, y, params)
 
     # Parameter update
-    println("ODE | gradients | ", gradients)
     for param_index in eachindex(gradients)
         params[param_index] -= LR * gradients[param_index]
     end
     params[dims^2+1] = 0.0
     params[dims^2+2] = 1.0
-    println("params | ", params)
     println("==============ODE END=============")
     return params
     
@@ -323,12 +321,12 @@ function node_main(params, train, val; dims=2, EPOCHS=20, LR=0.001, threshold=no
             afterplot = scatter3d(getindex.(after, 1), getindex.(after, 2), getindex.(after, 3), group=getindex.(after, 4))
             yhatplt = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
         end
-        png(beforeplt, "before.png")
-        png(afterplot, "after.png")
+        # png(beforeplt, "before.png")
+        # png(afterplot, "after.png")
         println("accuracy: ", accuracy / length(val))
         
         
-        png(yhatplt, "yhats.png")
+        # png(yhatplt, "yhats.png")
 
     end
     
