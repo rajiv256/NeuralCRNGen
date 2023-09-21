@@ -93,7 +93,7 @@ function create_dataset!(n, yfunc)
     return dataset
 end
 
-function create_linearly_separable_dataset!(n, yfunc; threshold=1.0)
+function create_linearly_separable_dataset(n, yfunc; threshold=1.0)
     dataset = []
     nneg = 0
     for i in 1:n
@@ -117,35 +117,35 @@ end
 
 
 # This is a classification dataset with nonlinearly separable data
-function create_annular_rings_dataset!(n, r)
+function create_annular_rings_dataset(n; lb=0.5, mb=1.0, ub=1.5)
+    
     dataset = []
-    nneg = 0
-    for i in 1:n
-        x1 = convert(Float64, randn(rng, 1)[1]) # CHECK
-        x2 = convert(Float64, randn(rng, 1)[1]) # CHECK
-        y = 1
-        if norm([x1, x2]) < r
-            y = 0
-            nneg += 1
+    
+    while length(dataset) <= n÷3
+        x1 = convert(Float32, randn(1)[1])
+        x2 = convert(Float32, randn(1)[1])
+        if norm([x1 x2]) <= lb
+            y = -1
+            push!(dataset, [x1 x2 y])
         end
-        # Leaving some space between annular rings
-        if norm([x1, x2]) > r && norm([x1, x2]) < 1.5 * r
-            continue
-        end
-
-        data_item = Vector{Float64}()
-        append!(data_item, [abs(x1), abs(x2), y])
-        data_item = reshape(data_item, (length(data_item), 1))
-        push!(dataset, data_item)
     end
-    print("nneg: ", nneg)
+
+    while length(dataset) <= n
+        x1 = convert(Float32, randn(1)[1])
+        x2 = convert(Float32, randn(1)[1])
+        if norm([x1 x2]) >= mb && norm([x1 x2]) <= ub
+            y = 1
+            push!(dataset, [x1 x2 y])
+        end
+    end
+    Random.shuffle!(dataset)
     return dataset
 end
 
 # # This part has to be changed into a function call 
-# N = 100
+N = 150
 # Nval = 20
-# rings_train_dataset = create_annular_rings_dataset!(N, 1.0)
+rings_train_dataset = create_annular_rings_dataset(N)
 # rings_val_dataset = create_annular_rings_dataset!(Nval, 1.0)
 
 # tanh_train_dataset = create_dataset!(N, mytanh)
@@ -162,3 +162,6 @@ function create_random_2D(r, c)
     mat = randn(rng, r, c)
     return mat
 end
+
+plt = scatter(getindex.(rings_train_dataset, 1), getindex.(rings_train_dataset, 2), group=getindex.(rings_train_dataset, 3))
+png(plt, "annular_rings.png")
