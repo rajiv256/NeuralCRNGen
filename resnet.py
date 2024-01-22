@@ -13,14 +13,13 @@ layer and final regression layer.
 import os
 import sys
 import random
-import seaborn as sns
 import argparse
 import logging
 import pickle as pkl
 import math
 
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -66,7 +65,7 @@ class NNet(nn.Module):
     def __init__(self):
         super(NNet, self).__init__()
         self.linear1 = nn.Linear(3, 3)
-        self.linearm = nn.Linear(3, 3)
+        # self.linearm = nn.Linear(3, 3)
         self.linear2 = nn.Linear(3, 1)
 
         self.track = {
@@ -85,12 +84,13 @@ class NNet(nn.Module):
                 # torch.nn.init.xavier_uniform_(m.weight)
                 # m.bias.data.fill_(0.1)
         init(self.linear1)
-        init(self.linearm)
+        # init(self.linearm)
         init(self.linear2)
 
     def forward(self, x):
-        x = x + self.linear1(x)
-        x = x + self.linearm(x)
+        x = F.relu(x + self.linear1(x))
+        # x = x + self.linearm(x)
+        # x = self.linear2(x)
         x = self.linear2(x)
         return x
 
@@ -145,7 +145,7 @@ class NNet(nn.Module):
             val_batches = 0
 
             for x, y in train_loader:
-
+                # print(x, y, x.shape, y.shape)
                 if torch.cuda.is_available():
                     x.cuda()
                     y.cuda()
@@ -208,8 +208,8 @@ class NNet(nn.Module):
 
             pbar.set_description(
                 f"epoch:{epoch} | tr: {ep_tr_loss} | val: {ep_val_loss}")
-            yhatsplt = sns.scatterplot(x=[item[0] for item in yhats], y=[item[1] for item in yhats], c=[item[2] for item in yhats])
-            plt.savefig("resnetyhats.png")
+            # yhatsplt = sns.scatterplot(x=[item[0] for item in yhats], y=[item[1] for item in yhats], c=[item[2] for item in yhats])
+            # plt.savefig("resnetyhats.png")
 
 if __name__ == "__main__":
 
@@ -219,8 +219,3 @@ if __name__ == "__main__":
 
     # Plot epoch train and val loss.
     track = nnet.track
-    plt.clf()
-    sns.lineplot(x=track['epoch'], y=track['ep_tr_loss'])
-    sns.lineplot(x=track['epoch'], y=track['ep_val_loss'])
-    
-    plt.savefig('plot.png')

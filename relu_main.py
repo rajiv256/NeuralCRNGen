@@ -1,7 +1,7 @@
 import numpy as np
 import src.ode as ode
 import utils
-from src.algebra import Scalar
+from src.algebra import Scalar, Term
 import itertools
 
 
@@ -47,69 +47,92 @@ def print_gradient_update_crn(
 
 
 if __name__ == '__main__':
-    D = 2  # TODO: INPUT
+
+    D = 3
+    
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
     p = ode.Matrix2D(symbol='p', dims=[D, D])
-    p.matrix()
+    x = ode.Matrix2D(symbol='x', dims=[D, 1])
     a = ode.Matrix2D(symbol='a', dims=[D, 1])
     g = ode.Matrix2D(symbol='g', dims=[D, D])
-    gmat = g.matrix()  # This assigns g.data to a proper value
-    # TODO: The value of dfdz is okay for now but changes when $f$ changes
-    #  from \theta z to RelU
-    dfdz = ode.Matrix2D(symbol='dfdz', dims=[D, D], data=p.data)
-    dfdtheta_data = ode.create_dfdtheta(D, prefix='z')
-    dfdtheta = ode.Matrix2D(
-        symbol='dfdtheta', dims=[D, D ** 2],
-        data=ode.create_dfdtheta(D, prefix='z')
-    )
+    h = ode.Matrix2D(symbol='h', dims=[1, 1])
 
-    # Node fwd
-    print("rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin")
-    fwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=1)
-    fwd_z_crn = fwd_z_ode.dual_rail_crn()
-    lcs = utils.print_crn(fwd_z_crn, title='NA')
-    print("end")
-    print("\n\n")
 
-    # Z backprop
-    print("rn_dual_backprop = @reaction_network rn_dual_backprop begin")
-    print("## Hidden state backprop")
-    bwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=-1)
-    bwd_z_crn = bwd_z_ode.dual_rail_crn()
-    lcs = list(set(utils.print_crn(bwd_z_crn, title="CRN for Z Backprop")))
+    # ReLU node forward
+    print("rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin")
+    
+    ## H --> H + Z
+    fwd_h_ode = ode.ODESystem(lhs=z, rhs=[h], parity=1)
+    print(fwd_h_ode)
+    fwd_h_crn = fwd_h_ode.dual_rail_crn()
+    lcs = utils.print_crn(fwd_h_crn, title='NA')
+    # print(ode.Matrix2D(dims=[z.dims[0], h.dims[1]], data=z.matrix()*h.matrix()))
 
-    # Adjoint Backprop
-    print("## Adjoint state backprop")
-    aT = ode.transpose_matrix(a)  # Use suffix T only for transpose
 
-    # TODO: Requires parity check
-    bwd_adj_ode = ode.ODESystem(lhs=aT, rhs=[aT, dfdz], parity=1)
-    bwd_adj_crn = bwd_adj_ode.dual_rail_crn()
-    lcs = list(
-        set(
-            utils.print_crn(
-                bwd_adj_crn, title="CRN for "
-                                   "Adjoint "
-                                   "Backprop"
-            )
-        )
-    )
 
-    # Gradient backprop
-    print("## Gradient backprop")
-    gg = ode.Matrix2D(
-        symbol=g.symbol, data=np.array(g.data).flatten().reshape(1, -1)
-    )
-    bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
-    bwd_g_crn = bwd_g_ode.dual_rail_crn()
-    lcs = list(set(utils.print_crn(bwd_g_crn, title='NA')))
-    print("end")
-    print("\n\n")
+    # D = 2  # TODO: INPUT
+    # z = ode.Matrix2D(symbol='z', dims=[D, 1])
+    # p = ode.Matrix2D(symbol='p', dims=[D, D])
+    # p.matrix()
+    # a = ode.Matrix2D(symbol='a', dims=[D, 1])
+    # g = ode.Matrix2D(symbol='g', dims=[D, D])
+    # gmat = g.matrix()  # This assigns g.data to a proper value
+    # # TODO: The value of dfdz is okay for now but changes when $f$ changes
+    # #  from \theta z to RelU
+    # dfdz = ode.Matrix2D(symbol='dfdz', dims=[D, D], data=p.data)
+    # dfdtheta_data = ode.create_dfdtheta(D, prefix='z')
+    # dfdtheta = ode.Matrix2D(
+        # symbol='dfdtheta', dims=[D, D ** 2],
+        # data=ode.create_dfdtheta(D, prefix='z')
+    # )
 
-    print_dual_dot_crn()  # This is a generic CRN.
+    # # Node fwd
+    # print("rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin")
+    # fwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=1)
+    # fwd_z_crn = fwd_z_ode.dual_rail_crn()
+    # lcs = utils.print_crn(fwd_z_crn, title='NA')
+    # print("end")
+    # print("\n\n")
 
-    print_gradient_update_crn(title="rn_gradient_update", dims=[D, D])
-    print_gradient_update_crn(title="rn_final_layer_update",
-                              P="W", G="M", dims=[D])
+    # # Z backprop
+    # print("rn_dual_backprop = @reaction_network rn_dual_backprop begin")
+    # print("## Hidden state backprop")
+    # bwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=-1)
+    # bwd_z_crn = bwd_z_ode.dual_rail_crn()
+    # lcs = list(set(utils.print_crn(bwd_z_crn, title="CRN for Z Backprop")))
+
+    # # Adjoint Backprop
+    # print("## Adjoint state backprop")
+    # aT = ode.transpose_matrix(a)  # Use suffix T only for transpose
+
+    # # TODO: Requires parity check
+    # bwd_adj_ode = ode.ODESystem(lhs=aT, rhs=[aT, dfdz], parity=1)
+    # bwd_adj_crn = bwd_adj_ode.dual_rail_crn()
+    # lcs = list(
+        # set(
+            # utils.print_crn(
+                # bwd_adj_crn, title="CRN for "
+                                   # "Adjoint "
+                                   # "Backprop"
+            # )
+        # )
+    # )
+
+    # # Gradient backprop
+    # print("## Gradient backprop")
+    # gg = ode.Matrix2D(
+        # symbol=g.symbol, data=np.array(g.data).flatten().reshape(1, -1)
+    # )
+    # bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
+    # bwd_g_crn = bwd_g_ode.dual_rail_crn()
+    # lcs = list(set(utils.print_crn(bwd_g_crn, title='NA')))
+    # print("end")
+    # print("\n\n")
+
+    # print_dual_dot_crn()  # This is a generic CRN.
+
+    # print_gradient_update_crn(title="rn_gradient_update", dims=[D, D])
+    # print_gradient_update_crn(title="rn_final_layer_update",
+                              # P="W", G="M", dims=[D])
 
     #

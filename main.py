@@ -47,10 +47,20 @@ def print_gradient_update_crn(
 
 
 if __name__ == '__main__':
-    D = 2  # TODO: INPUT
+    D = 3  # TODO: INPUT
+    
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
+    zrow = [Scalar(name=f'z{i}') for i in range(1, 4) for j in range(3)]
+    for i in zrow:
+        print(i)
+    zspecial = ode.Matrix2D(dims=[D, D], data=zrow)
+    zmat = zspecial.matrix()
+    # z = ode.Matrix2D(symbol='z', dims=[D, 1])
+    x = ode.Matrix2D(symbol='x', dims=[D, 1])
     p = ode.Matrix2D(symbol='p', dims=[D, D])
-    p.matrix()
+    pmat = p.matrix()
+    pz = utils.np_hadamard_scalar_matrices_2d(pmat, zmat)
+    pzmat = ode.Matrix2D(data=pz.tolist(), dims=[D, D])
     a = ode.Matrix2D(symbol='a', dims=[D, 1])
     g = ode.Matrix2D(symbol='g', dims=[D, D])
     gmat = g.matrix()  # This assigns g.data to a proper value
@@ -63,53 +73,60 @@ if __name__ == '__main__':
         data=ode.create_dfdtheta(D, prefix='z')
     )
 
-    # Node fwd
-    print("rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin")
-    fwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=1)
+    # Node fwd 
+    # For `relu`: dz/dt = z*xT*PT
+    print("rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin")
+    fwd_z_ode = ode.ODESystem(lhs=z, rhs=[pzmat, x], parity=1)
     fwd_z_crn = fwd_z_ode.dual_rail_crn()
     lcs = utils.print_crn(fwd_z_crn, title='NA')
-    print("end")
-    print("\n\n")
 
-    # Z backprop
-    print("rn_dual_backprop = @reaction_network rn_dual_backprop begin")
-    print("## Hidden state backprop")
-    bwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=-1)
-    bwd_z_crn = bwd_z_ode.dual_rail_crn()
-    lcs = list(set(utils.print_crn(bwd_z_crn, title="CRN for Z Backprop")))
+    # Node fwd
+    # print("rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin")
+    # fwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=1)
+    # fwd_z_crn = fwd_z_ode.dual_rail_crn()
+    # lcs = utils.print_crn(fwd_z_crn, title='NA')
+    # print("end")
+    # print("\n\n")
 
-    # Adjoint Backprop
-    print("## Adjoint state backprop")
-    aT = ode.transpose_matrix(a)  # Use suffix T only for transpose
+    # # Z backprop
+    # print("rn_dual_backprop = @reaction_network rn_dual_backprop begin")
+    # print("## Hidden state backprop")
+    # bwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=-1)
+    # bwd_z_crn = bwd_z_ode.dual_rail_crn()
+    # lcs = list(set(utils.print_crn(bwd_z_crn, title="CRN for Z Backprop")))
 
-    # TODO: Requires parity check
-    bwd_adj_ode = ode.ODESystem(lhs=aT, rhs=[aT, dfdz], parity=1)
-    bwd_adj_crn = bwd_adj_ode.dual_rail_crn()
-    lcs = list(
-        set(
-            utils.print_crn(
-                bwd_adj_crn, title="CRN for "
-                                   "Adjoint "
-                                   "Backprop"
-            )
-        )
-    )
+    # # Adjoint Backprop
+    # print("## Adjoint state backprop")
+    # aT = ode.transpose_matrix(a)  # Use suffix T only for transpose
 
-    # Gradient backprop
-    print("## Gradient backprop")
-    gg = ode.Matrix2D(
-        symbol=g.symbol, data=np.array(g.data).flatten().reshape(1, -1)
-    )
-    bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
-    bwd_g_crn = bwd_g_ode.dual_rail_crn()
-    lcs = list(set(utils.print_crn(bwd_g_crn, title='NA')))
-    print("end")
-    print("\n\n")
+    # # TODO: Requires parity check
+    # bwd_adj_ode = ode.ODESystem(lhs=aT, rhs=[aT, dfdz], parity=1)
+    # bwd_adj_crn = bwd_adj_ode.dual_rail_crn()
+    # lcs = list(
+        # set(
+            # utils.print_crn(
+                # bwd_adj_crn, title="CRN for "
+                                   # "Adjoint "
+                                   # "Backprop"
+            # )
+        # )
+    # )
 
-    print_dual_dot_crn()  # This is a generic CRN.
+    # # Gradient backprop
+    # print("## Gradient backprop")
+    # gg = ode.Matrix2D(
+        # symbol=g.symbol, data=np.array(g.data).flatten().reshape(1, -1)
+    # )
+    # bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
+    # bwd_g_crn = bwd_g_ode.dual_rail_crn()
+    # lcs = list(set(utils.print_crn(bwd_g_crn, title='NA')))
+    # print("end")
+    # print("\n\n")
 
-    print_gradient_update_crn(title="rn_gradient_update", dims=[D, D])
-    print_gradient_update_crn(title="rn_final_layer_update",
-                              P="W", G="M", dims=[D])
+    # print_dual_dot_crn()  # This is a generic CRN.
+
+    # print_gradient_update_crn(title="rn_gradient_update", dims=[D, D])
+    # print_gradient_update_crn(title="rn_final_layer_update",
+                              # P="W", G="M", dims=[D])
 
     #
