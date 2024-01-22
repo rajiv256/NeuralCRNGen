@@ -58,6 +58,27 @@ def np_matmult_scalar_matrices_2d(x, y):
     return ret
 
 
+def np_hadamard_scalar_matrices_2d(x, y):
+    assert x.ndim == 2
+    assert y.ndim == 2
+    assert (x.shape[0]==y.shape[0]) and (x.shape[1] == y.shape[1])
+    
+    rows = x.shape[0]
+    cols = y.shape[0]
+    ret = []
+    for r in range(rows):
+        ret.append([])
+        for c in range(cols):
+            ret[r].append(Expression())
+
+    for r in range(rows):
+        for c in range(cols):
+            ret[r][c] = algebra.mult_expressions(x[r][c], y[r][c])
+
+    ret = np.array(ret, dtype=Expression)
+    return ret 
+
+
 def convert_scalar_to_dual_rail(scalar: Scalar):
     return {
         'pos': [Scalar(name=scalar.name + globals.POS_SUFFIX)],

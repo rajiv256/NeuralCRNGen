@@ -22,6 +22,7 @@ class Matrix2D:
         self.data = data
 
     def matrix(self):
+        """Converts the Matrix2D object into an 2D nparray"""
         if self.data is not None:
             mat = np.array(self.data)
             if mat.ndim != 2:
@@ -46,8 +47,14 @@ class Matrix2D:
         return mat
 
     def __str__(self):
+        ret = ''
         mat = self.matrix()
-        return str(mat)
+        rows, cols = self.dims 
+        for r in range(rows):
+            for c in range(cols):
+                ret += str(mat[r][c]) + ' ' # Scalar object
+            ret += '\n'
+        return ret
 
 
 def transpose_matrix(mat):
@@ -72,6 +79,8 @@ def create_dfdtheta(D, prefix='x'):
 
     xs = np.array(xs)
     return xs
+
+
 
 
 class MultinomialODE:
@@ -145,6 +154,13 @@ class ODESystem:
         self.rhs = rhs
         self.parity = parity
 
+    def __str__(self):
+        ret = ''
+        ret += f'lhs: {self.lhs.symbol}: \n{str(self.lhs)}\n'
+        for r in self.rhs:
+            ret += f'rhs: {r.symbol}: \n{str(r)}\n'
+        return ret
+
     def dual_rail_crn(self):
         lhs_mat = self.lhs.matrix()
         rhs_mat_list = [r.matrix() for r in self.rhs]
@@ -172,12 +188,5 @@ class ODESystem:
 
 
 if __name__ == '__main__':
-    ode = ODESystem(
-        lhs=Matrix2D(symbol='z', dims=[2, 1]),
-        rhs=[Matrix2D(symbol='p', dims=[2, 2]),
-             Matrix2D(symbol='z', dims=[2, 1])],
-        parity=-1
-    )
-    crn = ode.dual_rail_crn()
-    for c in crn:
-        print(c)
+    z = Matrix2D(dims=[3, 3], data=['z1', 'z2', 'z3', 'z1', 'z2', 'z3', 'z1', 'z2', 'z3'])
+    print(z)
