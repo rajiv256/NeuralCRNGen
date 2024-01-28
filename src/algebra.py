@@ -107,11 +107,18 @@ class Scalar(Term):
         return self.name.upper() + self.name[1:]
 
     def __mul__(self, scalar):
+        if scalar.value == 1:
+            return Term(scalars=[self])
+        if scalar.value == 0:
+            return Term(scalars=[])
+
         return Term(
             scalars=[self, scalar]
         )
 
     def __add__(self, scalar):
+        if scalar.value == 0:
+            return self 
         return Scalar(
             name=f'{self.name}plus{scalar.name}',
             # Value doesn't need to be added.
