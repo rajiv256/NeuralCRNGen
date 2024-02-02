@@ -117,23 +117,24 @@ end
 
 
 # This is a classification dataset with nonlinearly separable data
-function create_annular_rings_dataset(n; lb=0.5, mb=1.0, ub=1.5)
+function create_annular_rings_dataset(n; lub=0.1, lb=0.5, mb=0.7, ub=1)
     
     dataset = []
-    
+    center = 0
+    normal = Uniform(-1, 1)
     while length(dataset) <= n÷3
-        x1 = convert(Float32, randn(1)[1])
-        x2 = convert(Float32, randn(1)[1])
-        if norm([x1 x2]) <= lb
+        x1 = convert(Float32, rand(normal, 1)[1])
+        x2 = convert(Float32, rand(normal, 1)[1])
+        if norm([x1-center x2-center]) <= lb && norm([x1-center x2-center]) >= lub
             y = -1
             push!(dataset, [x1 x2 y])
         end
     end
 
     while length(dataset) <= n
-        x1 = convert(Float32, randn(1)[1])
-        x2 = convert(Float32, randn(1)[1])
-        if norm([x1 x2]) >= mb && norm([x1 x2]) <= ub
+        x1 = convert(Float32, rand(normal, 1)[1])
+        x2 = convert(Float32, rand(normal, 1)[1])
+        if norm([x1-center x2-center]) >= mb && norm([x1-center x2-center]) <= ub
             y = 1
             push!(dataset, [x1 x2 y])
         end

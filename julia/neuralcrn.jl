@@ -444,7 +444,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
     vars = Dict();
 
     # Get all the involved CRNs and add their species to the vars
-    crns = [rn_dual_node_fwd, rn_dual_backprop, rn_gradient_update, rn_final_layer_update,
+    crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_gradient_update, rn_final_layer_update,
     rn_dissipate_reactions]
     for crn in crns
         for sp in species(crn)
@@ -496,8 +496,8 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             
             yvec = [y 1-y]
             
-            node_params = one_step_node(x, y, node_params, LR, dims)
-            println("ODE | params | ", node_params)
+#             node_params = one_step_node(x, y, node_params, LR, dims)
+#             println("ODE | params | ", node_params)
 
             
             println("=============== CRN ==========================")
@@ -519,6 +519,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             crn_dual_node_fwd(vars, tspan=tspan)
 
             # Calculate yhat            
+            print(vars)
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
             @show yhat, yhat[1]-yhat[2]
             
@@ -636,36 +637,36 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
         # Loss plots 
         crn_lossesplt = plot([tr_losses], label=["train"])
-        png(crn_lossesplt, "julia/images/crn_lossplts.png")
+#         png(crn_lossesplt, "julia/images/crn_lossplts.png")
 
         # Parameter tracking 
         p_plot = plot([ode_p_plot, crn_p_plot], label=["ode" "crn"])
-        png(p_plot, "julia/images/tracking/p.png")
+#         png(p_plot, "julia/images/tracking/p.png")
 
     end
     return vars    
 end
 
-function neuralcrn(;DIMS=2)
+# function neuralcrn(;DIMS=2)
 
-    open("neuralcrn.log", "w") do fileio  # Write to logs. 
-        redirect_stdout(fileio) do 
-            train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
-            val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
-            # train = create_annular_rings_dataset(100)
-            # val = create_annular_rings_dataset(40)
+#     open("neuralcrn.log", "w") do fileio  # Write to logs. 
+#         redirect_stdout(fileio) do 
+#             train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
+#             val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
+#             # train = create_annular_rings_dataset(100)
+#             # val = create_annular_rings_dataset(40)
 
-            params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-            println(params_orig)
+#             params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
+#             println(params_orig)
 
             
-            println("===============================")
-            vars = crn_main(params_orig, train_set, val_set, EPOCHS=6, dims=DIMS, tspan=(0.0, 1.0))
-            @show calculate_accuracy(val_set, copy(vars), dims=DIMS, threshold=0.5)
-        end
-    end
-end
+#             println("===============================")
+#             vars = crn_main(params_orig, train_set, val_set, EPOCHS=6, dims=DIMS, tspan=(0.0, 1.0))
+#             @show calculate_accuracy(val_set, copy(vars), dims=DIMS, threshold=0.5)
+#         end
+#     end
+# end
 
-neuralcrn(DIMS=2)
+# neuralcrn(DIMS=2)
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
