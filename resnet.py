@@ -88,7 +88,8 @@ class NNet(nn.Module):
         init(self.linear2)
 
     def forward(self, x):
-        x = F.relu(x + self.linear1(x))
+        x = F.relu(self.linear1(x))
+        print("z", x)
         # x = x + self.linearm(x)
         # x = self.linear2(x)
         x = self.linear2(x)
@@ -115,6 +116,11 @@ class NNet(nn.Module):
         self.train()
         self._init_weights()
 
+        print(self.linear1.weight.data)
+        print(self.linear1.bias.data)
+        print(self.linear2.weight.data)
+        print(self.linear2.bias.data)
+        
         # Dataset and dataloader
         dataset_folder = os.path.join(os.getcwd(), 'data', opt.dataset_name)
         train_pkl = os.path.join(dataset_folder, 'train.pkl')
@@ -150,9 +156,10 @@ class NNet(nn.Module):
                     x.cuda()
                     y.cuda()
 
+                print("x:",  x)
                 optimizer.zero_grad()
                 output = self(x)
-
+                exit(0)
                 loss = torch.sqrt(criterion(output.flatten(), y.flatten()))
                 loss.backward()
                 optimizer.step()
@@ -173,7 +180,6 @@ class NNet(nn.Module):
                 if torch.cuda.is_available():
                     x.cuda()
                     y.cuda()
-
                 output = self(x)
                 loss = torch.sqrt(criterion(output.flatten(), y.flatten()))
                 
@@ -215,6 +221,7 @@ if __name__ == "__main__":
 
     opt = get_args()
     nnet = NNet()
+
     nnet.train_model(opt)
 
     # Plot epoch train and val loss.

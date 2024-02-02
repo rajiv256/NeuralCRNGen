@@ -1,3 +1,4 @@
+import Pkg; 
 using DifferentialEquations;
 using Random;
 using Plots;
@@ -9,13 +10,14 @@ using Dictionaries;
 using LaTeXStrings;
 using Statistics;
 using ColorSchemes;
+using Distributions;
 
 
 # Simulate a custom ODE
 function simulate_reaction_network(network, u0, p;tspan=(), rate=1.0, reltol=1e-8, abstol=1e-8, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, p)
-    sol = solve(oprob, Tsit5(), reltol=1e-8, abstol=1e-8, kwargs...)
+    sol = solve(oprob, Tsit5(), reltol=reltol, abstol=abstol, kwargs...)
     return sol
 end
 
@@ -113,20 +115,42 @@ end
 
 
 function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
-    theta = randn(dims^2)
+    params = []
+    # Inserting dims so that there is no confusion  
+    push!(params, dims)
+
+    # Creating theta parameters
+    # theta = randn(dims^2)
+    # theta =( 1/sqrt(2))*rand(1:2, dims^2)
+    theta = ones(dims^2)*0.1
     for i in eachindex(theta)
         theta[i] = round(theta[i], digits=precision)
     end
     
-    params = []
+    
     append!(params, theta)
-    push!(params, t0)
-    push!(params, t1)
-    w = randn(dims)
+
+    # Creating beta
+    # beta = randn(dims)
+    beta = ones(dims)*0.1
+    for i in eachindex(beta)
+        beta[i] = round(beta[i], digits=precision)
+    end
+    append!(params, beta)
+    
+    # Creating weight params
+    # w = randn(dims)
+    w = rand(Normal(0, 1/dims), dims)
     for i in eachindex(w)
         w[i] = round(w[i], digits=precision)
     end
     append!(params, w)
+    
+    h = 0.1 # CHECK TODO:
+    push!(params, h)
+
+    push!(params, t0)
+    push!(params, t1)
     return params
 end
 
@@ -140,13 +164,18 @@ function augment(x, k=1) # Verified!
 end
 
 
-function sequester_params(p, dims)
+function sequester_params(p) 
+    dims = Int32(p[1])
+    p = p[2:end]
     theta = zeros(dims, dims)
     for i in 1:dims^2
         theta[(i-1)÷dims + 1, (i-1)%dims + 1] = p[i]
     end
-    t0 = p[dims^2 + 1]
-    t1 = p[dims^2 + 2]
-    w = p[dims^2+3:end]
-    return theta, t0, t1, w
+    beta = p[dims^2+1:dims^2 + dims]
+    w = p[dims^2 + dims+1:dims^2 + 2*dims]
+    h = p[dims^2 + 2*dims + 1]
+    t0 = p[dims^2 + 2*dims + 2]
+    t1 = p[dims^2 + 2*dims + 3]
+    
+    return dims, theta, beta, w, h, t0, t1
 end
