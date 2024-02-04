@@ -31,26 +31,23 @@ using NNlib;
 include("datasets.jl")
 include("utils.jl")
 
-function f(z, x, p, t)
+
+function f(u, xAndp, t)
+    x = xAndp[1:3]
+    p = xAndp[4:end]
     dims, theta, beta, w, h, _, _ = sequester_params(p)
-    hvec = ones(dims)*h 
-    fmat = (theta*x + beta).*z - z.*z + hvec
-    @assert length(fmat) == dims
+    hvec = [h, h, h]
+    fmat = hvec + (theta * x + beta) .* u - u .* u
+    # fmat = theta*u
+    @assert length(fmat) == length(u)
     return fmat
 end
 
+
 function forward!(du, u, xAndp, t)
-    """
-    xAndp: [x, dims, theta, beta, w, h, t0, t1]
-    """
-    dims = length(u)
-    x = xAndp[1:dims]
-    p = xAndp[dims+1:end]
-    # _, theta, beta, w, h, _, _ = sequester_params(p)
-    func = f(u, x, p, t)
-    
-    for i in eachindex(func)
-        du[i] = func[i]
+    fmat = f(u, xAndp, t)
+    for i in eachindex(fmat)
+        du[i] = fmat[i]
     end
 end
 
@@ -58,26 +55,7 @@ end
 # Calculates the final hidden state of the neural ode
 function forward_node(u0, xAndp, tspan)
     prob = ODEProblem(forward!, u0, tspan, xAndp)
-    sol = solve(prob, Tsit5(), reltol = 1e-3, abstol = 1e-6, save_on=false)
-    return sol
-end
-
-
-function backward!(du, u, sAndp, t)
-    slen = length(u)
-    s0 = sAndp[1:slen]
-    p = sAndp[slen+1:end]
-    func = f(u, s0, p, t)
-
-    for i in eachindex(func)
-        du[i] = func[i]
-    end
-end
-
-
-function backward_node(s0, sAndp, tspan)
-    prob = ODEProblem(backward!, s0, tspan, sAndp)
-    sol = solve(prob, Tsit5(), reltol=1e-3, abstol=1e-6, save_on=false)
+    sol = solve(prob, Tsit5(), reltol=1e-8, abstol=1e-12, save_on=false)
     return sol
 end
 
