@@ -114,43 +114,25 @@ function get_species_array(rn)
 end
 
 
-function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
+function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
     params = []
-    # Inserting dims so that there is no confusion  
-    push!(params, dims)
 
-    # Creating theta parameters
+    push!(params, Float32(dims))
+
+    theta = rand(Normal(1, 0.2), dims^2)
     # theta = randn(dims^2)
-    # theta =( 1/sqrt(2))*rand(1:2, dims^2)
-    theta = ones(dims^2)*0.1
-    for i in eachindex(theta)
-        theta[i] = round(theta[i], digits=precision)
-    end
-    
-    
     append!(params, theta)
-
-    # Creating beta
-    # beta = randn(dims)
     beta = ones(dims)*0.1
-    for i in eachindex(beta)
-        beta[i] = round(beta[i], digits=precision)
-    end
     append!(params, beta)
-    
-    # Creating weight params
-    # w = randn(dims)
-    w = rand(Normal(0, 1/dims), dims)
-    for i in eachindex(w)
-        w[i] = round(w[i], digits=precision)
-    end
+
+    w = ones(dims)
     append!(params, w)
-    
-    h = 0.1 # CHECK TODO:
+
     push!(params, h)
 
     push!(params, t0)
     push!(params, t1)
+
     return params
 end
 
