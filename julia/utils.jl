@@ -11,13 +11,15 @@ using LaTeXStrings;
 using Statistics;
 using ColorSchemes;
 using Distributions;
-
+using Catalyst;
 
 # Simulate a custom ODE
-function simulate_reaction_network(network, u0, p;tspan=(), rate=1.0, reltol=1e-8, abstol=1e-8, kwargs...)
+function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
-    oprob = ODEProblem(network, u0, tspan, p)
-    sol = solve(oprob, Tsit5(), reltol=reltol, abstol=abstol, kwargs...)
+    oprob = ODEProblem(network, u0, tspan, rate_constants)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-6, maxiters=1000)
+    g = plot(sol, vars=[2, 4, 6, 8, 10, 12], label=["1p" "1m"  "2p" "2m" "3p" "3m"])
+    png(g, "neuralcrnfwd.png")
     return sol
 end
 
