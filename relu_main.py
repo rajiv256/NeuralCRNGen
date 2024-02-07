@@ -119,7 +119,7 @@ if __name__ == '__main__':
     aphdmd = a._hadamard(p)
     bwd_apx_ode = ode.ODESystem(lhs=a, rhs=[aphdmd, x], parity=-1)
     bwd_apx_crn = bwd_apx_ode.dual_rail_crn()
-    print("\n# da_i/dt = -a_i p_ij x_j")
+    print("\n# da_i/dt = a_i p_ij x_j") # f--> -f
     lcs = utils.print_crn(bwd_apx_crn)
     
     # Gradients
@@ -138,15 +138,15 @@ if __name__ == '__main__':
     azrepeathdmd = arepeat._hadamard(zrepeat)
     azxrepeathdmd = azrepeathdmd._hadamard(xrepeat)
     
-    bwd_grads_ode = ode.ODESystem(lhs=grads, rhs=[azxrepeathdmd], parity=-1)
+    bwd_grads_ode = ode.ODESystem(lhs=grads, rhs=[azxrepeathdmd], parity=1)
     bwd_grads_crn = bwd_grads_ode.dual_rail_crn()
-    print("# dg_ij/dt = -a_i z_i x_j")
-    lcs = utils.print_crn(bwd_grads_crn)
+    print("# dg_ij/dt = a_i z_i x_j") # f --> -f ,  parity = 1
+    lcs = utils.print_crn(bwd_grads_crn) 
 
     # Beta gradients
     azhdmd = a._hadamard(z)
-    bwd_bgrads_ode = ode.ODESystem(lhs=bgrads, rhs=[azhdmd], parity=-1)
+    bwd_bgrads_ode = ode.ODESystem(lhs=bgrads, rhs=[azhdmd], parity=1)
     bwd_bgrads_crn = bwd_bgrads_ode.dual_rail_crn()
-    print("# dbg_i/dt = -a_i z_i")
+    print("# dbg_i/dt = a_i z_i") # f--> -f, parity = 1
     lcs = utils.print_crn(bwd_bgrads_crn)
 

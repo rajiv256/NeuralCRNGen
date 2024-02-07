@@ -106,7 +106,7 @@ function sequester_backward_variables(s; dims=3)
     adj = reshape(adj, (dims, 1))
 
     gtheta = s[offset+1:offset+dims^2]
-    offset + dims^2
+    offset += dims^2
     gtheta = reshape(gtheta, (1, dims^2)) # TODO: Check this!
 
     gbeta = s[offset+1:offset+dims]
@@ -140,6 +140,7 @@ function aug_dynamics!(du, u, sAndp, t)
 
     dfdt = -f(z, zAndp, t)
     @assert length(dfdt) == dims
+
     offset = 0
     for i in 1:dims
         du[offset+i] = dfdt[i]
@@ -180,13 +181,15 @@ function aug_dynamics!(du, u, sAndp, t)
     for i in eachindex(gbeta)
         du[offset+i] = gbeta[i]
     end
+    offset += length(gbeta)
     # Time dynamics of time(!!): Not used though sigh.
     # TODO: Might wanna change this in future if things don't work
-
+    
     gdt = -transpose(a) * dfdt
     @assert length(gdt) == 1
     # currently not changing time!
     du[offset+1] = 0
+
 end
 
 
@@ -217,6 +220,7 @@ function training_step(x, y, p; threshold=nothing)
     println("ODE | w | ", w)
     z, yhat = forward_step(x, p, w, tspan, threshold=threshold)
     z = reshape(z, (dims, 1)) # Make z a row-vector
+    zatT = copy(z)
     println("ODE | z at t=T | ", z)
     println("ODE | expected yhat | ", sum(z .* w))
     println("ODE | yhat at t=T | ", yhat)
@@ -255,15 +259,18 @@ function training_step(x, y, p; threshold=nothing)
     ## Gradients wrt w
     wgrads = (yhat - y) * z
     println("ODE | error: ", yhat - y)
-
+    println("ODE | wgrads | ", wgrads)
     # Initial state for the reverse time ODE
     s0 = vcat(z, a, gtheta, gbeta, dldt1)
     backward = backpropagation_step(s0, p, tspan)
     zat0, aat0, gtheta, gbeta, gdt = sequester_backward_variables(backward[end], dims=dims)
-
+    println("ODE | z at t=0 | ", zat0)
+    println("ODE | a at t=0 | ", aat0)
+    println("ODE | gbeta | ", gbeta)
+    println("ODE | gtheta | ", gtheta)
     # println("ODE | G: Gradients at t=0 | ", gradients)
     gradients = (zat0, aat0, gtheta, gbeta, wgrads, dldt1)
-    return z, yhat, loss, gradients
+    return zatT, yhat, loss, gradients
 end
 
 
@@ -437,20 +444,23 @@ function one_step_node(x, y, node_params, LR; dims=3, threshold=0.5)
     # for i in eachindex(gdt)
     #     node_params[offset + i] = gdt[i]
     # end
-    return gradients, node_params
+    return z, yhat, loss, gradients, node_params
 end
 
 
 
 function neuralode(; DIMS=3)
+    open("julia/neuralode.log", "w") do fileio  # Write to logs. 
+        redirect_stdout(fileio) do 
+            train = create_annular_rings_dataset(100)
+            val = create_annular_rings_dataset(200)
+            # val = train   
 
-    train = create_annular_rings_dataset(100)
-    val = create_annular_rings_dataset(200)
-    # val = train   
-
-    params_orig = create_node_params(DIMS, t0=0.0, t1=0.6, h=1.3)
-    println(params_orig)
-    node_main(params_orig, train, val, DIMS=DIMS, EPOCHS=20, threshold=0.5, LR=0.1)
+            params_orig = create_node_params(DIMS, t0=0.0, t1=0.6, h=0.3)
+            println(params_orig)
+            node_main(params_orig, train, val, DIMS=DIMS, EPOCHS=30, threshold=0.5, LR=0.1)
+        end
+    end
 end
 
-# neuralode() NOT USING FOR GENERATING RESULTS, USE neuralode.ipynb notebook
+# neuralode() #NOT USING FOR GENERATING RESULTS, USE neuralode.ipynb notebook

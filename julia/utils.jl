@@ -18,8 +18,6 @@ function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, rate_constants)
     sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-6, maxiters=1000)
-    g = plot(sol, vars=[2, 4, 6, 8, 10, 12], label=["1p" "1m"  "2p" "2m" "3p" "3m"])
-    png(g, "neuralcrnfwd.png")
     return sol
 end
 
@@ -121,7 +119,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 
     push!(params, Float32(dims))
 
-    theta = rand(Normal(1, 0.2), dims^2)
+    theta = rand(Normal(1.0, 0.0), dims^2)
     # theta = randn(dims^2)
     append!(params, theta)
     beta = ones(dims)*0.1

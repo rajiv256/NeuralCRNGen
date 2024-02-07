@@ -1,11 +1,11 @@
 rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     # dz_i/dt = h
-    1.0, H1p --> Z1p
-    1.0, H1m --> Z1m
-    1.0, H1p --> Z2p
-    1.0, H1m --> Z2m
-    1.0, H1p --> Z3p
-    1.0, H1m --> Z3m
+    1.0, H1p --> Z1p + H1p
+    1.0, H1m --> Z1m + H1m 
+    1.0, H2p --> Z2p + H2p
+    1.0, H2m --> Z2m + H2m
+    1.0, H3p --> Z3p + H3p
+    1.0, H3m --> Z3m + H3m
     # dz_i/dt = p_ij x_j z_i
     1.0, P11p + Z1p + X1p --> Z1p + P11p + Z1p + X1p
     1.0, P11m + Z1m + X1p --> Z1p + P11m + Z1m + X1p
@@ -16,6 +16,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P11p + Z1m + X1p --> Z1m + P11p + Z1m + X1p
     1.0, P11m + Z1p + X1p --> Z1m + P11m + Z1p + X1p
 
+
     1.0, P12p + Z1p + X2p --> Z1p + P12p + Z1p + X2p
     1.0, P12m + Z1m + X2p --> Z1p + P12m + Z1m + X2p
     1.0, P12p + Z1m + X2m --> Z1p + P12p + Z1m + X2m
@@ -24,7 +25,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P12m + Z1m + X2m --> Z1m + P12m + Z1m + X2m
     1.0, P12p + Z1m + X2p --> Z1m + P12p + Z1m + X2p
     1.0, P12m + Z1p + X2p --> Z1m + P12m + Z1p + X2p
-   
+
     1.0, P13p + Z1p + X3p --> Z1p + P13p + Z1p + X3p
     1.0, P13m + Z1m + X3p --> Z1p + P13m + Z1m + X3p
     1.0, P13p + Z1m + X3m --> Z1p + P13p + Z1m + X3m
@@ -33,7 +34,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P13m + Z1m + X3m --> Z1m + P13m + Z1m + X3m
     1.0, P13p + Z1m + X3p --> Z1m + P13p + Z1m + X3p
     1.0, P13m + Z1p + X3p --> Z1m + P13m + Z1p + X3p
-   
+
     1.0, P21p + Z2p + X1p --> Z2p + P21p + Z2p + X1p
     1.0, P21m + Z2m + X1p --> Z2p + P21m + Z2m + X1p
     1.0, P21p + Z2m + X1m --> Z2p + P21p + Z2m + X1m
@@ -42,7 +43,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P21m + Z2m + X1m --> Z2m + P21m + Z2m + X1m
     1.0, P21p + Z2m + X1p --> Z2m + P21p + Z2m + X1p
     1.0, P21m + Z2p + X1p --> Z2m + P21m + Z2p + X1p
-    
+
     1.0, P22p + Z2p + X2p --> Z2p + P22p + Z2p + X2p
     1.0, P22m + Z2m + X2p --> Z2p + P22m + Z2m + X2p
     1.0, P22p + Z2m + X2m --> Z2p + P22p + Z2m + X2m
@@ -51,7 +52,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P22m + Z2m + X2m --> Z2m + P22m + Z2m + X2m
     1.0, P22p + Z2m + X2p --> Z2m + P22p + Z2m + X2p
     1.0, P22m + Z2p + X2p --> Z2m + P22m + Z2p + X2p
-    
+
     1.0, P23p + Z2p + X3p --> Z2p + P23p + Z2p + X3p
     1.0, P23m + Z2m + X3p --> Z2p + P23m + Z2m + X3p
     1.0, P23p + Z2m + X3m --> Z2p + P23p + Z2m + X3m
@@ -60,7 +61,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P23m + Z2m + X3m --> Z2m + P23m + Z2m + X3m
     1.0, P23p + Z2m + X3p --> Z2m + P23p + Z2m + X3p
     1.0, P23m + Z2p + X3p --> Z2m + P23m + Z2p + X3p
-    
+
     1.0, P31p + Z3p + X1p --> Z3p + P31p + Z3p + X1p
     1.0, P31m + Z3m + X1p --> Z3p + P31m + Z3m + X1p
     1.0, P31p + Z3m + X1m --> Z3p + P31p + Z3m + X1m
@@ -69,7 +70,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P31m + Z3m + X1m --> Z3m + P31m + Z3m + X1m
     1.0, P31p + Z3m + X1p --> Z3m + P31p + Z3m + X1p
     1.0, P31m + Z3p + X1p --> Z3m + P31m + Z3p + X1p
-    
+
     1.0, P32p + Z3p + X2p --> Z3p + P32p + Z3p + X2p
     1.0, P32m + Z3m + X2p --> Z3p + P32m + Z3m + X2p
     1.0, P32p + Z3m + X2m --> Z3p + P32p + Z3m + X2m
@@ -78,7 +79,7 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P32m + Z3m + X2m --> Z3m + P32m + Z3m + X2m
     1.0, P32p + Z3m + X2p --> Z3m + P32p + Z3m + X2p
     1.0, P32m + Z3p + X2p --> Z3m + P32m + Z3p + X2p
-    
+
     1.0, P33p + Z3p + X3p --> Z3p + P33p + Z3p + X3p
     1.0, P33m + Z3m + X3p --> Z3p + P33m + Z3m + X3p
     1.0, P33p + Z3m + X3m --> Z3p + P33p + Z3m + X3m
@@ -87,34 +88,50 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P33m + Z3m + X3m --> Z3m + P33m + Z3m + X3m
     1.0, P33p + Z3m + X3p --> Z3m + P33p + Z3m + X3p
     1.0, P33m + Z3p + X3p --> Z3m + P33m + Z3p + X3p
+
     # dz_i/dt = b_iz_i
-    1.0, B1p + Z1p --> Z1p + B1p + Z1p
-    1.0, B1m + Z1m --> Z1p + B1m + Z1m
-    1.0, B1p + Z1m --> Z1m + B1p + Z1m
-    1.0, B1m + Z1p --> Z1m + B1m + Z1p
-    1.0, B2p + Z2p --> Z2p + B2p + Z2p
-    1.0, B2m + Z2m --> Z2p + B2m + Z2m
-    1.0, B2p + Z2m --> Z2m + B2p + Z2m
-    1.0, B2m + Z2p --> Z2m + B2m + Z2p
-    1.0, B3p + Z3p --> Z3p + B3p + Z3p
-    1.0, B3m + Z3m --> Z3p + B3m + Z3m
-    1.0, B3p + Z3m --> Z3m + B3p + Z3m
-    1.0, B3m + Z3p --> Z3m + B3m + Z3p
-    # dz_i/dt = -z_i^2
-    1.0, Z1p + Z1m --> Z1p + Z1p + Z1m
-    1.0, Z1m + Z1p --> Z1p + Z1m + Z1p
-    1.0, Z1p + Z1p --> Z1m + Z1p + Z1p
-    1.0, Z1m + Z1m --> Z1m + Z1m + Z1m
+    1.0, B1p + Z1p --> Z1p + Z1p + B1p
+    1.0, B1m + Z1m --> Z1p + Z1m + B1m
+    1.0, B1p + Z1m --> Z1m + Z1m + B1p
+    1.0, B1m + Z1p --> Z1m + Z1p + B1m
+
+    1.0, B2p + Z2p --> Z2p + Z2p + B2p
+    1.0, B2m + Z2m --> Z2p + Z2m + B2m
+    1.0, B2p + Z2m --> Z2m + Z2m + B2p 
+    1.0, B2m + Z2p --> Z2m + Z2p + B2m
+
+    1.0, B3p + Z3p --> Z3p + Z3p + B3p
+    1.0, B3m + Z3m --> Z3p + Z3m + B3m
+    1.0, B3p + Z3m --> Z3m + Z3m + B3p
+    1.0, B3m + Z3p --> Z3m + Z3p + B3m
+
+    # dz_i/dt = -z_i^2 
+    # Not sure if this is hacky
+    1.0, Z1p + Z1p --> Z1p 
+    1.0, Z1m + Z1m --> Z1m 
+    100.0, Z1p + Z1m --> 0
+
+    1.0, Z2p + Z2p --> Z2p
+    1.0, Z2m + Z2m --> Z2m
+    100.0, Z2p + Z2m --> 0
+
+    1.0, Z3p + Z3p --> Z3p
+    1.0, Z3m + Z3m --> Z3m
+    100.0, Z3p + Z3m --> 0
+
     
-    1.0, Z2p + Z2m --> Z2p + Z2p + Z2m
-    1.0, Z2m + Z2p --> Z2p + Z2m + Z2p
-    1.0, Z2p + Z2p --> Z2m + Z2p + Z2p
-    1.0, Z2m + Z2m --> Z2m + Z2m + Z2m
+    # # dz_i/dt = -z_i^2
+    # 2.0, Z1p + Z1m --> Z1p + Z1p + Z1m 
+    # 1.0, Z1p + Z1p --> Z1m + Z1p + Z1p 
+    # 1.0, Z1m + Z1m --> Z1m + Z1m + Z1m
     
-    1.0, Z3p + Z3m --> Z3p + Z3p + Z3m
-    1.0, Z3m + Z3p --> Z3p + Z3m + Z3p
-    1.0, Z3p + Z3p --> Z3m + Z3p + Z3p
-    1.0, Z3m + Z3m --> Z3m + Z3m + Z3m
+    # 2.0, Z2p + Z2m --> Z2p + Z2p + Z2m
+    # 1.0, Z2p + Z2p --> Z2m + Z2p + Z2p
+    # 1.0, Z2m + Z2m --> Z2m + Z2m + Z2m 
+    
+    # 2.0, Z3p + Z3m --> Z3p + Z3p + Z3m
+    # 1.0, Z3p + Z3p --> Z3m + Z3p + Z3p
+    # 1.0, Z3m + Z3m --> Z3m + Z3m + Z3m
 end
 
 
@@ -213,180 +230,180 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, B3p + Z3p --> Z3m + B3p + Z3p
     1.0, B3m + Z3m --> Z3m + B3m + Z3m
     # dz/dt = z^2
+    10.0, Z1p + Z1m --> 0
     1.0, Z1p + Z1p --> Z1p + Z1p + Z1p
-    1.0, Z1m + Z1m --> Z1p + Z1m + Z1m
-    1.0, Z1p + Z1m --> Z1m + Z1p + Z1m
-    1.0, Z1m + Z1p --> Z1m + Z1m + Z1p
-    
-    1.0, Z2p + Z2p --> Z2p + Z2p + Z2p
-    1.0, Z2m + Z2m --> Z2p + Z2m + Z2m
-    1.0, Z2p + Z2m --> Z2m + Z2p + Z2m
-    1.0, Z2m + Z2p --> Z2m + Z2m + Z2p
-    
-    1.0, Z3p + Z3p --> Z3p + Z3p + Z3p
-    1.0, Z3m + Z3m --> Z3p + Z3m + Z3m
-    1.0, Z3p + Z3m --> Z3m + Z3p + Z3m
-    1.0, Z3m + Z3p --> Z3m + Z3m + Z3p
+    1.0, Z1m + Z1m --> Z1m + Z1m + Z1m
 
-    # da_i/dt = -a_i p_ij x_j
-    1.0, A1p + P11p + X1m --> A1p + A1p + P11p + X1m
-    1.0, A1m + P11m + X1m --> A1p + A1m + P11m + X1m
-    1.0, A1p + P11m + X1p --> A1p + A1p + P11m + X1p
-    1.0, A1m + P11p + X1p --> A1p + A1m + P11p + X1p
-    1.0, A1p + P11p + X1p --> A1m + A1p + P11p + X1p
-    1.0, A1m + P11m + X1p --> A1m + A1m + P11m + X1p
-    1.0, A1p + P11m + X1m --> A1m + A1p + P11m + X1m
-    1.0, A1m + P11p + X1m --> A1m + A1m + P11p + X1m
-    1.0, A1p + P12p + X2m --> A1p + A1p + P12p + X2m
-    1.0, A1m + P12m + X2m --> A1p + A1m + P12m + X2m
-    1.0, A1p + P12m + X2p --> A1p + A1p + P12m + X2p
-    1.0, A1m + P12p + X2p --> A1p + A1m + P12p + X2p
-    1.0, A1p + P12p + X2p --> A1m + A1p + P12p + X2p
-    1.0, A1m + P12m + X2p --> A1m + A1m + P12m + X2p
-    1.0, A1p + P12m + X2m --> A1m + A1p + P12m + X2m
-    1.0, A1m + P12p + X2m --> A1m + A1m + P12p + X2m
-    1.0, A1p + P13p + X3m --> A1p + A1p + P13p + X3m
-    1.0, A1m + P13m + X3m --> A1p + A1m + P13m + X3m
-    1.0, A1p + P13m + X3p --> A1p + A1p + P13m + X3p
-    1.0, A1m + P13p + X3p --> A1p + A1m + P13p + X3p
-    1.0, A1p + P13p + X3p --> A1m + A1p + P13p + X3p
-    1.0, A1m + P13m + X3p --> A1m + A1m + P13m + X3p
-    1.0, A1p + P13m + X3m --> A1m + A1p + P13m + X3m
-    1.0, A1m + P13p + X3m --> A1m + A1m + P13p + X3m
-    1.0, A2p + P21p + X1m --> A2p + A2p + P21p + X1m
-    1.0, A2m + P21m + X1m --> A2p + A2m + P21m + X1m
-    1.0, A2p + P21m + X1p --> A2p + A2p + P21m + X1p
-    1.0, A2m + P21p + X1p --> A2p + A2m + P21p + X1p
-    1.0, A2p + P21p + X1p --> A2m + A2p + P21p + X1p
-    1.0, A2m + P21m + X1p --> A2m + A2m + P21m + X1p
-    1.0, A2p + P21m + X1m --> A2m + A2p + P21m + X1m
-    1.0, A2m + P21p + X1m --> A2m + A2m + P21p + X1m
-    1.0, A2p + P22p + X2m --> A2p + A2p + P22p + X2m
-    1.0, A2m + P22m + X2m --> A2p + A2m + P22m + X2m
-    1.0, A2p + P22m + X2p --> A2p + A2p + P22m + X2p
-    1.0, A2m + P22p + X2p --> A2p + A2m + P22p + X2p
-    1.0, A2p + P22p + X2p --> A2m + A2p + P22p + X2p
-    1.0, A2m + P22m + X2p --> A2m + A2m + P22m + X2p
-    1.0, A2p + P22m + X2m --> A2m + A2p + P22m + X2m
-    1.0, A2m + P22p + X2m --> A2m + A2m + P22p + X2m
-    1.0, A2p + P23p + X3m --> A2p + A2p + P23p + X3m
-    1.0, A2m + P23m + X3m --> A2p + A2m + P23m + X3m
-    1.0, A2p + P23m + X3p --> A2p + A2p + P23m + X3p
-    1.0, A2m + P23p + X3p --> A2p + A2m + P23p + X3p
-    1.0, A2p + P23p + X3p --> A2m + A2p + P23p + X3p
-    1.0, A2m + P23m + X3p --> A2m + A2m + P23m + X3p
-    1.0, A2p + P23m + X3m --> A2m + A2p + P23m + X3m
-    1.0, A2m + P23p + X3m --> A2m + A2m + P23p + X3m
-    1.0, A3p + P31p + X1m --> A3p + A3p + P31p + X1m
-    1.0, A3m + P31m + X1m --> A3p + A3m + P31m + X1m
-    1.0, A3p + P31m + X1p --> A3p + A3p + P31m + X1p
-    1.0, A3m + P31p + X1p --> A3p + A3m + P31p + X1p
-    1.0, A3p + P31p + X1p --> A3m + A3p + P31p + X1p
-    1.0, A3m + P31m + X1p --> A3m + A3m + P31m + X1p
-    1.0, A3p + P31m + X1m --> A3m + A3p + P31m + X1m
-    1.0, A3m + P31p + X1m --> A3m + A3m + P31p + X1m
-    1.0, A3p + P32p + X2m --> A3p + A3p + P32p + X2m
-    1.0, A3m + P32m + X2m --> A3p + A3m + P32m + X2m
-    1.0, A3p + P32m + X2p --> A3p + A3p + P32m + X2p
-    1.0, A3m + P32p + X2p --> A3p + A3m + P32p + X2p
-    1.0, A3p + P32p + X2p --> A3m + A3p + P32p + X2p
-    1.0, A3m + P32m + X2p --> A3m + A3m + P32m + X2p
-    1.0, A3p + P32m + X2m --> A3m + A3p + P32m + X2m
-    1.0, A3m + P32p + X2m --> A3m + A3m + P32p + X2m
-    1.0, A3p + P33p + X3m --> A3p + A3p + P33p + X3m
-    1.0, A3m + P33m + X3m --> A3p + A3m + P33m + X3m
-    1.0, A3p + P33m + X3p --> A3p + A3p + P33m + X3p
-    1.0, A3m + P33p + X3p --> A3p + A3m + P33p + X3p
-    1.0, A3p + P33p + X3p --> A3m + A3p + P33p + X3p
-    1.0, A3m + P33m + X3p --> A3m + A3m + P33m + X3p
-    1.0, A3p + P33m + X3m --> A3m + A3p + P33m + X3m
-    1.0, A3m + P33p + X3m --> A3m + A3m + P33p + X3m
-    # dg_ij/dt = -a_i z_i x_j
-    1.0, A1p + Z1p + X1m --> G11p + A1p + Z1p + X1m
-    1.0, A1m + Z1m + X1m --> G11p + A1m + Z1m + X1m
-    1.0, A1p + Z1m + X1p --> G11p + A1p + Z1m + X1p
-    1.0, A1m + Z1p + X1p --> G11p + A1m + Z1p + X1p
-    1.0, A1p + Z1p + X1p --> G11m + A1p + Z1p + X1p
-    1.0, A1m + Z1m + X1p --> G11m + A1m + Z1m + X1p
-    1.0, A1p + Z1m + X1m --> G11m + A1p + Z1m + X1m
-    1.0, A1m + Z1p + X1m --> G11m + A1m + Z1p + X1m
-    1.0, A1p + Z1p + X2m --> G12p + A1p + Z1p + X2m
-    1.0, A1m + Z1m + X2m --> G12p + A1m + Z1m + X2m
-    1.0, A1p + Z1m + X2p --> G12p + A1p + Z1m + X2p
-    1.0, A1m + Z1p + X2p --> G12p + A1m + Z1p + X2p
-    1.0, A1p + Z1p + X2p --> G12m + A1p + Z1p + X2p
-    1.0, A1m + Z1m + X2p --> G12m + A1m + Z1m + X2p
-    1.0, A1p + Z1m + X2m --> G12m + A1p + Z1m + X2m
-    1.0, A1m + Z1p + X2m --> G12m + A1m + Z1p + X2m
-    1.0, A1p + Z1p + X3m --> G13p + A1p + Z1p + X3m
-    1.0, A1m + Z1m + X3m --> G13p + A1m + Z1m + X3m
-    1.0, A1p + Z1m + X3p --> G13p + A1p + Z1m + X3p
-    1.0, A1m + Z1p + X3p --> G13p + A1m + Z1p + X3p
-    1.0, A1p + Z1p + X3p --> G13m + A1p + Z1p + X3p
-    1.0, A1m + Z1m + X3p --> G13m + A1m + Z1m + X3p
-    1.0, A1p + Z1m + X3m --> G13m + A1p + Z1m + X3m
-    1.0, A1m + Z1p + X3m --> G13m + A1m + Z1p + X3m
-    1.0, A2p + Z2p + X1m --> G21p + A2p + Z2p + X1m
-    1.0, A2m + Z2m + X1m --> G21p + A2m + Z2m + X1m
-    1.0, A2p + Z2m + X1p --> G21p + A2p + Z2m + X1p
-    1.0, A2m + Z2p + X1p --> G21p + A2m + Z2p + X1p
-    1.0, A2p + Z2p + X1p --> G21m + A2p + Z2p + X1p
-    1.0, A2m + Z2m + X1p --> G21m + A2m + Z2m + X1p
-    1.0, A2p + Z2m + X1m --> G21m + A2p + Z2m + X1m
-    1.0, A2m + Z2p + X1m --> G21m + A2m + Z2p + X1m
-    1.0, A2p + Z2p + X2m --> G22p + A2p + Z2p + X2m
-    1.0, A2m + Z2m + X2m --> G22p + A2m + Z2m + X2m
-    1.0, A2p + Z2m + X2p --> G22p + A2p + Z2m + X2p
-    1.0, A2m + Z2p + X2p --> G22p + A2m + Z2p + X2p
-    1.0, A2p + Z2p + X2p --> G22m + A2p + Z2p + X2p
-    1.0, A2m + Z2m + X2p --> G22m + A2m + Z2m + X2p
-    1.0, A2p + Z2m + X2m --> G22m + A2p + Z2m + X2m
-    1.0, A2m + Z2p + X2m --> G22m + A2m + Z2p + X2m
-    1.0, A2p + Z2p + X3m --> G23p + A2p + Z2p + X3m
-    1.0, A2m + Z2m + X3m --> G23p + A2m + Z2m + X3m
-    1.0, A2p + Z2m + X3p --> G23p + A2p + Z2m + X3p
-    1.0, A2m + Z2p + X3p --> G23p + A2m + Z2p + X3p
-    1.0, A2p + Z2p + X3p --> G23m + A2p + Z2p + X3p
-    1.0, A2m + Z2m + X3p --> G23m + A2m + Z2m + X3p
-    1.0, A2p + Z2m + X3m --> G23m + A2p + Z2m + X3m
-    1.0, A2m + Z2p + X3m --> G23m + A2m + Z2p + X3m
-    1.0, A3p + Z3p + X1m --> G31p + A3p + Z3p + X1m
-    1.0, A3m + Z3m + X1m --> G31p + A3m + Z3m + X1m
-    1.0, A3p + Z3m + X1p --> G31p + A3p + Z3m + X1p
-    1.0, A3m + Z3p + X1p --> G31p + A3m + Z3p + X1p
-    1.0, A3p + Z3p + X1p --> G31m + A3p + Z3p + X1p
-    1.0, A3m + Z3m + X1p --> G31m + A3m + Z3m + X1p
-    1.0, A3p + Z3m + X1m --> G31m + A3p + Z3m + X1m
-    1.0, A3m + Z3p + X1m --> G31m + A3m + Z3p + X1m
-    1.0, A3p + Z3p + X2m --> G32p + A3p + Z3p + X2m
-    1.0, A3m + Z3m + X2m --> G32p + A3m + Z3m + X2m
-    1.0, A3p + Z3m + X2p --> G32p + A3p + Z3m + X2p
-    1.0, A3m + Z3p + X2p --> G32p + A3m + Z3p + X2p
-    1.0, A3p + Z3p + X2p --> G32m + A3p + Z3p + X2p
-    1.0, A3m + Z3m + X2p --> G32m + A3m + Z3m + X2p
-    1.0, A3p + Z3m + X2m --> G32m + A3p + Z3m + X2m
-    1.0, A3m + Z3p + X2m --> G32m + A3m + Z3p + X2m
-    1.0, A3p + Z3p + X3m --> G33p + A3p + Z3p + X3m
-    1.0, A3m + Z3m + X3m --> G33p + A3m + Z3m + X3m
-    1.0, A3p + Z3m + X3p --> G33p + A3p + Z3m + X3p
-    1.0, A3m + Z3p + X3p --> G33p + A3m + Z3p + X3p
-    1.0, A3p + Z3p + X3p --> G33m + A3p + Z3p + X3p
-    1.0, A3m + Z3m + X3p --> G33m + A3m + Z3m + X3p
-    1.0, A3p + Z3m + X3m --> G33m + A3p + Z3m + X3m
-    1.0, A3m + Z3p + X3m --> G33m + A3m + Z3p + X3m
-    # dbg_i/dt = -a_i z_i
-    1.0, A1p + Z1m --> V1p + A1p + Z1m
-    1.0, A1m + Z1p --> V1p + A1m + Z1p
-    1.0, A1p + Z1p --> V1m + A1p + Z1p
-    1.0, A1m + Z1m --> V1m + A1m + Z1m
-    1.0, A2p + Z2m --> V2p + A2p + Z2m
-    1.0, A2m + Z2p --> V2p + A2m + Z2p
-    1.0, A2p + Z2p --> V2m + A2p + Z2p
-    1.0, A2m + Z2m --> V2m + A2m + Z2m
-    1.0, A3p + Z3m --> V3p + A3p + Z3m
-    1.0, A3m + Z3p --> V3p + A3m + Z3p
-    1.0, A3p + Z3p --> V3m + A3p + Z3p
-    1.0, A3m + Z3m --> V3m + A3m + Z3m
+    10.0, Z2p + Z2m --> 0
+    1.0, Z2p + Z2p --> Z2p + Z2p + Z2p
+    1.0, Z2m + Z2m --> Z2m + Z2m + Z2m
+
+    10.0, Z3p + Z3m --> 0
+    1.0, Z3p + Z3p --> Z3p + Z3p + Z3p
+    1.0, Z3m + Z3m --> Z3m + Z3m + Z3m
+
+    # da_i/dt = a_i p_ij x_j
+    1.0, A1p + P11p + X1p --> A1p + A1p + P11p + X1p
+    1.0, A1m + P11m + X1p --> A1p + A1m + P11m + X1p
+    1.0, A1p + P11m + X1m --> A1p + A1p + P11m + X1m
+    1.0, A1m + P11p + X1m --> A1p + A1m + P11p + X1m
+    1.0, A1p + P11p + X1m --> A1m + A1p + P11p + X1m
+    1.0, A1m + P11m + X1m --> A1m + A1m + P11m + X1m
+    1.0, A1p + P11m + X1p --> A1m + A1p + P11m + X1p
+    1.0, A1m + P11p + X1p --> A1m + A1m + P11p + X1p
+    1.0, A1p + P12p + X2p --> A1p + A1p + P12p + X2p
+    1.0, A1m + P12m + X2p --> A1p + A1m + P12m + X2p
+    1.0, A1p + P12m + X2m --> A1p + A1p + P12m + X2m
+    1.0, A1m + P12p + X2m --> A1p + A1m + P12p + X2m
+    1.0, A1p + P12p + X2m --> A1m + A1p + P12p + X2m
+    1.0, A1m + P12m + X2m --> A1m + A1m + P12m + X2m
+    1.0, A1p + P12m + X2p --> A1m + A1p + P12m + X2p
+    1.0, A1m + P12p + X2p --> A1m + A1m + P12p + X2p
+    1.0, A1p + P13p + X3p --> A1p + A1p + P13p + X3p
+    1.0, A1m + P13m + X3p --> A1p + A1m + P13m + X3p
+    1.0, A1p + P13m + X3m --> A1p + A1p + P13m + X3m
+    1.0, A1m + P13p + X3m --> A1p + A1m + P13p + X3m
+    1.0, A1p + P13p + X3m --> A1m + A1p + P13p + X3m
+    1.0, A1m + P13m + X3m --> A1m + A1m + P13m + X3m
+    1.0, A1p + P13m + X3p --> A1m + A1p + P13m + X3p
+    1.0, A1m + P13p + X3p --> A1m + A1m + P13p + X3p
+    1.0, A2p + P21p + X1p --> A2p + A2p + P21p + X1p
+    1.0, A2m + P21m + X1p --> A2p + A2m + P21m + X1p
+    1.0, A2p + P21m + X1m --> A2p + A2p + P21m + X1m
+    1.0, A2m + P21p + X1m --> A2p + A2m + P21p + X1m
+    1.0, A2p + P21p + X1m --> A2m + A2p + P21p + X1m
+    1.0, A2m + P21m + X1m --> A2m + A2m + P21m + X1m
+    1.0, A2p + P21m + X1p --> A2m + A2p + P21m + X1p
+    1.0, A2m + P21p + X1p --> A2m + A2m + P21p + X1p
+    1.0, A2p + P22p + X2p --> A2p + A2p + P22p + X2p
+    1.0, A2m + P22m + X2p --> A2p + A2m + P22m + X2p
+    1.0, A2p + P22m + X2m --> A2p + A2p + P22m + X2m
+    1.0, A2m + P22p + X2m --> A2p + A2m + P22p + X2m
+    1.0, A2p + P22p + X2m --> A2m + A2p + P22p + X2m
+    1.0, A2m + P22m + X2m --> A2m + A2m + P22m + X2m
+    1.0, A2p + P22m + X2p --> A2m + A2p + P22m + X2p
+    1.0, A2m + P22p + X2p --> A2m + A2m + P22p + X2p
+    1.0, A2p + P23p + X3p --> A2p + A2p + P23p + X3p
+    1.0, A2m + P23m + X3p --> A2p + A2m + P23m + X3p
+    1.0, A2p + P23m + X3m --> A2p + A2p + P23m + X3m
+    1.0, A2m + P23p + X3m --> A2p + A2m + P23p + X3m
+    1.0, A2p + P23p + X3m --> A2m + A2p + P23p + X3m
+    1.0, A2m + P23m + X3m --> A2m + A2m + P23m + X3m
+    1.0, A2p + P23m + X3p --> A2m + A2p + P23m + X3p
+    1.0, A2m + P23p + X3p --> A2m + A2m + P23p + X3p
+    1.0, A3p + P31p + X1p --> A3p + A3p + P31p + X1p
+    1.0, A3m + P31m + X1p --> A3p + A3m + P31m + X1p
+    1.0, A3p + P31m + X1m --> A3p + A3p + P31m + X1m
+    1.0, A3m + P31p + X1m --> A3p + A3m + P31p + X1m
+    1.0, A3p + P31p + X1m --> A3m + A3p + P31p + X1m
+    1.0, A3m + P31m + X1m --> A3m + A3m + P31m + X1m
+    1.0, A3p + P31m + X1p --> A3m + A3p + P31m + X1p
+    1.0, A3m + P31p + X1p --> A3m + A3m + P31p + X1p
+    1.0, A3p + P32p + X2p --> A3p + A3p + P32p + X2p
+    1.0, A3m + P32m + X2p --> A3p + A3m + P32m + X2p
+    1.0, A3p + P32m + X2m --> A3p + A3p + P32m + X2m
+    1.0, A3m + P32p + X2m --> A3p + A3m + P32p + X2m
+    1.0, A3p + P32p + X2m --> A3m + A3p + P32p + X2m
+    1.0, A3m + P32m + X2m --> A3m + A3m + P32m + X2m
+    1.0, A3p + P32m + X2p --> A3m + A3p + P32m + X2p
+    1.0, A3m + P32p + X2p --> A3m + A3m + P32p + X2p
+    1.0, A3p + P33p + X3p --> A3p + A3p + P33p + X3p
+    1.0, A3m + P33m + X3p --> A3p + A3m + P33m + X3p
+    1.0, A3p + P33m + X3m --> A3p + A3p + P33m + X3m
+    1.0, A3m + P33p + X3m --> A3p + A3m + P33p + X3m
+    1.0, A3p + P33p + X3m --> A3m + A3p + P33p + X3m
+    1.0, A3m + P33m + X3m --> A3m + A3m + P33m + X3m
+    1.0, A3p + P33m + X3p --> A3m + A3p + P33m + X3p
+    1.0, A3m + P33p + X3p --> A3m + A3m + P33p + X3p
+    
+    # dg_ij/dt = a_i z_i x_j
+    1.0, A1p + Z1p + X1p --> G11p + A1p + Z1p + X1p
+    1.0, A1m + Z1m + X1p --> G11p + A1m + Z1m + X1p
+    1.0, A1p + Z1m + X1m --> G11p + A1p + Z1m + X1m
+    1.0, A1m + Z1p + X1m --> G11p + A1m + Z1p + X1m
+    1.0, A1p + Z1p + X1m --> G11m + A1p + Z1p + X1m
+    1.0, A1m + Z1m + X1m --> G11m + A1m + Z1m + X1m
+    1.0, A1p + Z1m + X1p --> G11m + A1p + Z1m + X1p
+    1.0, A1m + Z1p + X1p --> G11m + A1m + Z1p + X1p
+    1.0, A1p + Z1p + X2p --> G12p + A1p + Z1p + X2p
+    1.0, A1m + Z1m + X2p --> G12p + A1m + Z1m + X2p
+    1.0, A1p + Z1m + X2m --> G12p + A1p + Z1m + X2m
+    1.0, A1m + Z1p + X2m --> G12p + A1m + Z1p + X2m
+    1.0, A1p + Z1p + X2m --> G12m + A1p + Z1p + X2m
+    1.0, A1m + Z1m + X2m --> G12m + A1m + Z1m + X2m
+    1.0, A1p + Z1m + X2p --> G12m + A1p + Z1m + X2p
+    1.0, A1m + Z1p + X2p --> G12m + A1m + Z1p + X2p
+    1.0, A1p + Z1p + X3p --> G13p + A1p + Z1p + X3p
+    1.0, A1m + Z1m + X3p --> G13p + A1m + Z1m + X3p
+    1.0, A1p + Z1m + X3m --> G13p + A1p + Z1m + X3m
+    1.0, A1m + Z1p + X3m --> G13p + A1m + Z1p + X3m
+    1.0, A1p + Z1p + X3m --> G13m + A1p + Z1p + X3m
+    1.0, A1m + Z1m + X3m --> G13m + A1m + Z1m + X3m
+    1.0, A1p + Z1m + X3p --> G13m + A1p + Z1m + X3p
+    1.0, A1m + Z1p + X3p --> G13m + A1m + Z1p + X3p
+    1.0, A2p + Z2p + X1p --> G21p + A2p + Z2p + X1p
+    1.0, A2m + Z2m + X1p --> G21p + A2m + Z2m + X1p
+    1.0, A2p + Z2m + X1m --> G21p + A2p + Z2m + X1m
+    1.0, A2m + Z2p + X1m --> G21p + A2m + Z2p + X1m
+    1.0, A2p + Z2p + X1m --> G21m + A2p + Z2p + X1m
+    1.0, A2m + Z2m + X1m --> G21m + A2m + Z2m + X1m
+    1.0, A2p + Z2m + X1p --> G21m + A2p + Z2m + X1p
+    1.0, A2m + Z2p + X1p --> G21m + A2m + Z2p + X1p
+    1.0, A2p + Z2p + X2p --> G22p + A2p + Z2p + X2p
+    1.0, A2m + Z2m + X2p --> G22p + A2m + Z2m + X2p
+    1.0, A2p + Z2m + X2m --> G22p + A2p + Z2m + X2m
+    1.0, A2m + Z2p + X2m --> G22p + A2m + Z2p + X2m
+    1.0, A2p + Z2p + X2m --> G22m + A2p + Z2p + X2m
+    1.0, A2m + Z2m + X2m --> G22m + A2m + Z2m + X2m
+    1.0, A2p + Z2m + X2p --> G22m + A2p + Z2m + X2p
+    1.0, A2m + Z2p + X2p --> G22m + A2m + Z2p + X2p
+    1.0, A2p + Z2p + X3p --> G23p + A2p + Z2p + X3p
+    1.0, A2m + Z2m + X3p --> G23p + A2m + Z2m + X3p
+    1.0, A2p + Z2m + X3m --> G23p + A2p + Z2m + X3m
+    1.0, A2m + Z2p + X3m --> G23p + A2m + Z2p + X3m
+    1.0, A2p + Z2p + X3m --> G23m + A2p + Z2p + X3m
+    1.0, A2m + Z2m + X3m --> G23m + A2m + Z2m + X3m
+    1.0, A2p + Z2m + X3p --> G23m + A2p + Z2m + X3p
+    1.0, A2m + Z2p + X3p --> G23m + A2m + Z2p + X3p
+    1.0, A3p + Z3p + X1p --> G31p + A3p + Z3p + X1p
+    1.0, A3m + Z3m + X1p --> G31p + A3m + Z3m + X1p
+    1.0, A3p + Z3m + X1m --> G31p + A3p + Z3m + X1m
+    1.0, A3m + Z3p + X1m --> G31p + A3m + Z3p + X1m
+    1.0, A3p + Z3p + X1m --> G31m + A3p + Z3p + X1m
+    1.0, A3m + Z3m + X1m --> G31m + A3m + Z3m + X1m
+    1.0, A3p + Z3m + X1p --> G31m + A3p + Z3m + X1p
+    1.0, A3m + Z3p + X1p --> G31m + A3m + Z3p + X1p
+    1.0, A3p + Z3p + X2p --> G32p + A3p + Z3p + X2p
+    1.0, A3m + Z3m + X2p --> G32p + A3m + Z3m + X2p
+    1.0, A3p + Z3m + X2m --> G32p + A3p + Z3m + X2m
+    1.0, A3m + Z3p + X2m --> G32p + A3m + Z3p + X2m
+    1.0, A3p + Z3p + X2m --> G32m + A3p + Z3p + X2m
+    1.0, A3m + Z3m + X2m --> G32m + A3m + Z3m + X2m
+    1.0, A3p + Z3m + X2p --> G32m + A3p + Z3m + X2p
+    1.0, A3m + Z3p + X2p --> G32m + A3m + Z3p + X2p
+    1.0, A3p + Z3p + X3p --> G33p + A3p + Z3p + X3p
+    1.0, A3m + Z3m + X3p --> G33p + A3m + Z3m + X3p
+    1.0, A3p + Z3m + X3m --> G33p + A3p + Z3m + X3m
+    1.0, A3m + Z3p + X3m --> G33p + A3m + Z3p + X3m
+    1.0, A3p + Z3p + X3m --> G33m + A3p + Z3p + X3m
+    1.0, A3m + Z3m + X3m --> G33m + A3m + Z3m + X3m
+    1.0, A3p + Z3m + X3p --> G33m + A3p + Z3m + X3p
+    1.0, A3m + Z3p + X3p --> G33m + A3m + Z3p + X3p
+
+    # dbg_i/dt = a_i z_i
+    1.0, A1p + Z1p --> V1p + A1p + Z1p
+    1.0, A1m + Z1m --> V1p + A1m + Z1m
+    1.0, A1p + Z1m --> V1m + A1p + Z1m
+    1.0, A1m + Z1p --> V1m + A1m + Z1p
+    1.0, A2p + Z2p --> V2p + A2p + Z2p
+    1.0, A2m + Z2m --> V2p + A2m + Z2m
+    1.0, A2p + Z2m --> V2m + A2p + Z2m
+    1.0, A2m + Z2p --> V2m + A2m + Z2p
+    1.0, A3p + Z3p --> V3p + A3p + Z3p
+    1.0, A3m + Z3m --> V3p + A3m + Z3m
+    1.0, A3p + Z3m --> V3m + A3p + Z3m
+    1.0, A3m + Z3p --> V3m + A3m + Z3p
+    
 end
    
 
@@ -439,6 +456,18 @@ rn_param_update = @reaction_network rn_param_update begin
     k2, G32m --> 0
     k2, G33p --> 0
     k2, G33m --> 0
+    k1, V1p --> B1m
+    k1, V1m --> B1p
+    k1, V2p --> B2m
+    k1, V2m --> B2p
+    k1, V3p --> B3m
+    k1, V3m --> B3p
+    k2, V1p --> 0
+    k2, V1m --> 0
+    k2, V2p --> 0
+    k2, V2m --> 0
+    k2, V3p --> 0
+    k2, V3m --> 0
 end
 
 
@@ -548,22 +577,34 @@ end
 
 
 rn_create_error_species = @reaction_network rn_create_error_species begin
-    1.0, Op + Ym --> Ep + Op + Ym
-    1.0, Om + Yp --> Em + Om + Yp
+    # 1.0, Op + Ym --> Ep + Op + Ym
+    # 1.0, Om + Yp --> Em + Om + Yp
+    10.0, Op --> Ep
+    10.0, Yp --> Em
+    10.0, Om --> Em
+    10.0, Ym --> Ep 
+    100.0, Ep + Em --> 0
 end
 
 
 rn_dual_binary_scalar_mult = @reaction_network rn_dual_binary_scalar_mult begin
-    1.0, Ep + S1p --> P1p + Ep
-    1.0, Ep + S1m --> P1m + Ep
-    1.0, Ep + S2p --> P2p + Ep
-    1.0, Ep + S2m --> P2m + Ep
-    1.0, Ep + S3p --> P3p + Ep 
-    1.0, Ep + S3m --> P3m + Ep 
-    1.0, Em + S1p --> P1m + Em 
-    1.0, Em + S1m --> P1p + Em 
-    1.0, Em + S2p --> P2m + Em 
-    1.0, Em + S2m --> P2p + Em 
-    1.0, Em + S3p --> P3m + Em 
-    1.0, Em + S3m --> P3p + Em 
+    1.0, Ep + S1p --> P1p + Ep + S1p 
+    1.0, Ep + S1m --> P1m + Ep + S1m 
+    1.0, Ep + S2p --> P2p + Ep + S2p
+    1.0, Ep + S2m --> P2m + Ep + S2m
+    1.0, Ep + S3p --> P3p + Ep + S3p
+    1.0, Ep + S3m --> P3m + Ep + S3m
+    1.0, Em + S1p --> P1m + Em + S1p
+    1.0, Em + S1m --> P1p + Em + S1m
+    1.0, Em + S2p --> P2m + Em + S2p
+    1.0, Em + S2m --> P2p + Em + S2m
+    1.0, Em + S3p --> P3m + Em + S3p
+    1.0, Em + S3m --> P3p + Em + S3m
+    1.0, P1p --> 0
+    1.0, P1m --> 0
+    1.0, P2p --> 0
+    1.0, P2m --> 0
+    1.0, P3p --> 0
+    1.0, P3m --> 0
 end
+
