@@ -28,7 +28,7 @@ CLASSES = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
 file = open("/Users/rajiv/Desktop/PhD/RIP/neural-ode/data/iris/iris.data", "r")
 lines = readlines(file)
 
-function create_iris_dataset(feature_indices=[1, 3], classes=["Iris-setosa", "Iris-virginica"], N=100)
+function create_iris_dataset(;feature_indices=[1, 2], classes=["Iris-setosa", "Iris-virginica"], N=100)
     dataset = []
     inputs = Vector{Vector{Float64}}()
     targets = Vector{String}()

@@ -302,7 +302,7 @@ function dissipate_and_annihilate(vars, tspan)
     ss = species(rn_dissipate_reactions)
     u = [vars[_convert_species2var(sp)] for sp in ss]
     p = []
-
+    
     sol = simulate_reaction_network(rn_dissipate_reactions, u, p, tspan=tspan)
     
     for i in eachindex(ss)
@@ -439,7 +439,7 @@ end
 
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0))
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0))
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -650,17 +650,14 @@ function neuralcrn(;DIMS=2)
 
     open("neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
-            train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
-            val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
-            # train = create_annular_rings_dataset(100)
-            # val = create_annular_rings_dataset(40)
+            train_set, val_set = create_iris_dataset(feature_indices=[1, 2], classes=["Iris-setosa", "Iris-virginica"])
 
             params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
             println(params_orig)
 
             
             println("===============================")
-            vars = crn_main(params_orig, train_set, val_set, EPOCHS=6, dims=DIMS, tspan=(0.0, 1.0))
+            vars = crn_main(params_orig, train_set, val_set, EPOCHS=20, dims=DIMS, tspan=(0.0, 1.0), LR=0.01)
             @show calculate_accuracy(val_set, copy(vars), dims=DIMS, threshold=0.5)
         end
     end

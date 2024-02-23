@@ -121,7 +121,7 @@ k2, G21p --> 0
 k2, G21m --> 0
 k2, G22p --> 0
 k2, G22m --> 0
-end k1 k2
+end
 
 rn_final_layer_update = @reaction_network rn_final_layer_update  begin
 k1, M1p --> W1m
@@ -132,7 +132,7 @@ k2, M1p --> 0
 k2, M1m --> 0
 k2, M2p --> 0
 k2, M2m --> 0
-end k1 k2
+end
 
 rn_dissipate_reactions = @reaction_network rn_dissipate_reactions begin
     1.0, G11p --> 0
