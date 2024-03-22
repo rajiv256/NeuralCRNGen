@@ -19,7 +19,7 @@ import pickle as pkl
 import math
 
 from tqdm import tqdm
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -48,7 +48,7 @@ class MyDataset(Dataset):
     def __init__(self, dataset):
         super(MyDataset, self).__init__()
 
-        self.x = [item[0] + [1] for item in dataset] # Augmented dim
+        self.x = [item[0] + [0, 0] for item in dataset] # Augmented dim
         
         self.y = [item[1] for item in dataset]
 
@@ -62,11 +62,11 @@ class MyDataset(Dataset):
 
 
 class NNet(nn.Module):
-    def __init__(self):
+    def __init__(self, threshold=0.5, pos=1.0, neg=0.0):
         super(NNet, self).__init__()
-        self.linear1 = nn.Linear(3, 3)
-        # self.linearm = nn.Linear(3, 3)
-        self.linear2 = nn.Linear(3, 1)
+        self.linear1 = nn.Linear(4, 4)
+        # self.lineararm = nn.Linear(3, 3)
+        self.linear2 = nn.Linear(4, 1)
 
         self.track = {
             'ep_tr_loss': [],
@@ -75,23 +75,23 @@ class NNet(nn.Module):
             'st_tr_loss': [],
             'step': []
         }
+        self.threshold = threshold
+        self.pos = pos
+        self.neg = neg
 
     def _init_weights(self):
         def init(m):
             if type(m) == nn.Linear:
-                m.weight.data.fill_(0.1)
+                m.weight.data.uniform_(0.0, 1.0)
                 m.bias.data.fill_(0.1)
-                # torch.nn.init.xavier_uniform_(m.weight)
-                # m.bias.data.fill_(0.1)
         init(self.linear1)
-        # init(self.linearm)
+        # init(self.lineararm)
         init(self.linear2)
+        self.linear2.bias.data.fill_(0.0)
 
     def forward(self, x):
         x = F.relu(self.linear1(x))
-        print("z", x)
-        # x = x + self.linearm(x)
-        # x = self.linear2(x)
+        print("After first layer: ", x)
         x = self.linear2(x)
         return x
 
@@ -115,11 +115,6 @@ class NNet(nn.Module):
 
         self.train()
         self._init_weights()
-
-        print(self.linear1.weight.data)
-        print(self.linear1.bias.data)
-        print(self.linear2.weight.data)
-        print(self.linear2.bias.data)
         
         # Dataset and dataloader
         dataset_folder = os.path.join(os.getcwd(), 'data', opt.dataset_name)
@@ -140,7 +135,11 @@ class NNet(nn.Module):
 
         step = 0
         pbar = tqdm(range(opt.epochs))
-
+        print(self.linear1.weight.data.flatten())
+        print(self.linear1.bias.data)
+        print(self.linear2.weight.data)
+        print(self.linear2.bias.data)
+        # exit(0)
         for epoch in pbar:
 
             self.train()
@@ -149,30 +148,32 @@ class NNet(nn.Module):
             ep_val_loss = 0.0
             tr_batches = 0
             val_batches = 0
-
+            
             for x, y in train_loader:
-                # print(x, y, x.shape, y.shape)
+                
+                print("input: ", x)
                 if torch.cuda.is_available():
                     x.cuda()
                     y.cuda()
 
-                print("x:",  x)
                 optimizer.zero_grad()
                 output = self(x)
+                print("output: ", output)
                 exit(0)
+
                 loss = torch.sqrt(criterion(output.flatten(), y.flatten()))
                 loss.backward()
+                # print("loss: ", loss)
+                # print("y: ", y)
                 optimizer.step()
                 self.track['step'].append(step)
                 self.track['st_tr_loss'].append(loss.item())
                 step += 1
-
                 ep_tr_loss += loss.item()
                 tr_batches += 1
 
             self.eval()
             val_acc = 0.0
-            
             yhats = []
 
             for x, y in val_loader:
@@ -192,14 +193,14 @@ class NNet(nn.Module):
                 for i in range(len(outputs)):
                     xx = xnumpy[i]
                     b = math.ceil(outputs[i])         
-                    if outputs[i] >= 0 and targets[i] == 1:
+                    if outputs[i] >= self.threshold and targets[i] == self.pos:
                         correct += 1
                        
-                    if outputs[i] < 0 and targets[i] == -1:
+                    if outputs[i] < self.threshold and targets[i] == self.neg:
                         correct += 1
                     yhats.append([xx[0], xx[1], b])
 
-                    print("out, tgt, cor: ", outputs[i], targets[i], correct)
+                    # print("out, tgt, cor: ", outputs[i], targets[i], correct)
                 # print(outputs, targets, correct)
                 val_acc += correct/len(outputs)
 
@@ -219,6 +220,7 @@ class NNet(nn.Module):
 
 if __name__ == "__main__":
 
+
     opt = get_args()
     nnet = NNet()
 
@@ -226,3 +228,6 @@ if __name__ == "__main__":
 
     # Plot epoch train and val loss.
     track = nnet.track
+    ys = track['st_tr_loss']
+    g = plt.plot(ys)
+    plt.savefig("st_tr_loss.png")

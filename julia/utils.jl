@@ -17,7 +17,9 @@ using Catalyst;
 function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, rate_constants)
-    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-6, maxiters=1000)
+    # sol = solve(oprob, Rodas4(autodiff=false), reltol=1e-3, abstol=1e-8, maxiters=1e6)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-8, abstol=1e-8, maxiters=1e6)
+
     return sol
 end
 
@@ -114,18 +116,24 @@ function get_species_array(rn)
 end
 
 
-function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
+function create_node_params(dims; t0=0.0, t1=1.0, h=0.3, precision=10)
     params = []
 
-    push!(params, Float32(dims))
+    push!(params, Float64(dims))
+    # theta = rand(Normal(0.5, 0.1), dims^2)
+    # theta = theta / sqrt(dims)
+    theta = randn(dims^2)
+    # theta = ones(dims^2)*0.5
 
-    theta = rand(Normal(1.0, 0.0), dims^2)
-    # theta = randn(dims^2)
     append!(params, theta)
-    beta = ones(dims)*0.1
+    beta = ones(dims)*(-1.0)
+    # beta = beta / sqrt(dims)
     append!(params, beta)
 
-    w = ones(dims)
+    # w = rand(Normal(0.5, 0.1), dims)
+    # w = w / sqrt(dims)
+    # w = ones(dims)*0.5
+    w = randn(dims)
     append!(params, w)
 
     push!(params, h)
@@ -137,10 +145,10 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 end
 
 # Adds `k` zeroes to the end of the column matrix `u`
-function augment(x, k=1) # Verified!
+function augment(x, k=1; augval=0.1) # Verified!
     ret = copy(x)
     for i in 1:k
-        ret = vcat(ret, 0.0)
+        ret = vcat(ret, augval)  # TODO 
     end
     return ret
 end
