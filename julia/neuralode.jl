@@ -45,9 +45,8 @@ function f(u, xAndp, t)
     x = xAndp[1:LU]
     p = xAndp[LU+1:end]
     dims, theta, beta, w, h, _, _ = sequester_params(p)
-    hvec = [h, h, h]
+    hvec = [h h h h]
     fmat = hvec + (theta * x + beta) .* u - u .* u
-    # fmat = theta*u
     @assert length(fmat) == length(u)
     return fmat
 end
@@ -64,7 +63,7 @@ function forward_node(u0, xAndp, tspan; reltol=1e-4, abstol=1e-6, save_on=false,
     prob = ODEProblem(forward!, u0, tspan, xAndp)
     sol = solve(prob, TRBDF2(autodiff=false), reltol=reltol, abstol=abstol, save_on=save_on, maxiters=maxiters)
     g = plot(sol)
-    png(g, "neuralodefwd.png")
+    # png(g, "neuralodefwd.png")
     return sol
 end
 
@@ -116,6 +115,7 @@ function sequester_backward_variables(s; dims=3)
     gdt = s[offset+1]
     return z, adj, gtheta, gbeta, gdt
 end
+
 
 function aug_dynamics!(du, u, sAndp, t)
 
@@ -202,6 +202,7 @@ function backpropagation_step(s0, p, tspan; dims=3)
     sol = solve(prob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-6, save_on=false, maxiters=1000)
     return sol
 end
+
 
 function training_step(x, y, p; threshold=nothing)
     """
@@ -406,10 +407,10 @@ function node_main(params, train, val; DIMS=3, EPOCHS=20, LR=0.001, threshold=no
             afterplot = scatter3d(getindex.(after, 1), getindex.(after, 2), getindex.(after, 3), group=getindex.(after, 4), title="Validation set | After Kernel Lift")
             yhatplt = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4), title="Validation set | Predictions")
         end
-        png(beforeplt, "images/ode_before.png")
-        png(afterplot, "images/ode_after.png")
-        png(valaccplot, "images/ode_val_accuracies.png")
-        png(yhatplt, "images/ode_yhats.png")
+        # png(beforeplt, "images/ode_before.png")
+        # png(afterplot, "images/ode_after.png")
+        # png(valaccplot, "images/ode_val_accuracies.png")
+        # png(yhatplt, "images/ode_yhats.png")
         next!(p)
 
     end

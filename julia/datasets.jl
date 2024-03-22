@@ -143,19 +143,114 @@ function create_annular_rings_dataset(n; lub=0.04, lb=0.3, mb=0.8, ub=1.0)
     return dataset
 end
 
-# # This part has to be changed into a function call 
-N = 150
-# Nval = 20
-rings_train_dataset = create_annular_rings_dataset(N)
-# rings_val_dataset = create_annular_rings_dataset!(Nval, 1.0)
 
-# tanh_train_dataset = create_dataset!(N, mytanh)
-# tanh_val_dataset = create_dataset!(Nval, mytanh)
-# print(tanh_train_dataset[1])
+function create_xor_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+    # xor_dataset = create_xor_dataset(100)
 
-# linear_class_train_dataset = create_linearly_separable_dataset!(N, linear, threshold=0.0)
-# linear_class_val_dataset = create_linearly_separable_dataset!(Nval, linear, threshold=0.0)
+    # g = scatter!(getindex.(xor_dataset, 1), getindex.(xor_dataset, 2), group=getindex.(xor_dataset, 3))
+    # png(g, "julia/images/xor_dataset.png")
+    dataset = []
+    uniform = Uniform(0, 1)
 
+    while length(dataset) <= n÷2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+        
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary ⊻ x2binary)
+        if y == 0.0
+            push!(dataset, [x1 x2 neg])    
+        end
+    end
+
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+        
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary ⊻ x2binary)
+        if y == 1.0
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
+
+
+function create_and_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+    # xor_dataset = create_xor_dataset(100)
+
+    # g = scatter!(getindex.(xor_dataset, 1), getindex.(xor_dataset, 2), group=getindex.(xor_dataset, 3))
+    # png(g, "julia/images/xor_dataset.png")
+    dataset = []
+    uniform = Uniform(0, 1)
+
+    while length(dataset) <= n ÷ 2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary & x2binary)
+        if y == 0.0
+            push!(dataset, [x1 x2 neg])
+        end
+    end
+
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary & x2binary)
+        if y == 1.0
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
+
+
+function create_logistic_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+    
+    dataset = []
+    uniform = Uniform(0, 1)
+    theta = randn(4)
+    theta = reshape(theta, (2, 2))
+
+    while length(dataset) <= n ÷ 2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        if x2 <= x1^2
+            push!(dataset, [x1 x2 neg])
+        end
+    end
+
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        if x2 > x1^2
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
+        
 
 # Create a random matrix
 function create_random_2D(r, c)
@@ -164,5 +259,3 @@ function create_random_2D(r, c)
     return mat
 end
 
-plt = scatter(getindex.(rings_train_dataset, 1), getindex.(rings_train_dataset, 2), group=getindex.(rings_train_dataset, 3))
-png(plt, "annular_rings.png")
