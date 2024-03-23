@@ -191,65 +191,79 @@ function crn_create_error_species(vars)
 end
 
 
-function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0)
+function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0, augval=augval)
     aug_x = []
     reg_x = []
     yhats = []
+    markers = []
 
     for i in eachindex(dataset)
         x, y = get_one(dataset, i)
 
-        x = augment(x, dims - length(x))
-        yvec = [y 1 - y]
+        x = augment(x, dims - length(x), augval=augval)
+  
         for zi in eachindex(x)
             d = _index1Dvar("Z", zi, x[zi], dims=dims)
             for (k, v) in d
                 varscopy[k] = v
             end
         end
-        varscopy["Yp"] = yvec[1]
-        varscopy["Ym"] = yvec[2]
+        for zi in eachindex(x)
+            d = _index1Dvar("X", zi, x[zi], dims=dims)
+            for (k, v) in d
+                varscopy[k] = v
+            end
+        end
+        varscopy["Yp"] = y
+        varscopy["Ym"] = 0.0
         elem = []
         append!(elem, x)
         push!(elem, y)
         push!(reg_x, elem)
         
-        crn_dual_node_fwd(rn_dual_node_relu_fwd, varscopy, tspan=(0.0, 1.0))
-
+        crn_dual_node_fwd(rn_dual_node_relu_fwd, varscopy, tspan=tspan)
+    
         yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
         @show yhat, yhat[1] - yhat[2]
         varscopy["Op"] = yhat[1]
         varscopy["Om"] = yhat[2]
         
-        if yhat[1]-yhat[2] >= threshold
-            exp = 1.0
-        else
-            exp = 0.0
+        output = 0.0
+        if varscopy["Op"]-varscopy["Om"] > threshold
+            output = 1.0
         end
-        temp = []
-        append!(temp, x)
-        push!(temp, exp)
-        push!(yhats, temp)
-
         push!(
             aug_x, [
                 varscopy["Z1p"] - varscopy["Z1m"],
                 varscopy["Z2p"] - varscopy["Z2m"],
                 varscopy["Z3p"] - varscopy["Z3m"],
-                yvec[1] - yvec[2]
+                output
             ]
         )
+        
+        if y == 0.0
+            push!(markers, :circ)
+        else
+            push!(markers, :rect)
+        end
+
+        temp = []
+        append!(temp, x)
+        push!(temp, output)
+        push!(yhats, temp)
+
+        
     end
     plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
-    plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4))
-    png(plt_state1, "crn_before_aug.png")
-    png(plt_state2, "crn_after_aug.png")
-    pltyhats = scatter3d(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 3), group=getindex.(yhats, 4))
-    png(pltyhats, "crn_yhats.png")
+    plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4), markershape=markers) # Color: based on output, shape based on target label. 
+    png(plt_state1, "julia/images/crn_before_aug.png")
+    png(plt_state2, "julia/images/crn_after_aug.png")
+    pltyhats = scatter(getindex.(yhats, 1), getindex.(yhats, 2), group=getindex.(yhats, 4))
+    png(pltyhats, "julia/images/crn_yhats.png")
 end
 
 
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect])
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0)
     acc = 0
     preds2d = []
     for i in 1:length(dataset)
@@ -258,7 +272,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
         temp = []
         append!(temp, x)
 
-        x = augment(x, dims - length(x))
+        x = augment(x, dims - length(x), augval=augval)
 
         for zi in eachindex(x)
             d = _index1Dvar("Z", zi, x[zi], dims=dims)
@@ -301,7 +315,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
     # plot()
     # Colors (index = 4) represent the original class the data point belongs to
     # Shapes (index = 3) represent the predicted class of the data point 
-    sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3))
+    sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3)) # output is the label
     png(sca, "julia/images/crn_accuracy_plot.png")
     println("Accuracy: $(acc/length(dataset))")
     return acc/length(dataset)
@@ -368,7 +382,7 @@ function crn_dual_backprop(rn, vars, tspan; bias=0.01, reltol=1e-4, abstol=1e-6,
     u = [vars[_convert_species2var(sp)] for sp in ss]
     @assert length(u) == length(ss)
     p = []
-    sol = simulate_reaction_network(rn, u, p, tspan=tspan, reltol=reltol, abstol=abstol) # CHECK
+    sol = simulate_reaction_network(rn, u, p, tspan=tspan) # TODO: CHECK
     for i in eachindex(ss)
         vars[_convert_species2var(ss[i])] = sol[end][i]
     end
@@ -423,7 +437,7 @@ function crn_dot(vars, subA, subB; max_val=40.0, reltol=1e-8, abstol=1e-8, defau
 
     # solve the ODE
     p = []
-    sol = simulate_reaction_network(rn_dual_dot, u, p, tspan=(0.0, max_val), reltol=reltol, abstol=abstol)
+    sol = simulate_reaction_network(rn_dual_dot, u, p, tspan=(0.0, max_val))
 
     # Collect the outputs
     yp = sol[end][get_index_of("Yp", dotss)]
@@ -439,7 +453,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
     u = [vars[_convert_species2var(sp)] for sp in ss]
     p = []
     
-    sol = simulate_reaction_network(rn, u, p, tspan=tspan, reltol=reltol, abstol=abstol, save_on=save_on, maxiters=maxiters)
+    sol = simulate_reaction_network(rn, u, p, tspan=tspan)
     # for i in eachindex(u)
     #     println(ss[i], " => ", sol[end][i])
     # end
@@ -453,7 +467,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0)
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -534,25 +548,25 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             println("\n\n========= EPOCH: $epoch | i: $i ===========")
             
             x, y = get_one(train, i)
-            x = augment(x, dims-length(x))
+            x = augment(x, dims-length(x), augval=augval)
 
             println("ODE | Ideal ReLU | ", relu.(theta*x + beta))
             
-            # gradients: tuple, node_params: usual params vector
-            odez, odeyhat, odeloss, odegradients, node_params = one_step_node(x, y, node_params, LR, dims=dims, threshold=threshold)
-            println("ODE | node_params after update | ", node_params)   
-            println("ODE | odez | ", odez)
-            println("ODE | odeyhat | ", odeyhat)
-            println("ODE | odeloss | ", odeloss)     
-            _, _, odethetagrads, odebetagrads, odewgrads, odegdt = odegradients
-            println("ODE | odewgrads in crn_main | ", odewgrads)
-            println("ODE | odethetagrads in crn_main | ", odethetagrads)
-            println("ODE | odebetagrads in crn_main | ", odebetagrads)
+            # # gradients: tuple, node_params: usual params vector
+            # odez, odeyhat, odeloss, odegradients, node_params = one_step_node(x, y, node_params, LR, dims=dims, threshold=threshold)
+            # println("ODE | node_params after update | ", node_params)   
+            # println("ODE | odez | ", odez)
+            # println("ODE | odeyhat | ", odeyhat)
+            # println("ODE | odeloss | ", odeloss)     
+            # _, _, odethetagrads, odebetagrads, odewgrads, odegdt = odegradients
+            # println("ODE | odewgrads in crn_main | ", odewgrads)
+            # println("ODE | odethetagrads in crn_main | ", odethetagrads)
+            # println("ODE | odebetagrads in crn_main | ", odebetagrads)
             
-            _, node_theta, node_beta, node_w, _, _, _ = sequester_params(node_params)
-            println("ODE | node_theta | ", reshape(node_theta, (dims, dims)))
-            println("ODE | node_beta in crn_main | ", node_beta)
-            println("ODE | node_w in crn_main | ", node_w)
+            # _, node_theta, node_beta, node_w, _, _, _ = sequester_params(node_params)
+            # println("ODE | node_theta | ", reshape(node_theta, (dims, dims)))
+            # println("ODE | node_beta in crn_main | ", node_beta)
+            # println("ODE | node_w in crn_main | ", node_w)
 
             println("-------------------- CRN ---------------------")
             @show x, y
@@ -645,16 +659,23 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
         end
         tr_epoch_loss /= length(train)
-        push!(tr_losses, tr_epoch_loss)
-
-        ###################################################
-        ################## VALIDATION #####################
+        
+        @show epoch, tr_epoch_loss
+        ##################################################
+        ################# VALIDATION #####################
         val_epoch_loss = 0.0
         val_acc = 0.0
+        
+        if epoch % 10 != 0
+            continue
+        end
+        
+
+
         for i in eachindex(val)
             println("=========VAL EPOCH: $epoch | ITERATION: $i ===========")
             x, y = get_one(val, i)
-            x = augment(x, dims - length(x))
+            x = augment(x, dims - length(x), augval=augval)
 
             # Working with classes 0.0 and 1.0
             vars["Yp"] = y
@@ -718,46 +739,18 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
         val_epoch_loss /= length(val)
         push!(val_losses, val_epoch_loss)
-
+        push!(tr_losses, tr_epoch_loss)
         val_acc /= length(val)
         @show epoch, val_acc
         crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
-        png(crn_losses_plt, "crn_train_lossplts.png")
-
-        # @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=0.5)
+        png(crn_losses_plt, "julia/images/crn_train_lossplts.png")
+        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval)
+        @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval)
 
         
     end
     return vars    
 end
-
-# len = length(verify_approx_relu)
-# xs = range(1, len)
-# for plt_index in eachindex(range(1, 3))
-
-#     reluys = []
-#     crnys = []
-#     odeys = []
-#     for yindex in range(1, len)
-#         push!(reluys, verify_approx_relu[yindex][plt_index])
-#         push!(crnys, verify_neuralcrn[yindex][plt_index])
-#         push!(odeys, verify_neuralode[yindex][plt_index])
-#     end
-#     ggi = plot([xs, xs], [odeys, crnys], label=["neuralode" "neuralcrn"])
-#     png(ggi, "verify_approx_$(plt_index).png")
-# end
-
-# len = length(verify_loss_crn)
-# xs = range(1, len)
-# gg = plot([xs, xs], [verify_loss_ode, verify_loss_crn], label=["ode_loss" "crn_loss"])
-# png(gg, "verify_loss.png")
-# gg = plot([xs, xs], [verify_wgrads_ode, verify_wgrads_crn], label=["ode_wgrads" "crn_wgrads"])
-# png(gg, "images/verify_wgrads_$(verify_index).png")
-# gg = plot([xs, xs], [verify_bgrads_ode, verify_bgrads_crn], label=["ode_bgrads" "crn_bgrads"])
-# png(gg, "images/verify_bgrads_$(verify_index).png")
-#         # Parameter tracking 
-#         p_plot = plot([ode_p_plot, crn_p_plot], label=["ode" "crn"])
-# #         png(p_plot, "julia/images/tracking/p.png")
 
 function neuralcrn(;DIMS=3)
 
@@ -765,16 +758,36 @@ function neuralcrn(;DIMS=3)
         redirect_stdout(fileio) do 
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
-            train = create_annular_rings_dataset(100)
-            val = create_annular_rings_dataset(200)
+            # train = create_annular_rings_dataset(100)
+            # val = create_annular_rings_dataset(200)
+            train = create_xor_dataset(100)
+            # train = create_and_dataset(100)
+            # val = create_xor_dataset(200)
+            val = []
+            for i in range(0, 100, 20)
+                for j in range(0, 100, 20)
+                    x1 = i/100
+                    x2 = j/100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b ⊻ x2b)
+                    push!(val, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(val)
+
             t0 = 0.0
             t1 = 0.6
+            AUGVAL = 1.0
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
+            # params_orig = [3.0, 0.2697779992819037, 2.026282606542241, -1.0067229829617201, -0.1700254396853754, 0.5966524995837073, -0.14944691903686885, -0.84292623916242, -0.6706454093792844, -1.4894152648053163, 0.1, 0.1, 0.1, 0.24786196828161378, -1.097383662372927, 1.4350793439863558, 0.3, 0.0, 0.6]
+            
+            @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=50, dims=DIMS, LR=0.1, tspan=tspan)
-            @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5)
+            vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
+            @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
 end
