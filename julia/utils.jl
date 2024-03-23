@@ -17,7 +17,7 @@ using Catalyst;
 function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, rate_constants)
-    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-6, maxiters=1000)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-8, maxiters=1e7)
     return sol
 end
 
@@ -119,28 +119,30 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 
     push!(params, Float32(dims))
 
-    theta = rand(Normal(1.0, 0.0), dims^2)
-    # theta = randn(dims^2)
+    theta = rand(Normal(0.0, 2.0), dims^2)
+    theta = theta/sqrt(dims)
+
     append!(params, theta)
-    beta = ones(dims)*0.1
+    beta = ones(dims)*0.1 
     append!(params, beta)
 
-    w = ones(dims)
+    w = rand(Normal(0.0, 2.0), dims)
+    w = w/sqrt(dims)
     append!(params, w)
 
     push!(params, h)
 
     push!(params, t0)
     push!(params, t1)
-
+    
     return params
 end
 
 # Adds `k` zeroes to the end of the column matrix `u`
-function augment(x, k=1) # Verified!
+function augment(x, k; augval=1.0) # Verified!
     ret = copy(x)
     for i in 1:k
-        ret = vcat(ret, 0.0)
+        ret = vcat(ret, augval)
     end
     return ret
 end
