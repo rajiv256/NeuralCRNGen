@@ -18,7 +18,7 @@ function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, rate_constants)
     # sol = solve(oprob, Rodas4(autodiff=false), reltol=1e-3, abstol=1e-8, maxiters=1e6)
-    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-2, abstol=1e-6)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-6, maxiters=1e4)
 
     return sol
 end
@@ -123,7 +123,8 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.3, precision=10)
     # theta = rand(Normal(0.5, 0.1), dims^2)
     # theta = theta / sqrt(dims)
     # theta = randn(dims^2)
-    theta = ones(dims^2)*0.8
+    theta = rand(Normal(0, 1.0), dims^2)
+    theta = theta/sqrt(dims)
 
     append!(params, theta)
     beta = ones(dims)*0.1
@@ -132,8 +133,9 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.3, precision=10)
 
     # w = rand(Normal(0.5, 0.1), dims)
     # w = w / sqrt(dims)
-    w = ones(dims)*0.8
-    # w = randn(dims)
+    w = rand(Normal(0.0, 1.0), dims)
+    w = w/sqrt(dims)
+
     append!(params, w)
 
     push!(params, h)

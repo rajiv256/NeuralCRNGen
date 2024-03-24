@@ -372,7 +372,7 @@ function crn_dual_backprop(rn, vars, tspan; bias=0.01, reltol=1e-4, abstol=1e-6,
     u = [vars[_convert_species2var(sp)] for sp in ss]
     @assert length(u) == length(ss)
     p = []
-    sol = simulate_reaction_network(rn, u, p, tspan=tspan, reltol=reltol, abstol=abstol) # CHECK
+    sol = simulate_reaction_network(rn, u, p, tspan=tspan)
     for i in eachindex(ss)
         vars[_convert_species2var(ss[i])] = sol[end][i]
     end
@@ -441,7 +441,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
     u = [vars[_convert_species2var(sp)] for sp in ss]
     p = []
     
-    sol = simulate_reaction_network(rn, u, p, tspan=tspan, reltol=reltol, abstol=abstol, save_on=save_on)
+    sol = simulate_reaction_network(rn, u, p, tspan=tspan, save_on=save_on)
     
     for i in eachindex(ss)
         if startswith(string(ss[i]), "Z")
@@ -556,9 +556,9 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             end
 
             println("---- y : ", y)
-            # _print_vars(vars, "Y", title="CRN | Y at t=T")
-            # _print_vars(vars, "Z", title="CRN | z at t=0")
-            # _print_vars(vars, "H", title="CRN | h at t=0")
+            _print_vars(vars, "Y", title="CRN | Y at t=T")
+            _print_vars(vars, "Z", title="CRN | z at t=0")
+            _print_vars(vars, "H", title="CRN | h at t=0")
 
             # Forward stage
             crn_dual_node_fwd(rn_dual_node_relu_fwd, vars, tspan=tspan)
@@ -575,8 +575,8 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 vars["Om"] = 0.0
             end
 
-            # _print_vars(vars, "O", title="CRN | O at t=T") 
-            # _print_vars(vars, "Y", title="CRN | Y at t=T")
+            _print_vars(vars, "O", title="CRN | O at t=T") 
+            _print_vars(vars, "Y", title="CRN | Y at t=T")
 
             # Assigns the vars[Ep] and vars[Em] variables
             crn_create_error_species(vars)
@@ -594,7 +594,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             
             #--------------- BACKPROPAGATION BEGIN ----------------#
             
-            println("-------BEFORE BACKPROP-------")
+            println("-------BACKPROP-------")
             
             # Backpropagate and calculate parameter gradients 
             crn_dual_backprop(rn_dual_node_relu_bwd, vars, tspan)
@@ -605,10 +605,10 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                     vars[k] = min(vars[k], CLIPGRAD)
                 end
             end
-            # _print_vars(vars, "Z", title="CRN | Z after backprop at t=0 | ")
-            # _print_vars(vars, "A", title="CRN | A at t=0")
+            _print_vars(vars, "Z", title="CRN | Z after backprop at t=0 | ")
+            _print_vars(vars, "A", title="CRN | A at t=0")
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
-            # _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
+            _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
 
             # Tracking parameters
             for (k, v) in vars
@@ -621,8 +621,8 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
             # Update the parameters
             crn_param_update(rn_param_update, vars, LR, (0.0, 40.0))
-            # _print_vars(vars, "P", title="CRN | params after update |")
-            # _print_vars(vars, "B", title="CRN | beta after update |")
+            _print_vars(vars, "P", title="CRN | params after update |")
+            _print_vars(vars, "B", title="CRN | beta after update |")
 
 
 
@@ -761,40 +761,40 @@ end
 
 function neuralcrn(;DIMS=4)
 
-    open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
-        redirect_stdout(fileio) do 
-        POS = 1.0
-        NEG = 0.0
-        THRESHOLD = 0.5
-        train = create_and_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
-        # val = create_and_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
+    # open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
+    #     redirect_stdout(fileio) do 
+    POS = 1.0
+    NEG = 0.0
+    THRESHOLD = 0.5
+    train = create_and_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
+    # val = create_and_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
 
-        # train = create_logistic_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
-        # val = create_logistic_dataset(200, pos=POS, neg=NEG, threshold=THRESHOLD)
-    
-        val = []
-        for i in range(0, 100, 20)
-            for j in range(0, 100, 20)
-                x1 = i / 100
-                x2 = j / 100
-                x1b = Bool(floor(x1 + 0.5))
-                x2b = Bool(floor(x2 + 0.5))
-                y = Float32(x1b & x2b)
-                push!(val, [x1 x2 y])
-            end
-        end
-        Random.shuffle!(val)
+    # train = create_logistic_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
+    # val = create_logistic_dataset(200, pos=POS, neg=NEG, threshold=THRESHOLD)
 
-        t0 = 0.0
-        t1 = 0.6
-        tspan = (t0, t1)
-        params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
-        params_orig_copy = copy(params_orig)
-        # @show params_orig_copy
-        println("===============================", params_orig)
-        vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.05, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD, CLIPGRAD=20.0, augval=1.0)
+    val = []
+    for i in range(0, 100, 20)
+        for j in range(0, 100, 20)
+            x1 = i / 100
+            x2 = j / 100
+            x1b = Bool(floor(x1 + 0.5))
+            x2b = Bool(floor(x2 + 0.5))
+            y = Float32(x1b & x2b)
+            push!(val, [x1 x2 y])
         end
     end
+    Random.shuffle!(val)
+
+    t0 = 0.0
+    t1 = 0.4
+    tspan = (t0, t1)
+    params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
+    params_orig_copy = copy(params_orig)
+    # @show params_orig_copy
+    println("===============================", params_orig)
+    vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD, CLIPGRAD=20.0, augval=0.8)
+    #     end
+    # end
 
 end
 
