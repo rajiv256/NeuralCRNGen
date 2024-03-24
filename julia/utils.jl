@@ -17,7 +17,7 @@ using Catalyst;
 function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, rate_constants)
-    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-8, maxiters=1e7)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-8, maxiters=1e4)
     return sol
 end
 
@@ -128,6 +128,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 
     w = rand(Normal(0.0, 2.0), dims)
     w = w/sqrt(dims)
+    # w = ones(dims)
     append!(params, w)
 
     push!(params, h)

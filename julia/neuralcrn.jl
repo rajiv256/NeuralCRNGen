@@ -467,7 +467,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0, pos=1.0, neg=0.0)
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -597,10 +597,22 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             
             # Calculate yhat
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
+            yhatval = yhat[1] - yhat[2]
             @show yhat, yhat[1]-yhat[2]
+            if yhatval >= pos
+                yhatval = pos
+            end
+            if yhatval <= neg
+                yhatval = neg 
+            end
             
-            vars["Op"] = max(0, yhat[1] - yhat[2])
-            vars["Om"] = max(0, yhat[2] - yhat[1])
+            if yhatval > 0.0
+                vars["Op"] = yhatval 
+                vars["Om"] = 0.0
+            else 
+                vars["Op"] = 0.0
+                vars["Om"] = -yhatval
+            end
             _print_vars(vars, "O", title="CRN | O at t=T") 
             _print_vars(vars, "Y", title="CRN | Y at t=T")
 
@@ -667,7 +679,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         val_acc = 0.0
         
         # Validate every..20 steps
-        if epoch % 20 != 0
+        if epoch % 10 != 1
             continue
         end
         
@@ -713,8 +725,25 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 val_acc += 1
             end
 
-            vars["Op"] = max(0, yhat[1] - yhat[2])
-            vars["Om"] = max(0, yhat[2] - yhat[1])
+            yhatval = yhat[1] - yhat[2]
+            @show yhat, yhat[1] - yhat[2]
+            if yhatval >= pos
+                yhatval = pos
+            end
+            if yhatval <= neg
+                yhatval = neg
+            end
+
+            if yhatval > 0.0
+                vars["Op"] = yhatval
+                vars["Om"] = 0.0
+            else
+                vars["Op"] = 0.0
+                vars["Om"] = -yhatval
+            end
+
+            # vars["Op"] = max(0, yhat[1] - yhat[2])
+            # vars["Om"] = max(0, yhat[2] - yhat[1])
             _print_vars(vars, "O", title="CRN | O at t=T")
             _print_vars(vars, "Y", title="CRN | Y at t=T")
             crn_create_error_species(vars)
@@ -757,16 +786,21 @@ function neuralcrn(;DIMS=3)
 
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
+            POS = 1.0
+            NEG = 0.0
+            THRESHOLD = 0.5
+            AUGVAL = 1.0
+
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
             # train = create_annular_rings_dataset(100)
             # val = create_annular_rings_dataset(200)
             # train = create_xor_dataset(100)
-            train = create_and_dataset(100)
-            # val = create_xor_dataset(200)
+            train = create_or_dataset(100)
+            # val = create_and_dataset(400)
             val = []
-            for i in range(0, 100, 20)
-                for j in range(0, 100, 20)
+            for i in range(0, 100, 15)
+                for j in range(0, 100, 15)
                     x1 = i/100
                     x2 = j/100
                     x1b = Bool(floor(x1 + 0.5))
@@ -778,8 +812,7 @@ function neuralcrn(;DIMS=3)
             Random.shuffle!(val)
 
             t0 = 0.0
-            t1 = 1.0
-            AUGVAL = 1.0
+            t1 = 0.6
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
             # params_orig = [3.0, 0.2697779992819037, 2.026282606542241, -1.0067229829617201, -0.1700254396853754, 0.5966524995837073, -0.14944691903686885, -0.84292623916242, -0.6706454093792844, -1.4894152648053163, 0.1, 0.1, 0.1, 0.24786196828161378, -1.097383662372927, 1.4350793439863558, 0.3, 0.0, 0.6]
@@ -787,7 +820,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
+            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, pos=POS, neg=NEG, threshold=THRESHOLD)
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
