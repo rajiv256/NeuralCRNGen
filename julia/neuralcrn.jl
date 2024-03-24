@@ -240,7 +240,7 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
                 output
             ]
         )
-        
+
         if y == 0.0
             push!(markers, :circ)
         else
@@ -666,7 +666,8 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         val_epoch_loss = 0.0
         val_acc = 0.0
         
-        if epoch % 10 != 0
+        # Validate every..20 steps
+        if epoch % 20 != 0
             continue
         end
         
@@ -760,8 +761,8 @@ function neuralcrn(;DIMS=3)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
             # train = create_annular_rings_dataset(100)
             # val = create_annular_rings_dataset(200)
-            train = create_xor_dataset(100)
-            # train = create_and_dataset(100)
+            # train = create_xor_dataset(100)
+            train = create_and_dataset(100)
             # val = create_xor_dataset(200)
             val = []
             for i in range(0, 100, 20)
@@ -770,14 +771,14 @@ function neuralcrn(;DIMS=3)
                     x2 = j/100
                     x1b = Bool(floor(x1 + 0.5))
                     x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b ⊻ x2b)
+                    y = Float32(x1b & x2b)
                     push!(val, [x1 x2 y])
                 end
             end
             Random.shuffle!(val)
 
             t0 = 0.0
-            t1 = 0.6
+            t1 = 1.0
             AUGVAL = 1.0
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
@@ -786,7 +787,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
+            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
