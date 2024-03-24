@@ -184,10 +184,6 @@ end
 
 
 function create_and_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
-    # xor_dataset = create_xor_dataset(100)
-
-    # g = scatter!(getindex.(xor_dataset, 1), getindex.(xor_dataset, 2), group=getindex.(xor_dataset, 3))
-    # png(g, "julia/images/xor_dataset.png")
     dataset = []
     uniform = Uniform(0, 1)
 
