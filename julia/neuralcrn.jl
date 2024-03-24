@@ -805,7 +805,7 @@ function neuralcrn(;DIMS=3)
                     x2 = j/100
                     x1b = Bool(floor(x1 + 0.5))
                     x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b & x2b)
+                    y = Float32(x1b | x2b)
                     push!(val, [x1 x2 y])
                 end
             end
