@@ -797,7 +797,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             # println("===============================")
-            vars = crn_main(params_orig, train, train, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, pos=POS, neg=NEG, threshold=THRESHOLD)
+            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, pos=POS, neg=NEG, threshold=THRESHOLD)
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
