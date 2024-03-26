@@ -47,18 +47,17 @@ def print_gradient_update_crn(
 
 
 if __name__ == '__main__':
-    D = 3  # TODO: INPUT
+    D = 10  # TODO: INPUT
     
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
-    zrow = [Scalar(name=f'z{i}') for i in range(1, 4) for j in range(3)]
-    for i in zrow:
-        print(i)
+    zrow = [Scalar(name=f'z{i}') for i in range(D) for j in range(D)]
     zspecial = ode.Matrix2D(dims=[D, D], data=zrow)
     zmat = zspecial.matrix()
-    # z = ode.Matrix2D(symbol='z', dims=[D, 1])
+
     x = ode.Matrix2D(symbol='x', dims=[D, 1])
     p = ode.Matrix2D(symbol='p', dims=[D, D])
     pmat = p.matrix()
+
     pz = utils.np_hadamard_scalar_matrices_2d(pmat, zmat)
     pzmat = ode.Matrix2D(data=pz.tolist(), dims=[D, D])
     a = ode.Matrix2D(symbol='a', dims=[D, 1])
