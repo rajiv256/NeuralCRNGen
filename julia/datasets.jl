@@ -25,10 +25,24 @@ function mytanh(x1, x2)
 end
 
 CLASSES = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
-file = open("/Users/rajiv/Desktop/PhD/RIP/neural-ode/data/iris/iris.data", "r")
+file = open("data/iris/iris.data", "r")
 lines = readlines(file)
 
-function create_iris_dataset(feature_indices=[1, 3], classes=["Iris-setosa", "Iris-virginica"], N=100)
+"""
+ Number of Instances: 150 (50 in each of three classes)
+6. Number of Attributes: 4 numeric, predictive attributes and the class
+7. Attribute Information:
+   1. sepal length in cm
+   2. sepal width in cm
+   3. petal length in cm
+   4. petal width in cm
+   5. class: 
+      -- Iris Setosa
+      -- Iris Versicolour
+      -- Iris Virginica
+"""
+
+function create_iris_dataset(;feature_indices=[1, 3], classes=["Iris-setosa", "Iris-virginica"], N=100)
     dataset = []
     inputs = Vector{Vector{Float64}}()
     targets = Vector{String}()
@@ -49,29 +63,32 @@ function create_iris_dataset(feature_indices=[1, 3], classes=["Iris-setosa", "Ir
     for (input, target) in zip(inputs, targets)
         data_item = Vector{Float64}()
         append!(data_item, input)
-        if target == "Iris-setosa"
+        println(target)
+        if target == "Iris-versicolor"
             push!(data_item, 0.0)
         end
         if target == "Iris-virginica"
             push!(data_item, 1.0)
         end
-        data_item = reshape(data_item, (length(data_item), 1))
+        # data_item = reshape(data_item, (length(data_item), 1))
         push!(iris_dataset, data_item)
     end
     Random.shuffle!(iris_dataset)
     # To be used for training
 
-    iris_train_dataset, iris_val_dataset = train_val_split(iris_dataset)
+    # iris_train_dataset, iris_val_dataset = train_val_split(iris_dataset)
+    iris_train_dataset = iris_dataset[1:Int32(0.8*length(iris_dataset))]
+    iris_val_dataset = iris_dataset[Int32(0.8 * length(iris_dataset))+1:end]
 
-    return iris_train_dataset, iris_val_dataset, iris_val_dataset
+    return iris_train_dataset, iris_val_dataset
 end
 
 
 function plot_iris_dataset(dataset=[])
     plot()
-    for data in dataset
-        scatter!(data)
-    end
+    gg = nothing 
+    gg = scatter!(getindex.(dataset, 1), getindex.(dataset, 2), group=getindex.(dataset, 3))
+    return gg
 end
 
 
@@ -238,3 +255,12 @@ end
 
 # plt = scatter(getindex.(rings_train_dataset, 1), getindex.(rings_train_dataset, 2), group=getindex.(rings_train_dataset, 3))
 # png(plt, "annular_rings.png")
+
+
+train, val = create_iris_dataset(feature_indices=[1, 3])
+# println(train)
+trplt = plot_iris_dataset(train)
+valplt = plot_iris_dataset(val)
+
+png(trplt, "images/iris_train.png")
+png(valplt, "images/iris_val.png")
