@@ -32,9 +32,9 @@ class Matrix2D:
         # If the matrix is a column vector, then give it just the indices and
         # no cartesian product is required.
         if self.dims[-1] == 1:
-            indices = [str(i) for i in range(1, 1+self.dims[0])]
+            indices = [str(i) for i in range(self.dims[0])]
         else:
-            indices = [list(range(1, d + 1)) for d in self.dims]
+            indices = [list(range(d)) for d in self.dims]
             indices = itertools.product(*indices)
             indices = [utils.tuple_to_string(t) for t in indices]
         scalars = np.array(
@@ -98,7 +98,7 @@ class Matrix2D:
 
 
     
-
+    
 def transpose_matrix(mat):
     matT = Matrix2D(
         symbol=mat.symbol + "T", dims=list(reversed(mat.dims)),

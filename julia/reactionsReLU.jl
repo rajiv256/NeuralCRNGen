@@ -405,18 +405,6 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, A3m + Z3p --> V3m + A3m + Z3p
     
 end
-   
-
-rn_dual_mult = @reaction_network rn_dual_mult begin
-    1.0, A1p + B1p --> Yp + A1p + B1p
-    1.0, A1m + B1m --> Yp + A1m + B1m
-    1.0, A1p + B1m --> Ym + A1p + B1m
-    1.0, A1m + B1p --> Ym + A1m + B1p
-    1.0, A2p + B2p --> Yp + A2p + B2p
-    1.0, A2m + B2m --> Yp + A2m + B2m
-    1.0, A2p + B2m --> Ym + A2p + B2m
-    1.0, A2m + B2p --> Ym + A2m + B2p
-end
 
 
 rn_param_update = @reaction_network rn_param_update begin
