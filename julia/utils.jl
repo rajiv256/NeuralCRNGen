@@ -114,19 +114,19 @@ function get_species_array(rn)
 end
 
 
-function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10, NUM_CLASSES=3)
+function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10, num_classes=3)
     params = []
 
     push!(params, Float32(dims))
 
-    theta = rand(Normal(0.0, 0.2), dims^2)
+    theta = rand(Normal(0.0, 2.0), dims^2)
     theta = theta/sqrt(dims)
 
     append!(params, theta)
     beta = ones(dims)*0.1 
     append!(params, beta)
 
-    w = rand(Normal(0.0, 0.2), dims*NUM_CLASSES)
+    w = rand(Normal(0.0, 2.0), dims*num_classes)
     w = w/sqrt(dims)
     append!(params, w)
 
@@ -135,10 +135,6 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10, NUM_CLASS
     push!(params, t0)
     push!(params, t1)
 
-    for i in eachindex(params)
-        params[i] = abs(params[i])
-    end
-    
     return params
 end
 

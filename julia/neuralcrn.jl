@@ -18,6 +18,7 @@ using NNlib;
 using IJulia;
 using ProgressMeter;
 using Distributions;
+using Serialization;
 
 include("datasets.jl")
 include("utils.jl")
@@ -505,8 +506,43 @@ function crn_adjoint_calculate(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1
 end
 
 
+function normalize_dataset(dataset; trainmaxs=nothing, trainmins=nothing)
+    x, y = dataset[1]
+    XSZ = length(x)
+    
+    maxs = ones(XSZ)*-10000.0
+    mins = ones(XSZ)*10000.0
+    if trainmaxs === nothing || trainmins === nothing 
+        for dindex in eachindex(dataset)
+            x, y = dataset[dindex]
+            for xi in eachindex(x)
+                if x[xi] > maxs[xi]
+                    maxs[xi] = x[xi]
+                end
+                if x[xi] < mins[xi]
+                    mins[xi] = x[xi]
+                end
+            end
+        end
+    else
+        maxs = trainmaxs 
+        mins = trainmins
+    end
+    dataset_norm = []
+    for dindex in eachindex(dataset)
+        x, y = dataset[dindex]
+        x_norm = []
+        for xi in eachindex(x)
+            push!(x_norm, (x[xi] - mins[xi])/(maxs[xi]-mins[xi] + 1e-6))
+        end
+        push!(dataset_norm, [x_norm, y])
+    end
+    return maxs, mins, dataset_norm
+end
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0, NUM_CLASSES=3)
+
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), 
+    threshold=0.5, augval=1.0, num_classes=3, out_dir="julia/images/")
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -542,7 +578,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
     # Assign weight parameters
     for windex in eachindex(w)
-        d = _index2Dvar("W", windex, w[windex], dims1=dims, dims2=NUM_CLASSES)
+        d = _index2Dvar("W", windex, w[windex], dims1=dims, dims2=num_classes)
         print("dd ", d)
         for (k,v) in d
             vars[k] = v
@@ -610,7 +646,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             end
 
             # Assigning y appropriately for multi-class
-            for i in range(0, NUM_CLASSES-1)
+            for i in range(0, num_classes-1)
                 vars["Y$(i)p"] = y[i+1]
                 vars["Y$(i)m"] = 0.0
             end
@@ -632,7 +668,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             ###############
 
             # Epoch loss function
-            for i in range(0, NUM_CLASSES-1)
+            for i in range(0, num_classes-1)
                 tr_epoch_loss += 0.5 * (vars["E$(i)p"] - vars["E$(i)m"])^2
             end
             
@@ -677,8 +713,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 else
                     vars[k] = 0.0
                 end
-            end
-
+            end 
         end
         tr_epoch_loss /= length(train)
         
@@ -697,7 +732,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             @show x, y
             
             # Assigning y appropriately for multi-class
-            for i in range(0, NUM_CLASSES - 1)
+            for i in range(0, num_classes - 1)
                 vars["Y$(i)p"] = y[i+1]
                 vars["Y$(i)m"] = 0.0
             end
@@ -723,7 +758,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             crn_yhat_calculate(rn_yhat_calculate, vars, tspan=(0.0, 40.0))
 
             yhat = []
-            for yi in range(0, NUM_CLASSES-1)
+            for yi in range(0, num_classes-1)
                 push!(yhat, vars["O$(yi)p"] - vars["O$(yi)m"])
             end
             if argmax(yhat) == argmax(y)
@@ -737,7 +772,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             crn_create_error_species(vars)
 
             # Epoch loss function
-            for i in range(0, NUM_CLASSES-1)
+            for i in range(0, num_classes-1)
                 val_epoch_loss += 0.5*(vars["E$(i)p"] - vars["E$(i)m"])^2
             end
             
@@ -759,44 +794,50 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         end
 
         val_epoch_loss /= length(val)
-        push!(val_losses, val_epoch_loss)
-        push!(tr_losses, tr_epoch_loss)
+        
+        push!(crn_tracking["val_loss"], val_epoch_loss)
+        push!(crn_tracking["train_loss"], tr_epoch_loss)
+        
         val_acc /= length(val)
-        push!(val_accs, val_acc)
-        val_accs_plot = plot(val_accs, label="val_acc")
-        png(val_accs_plot, "julia/images/crn_val_accsplt.png")
         @show epoch, val_acc
-        crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
-        png(crn_losses_plt, "julia/images/crn_train_lossplts.png")
-        # plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval)
-        # @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval)
+
+        push!(crn_tracking["val_acc"], val_acc)
+        
+        val_accs_plot = plot(crn_tracking["val_acc"], label="val_acc")
+        png(val_accs_plot, "$(out_dir)/images/crn_val_accsplt.png")
+        
+        crn_losses_plt = plot([crn_tracking["train_loss"], crn_tracking["val_loss"]], label=["train" "val"])
+        png(crn_losses_plt, "$(out_dir)/images/crn_train_lossplts.png")
+
+        open("$(out_dir)/crn_tracking.pickle", "w") do fileio
+            serialize(fileio, crn_tracking)
+        end
     end
     return vars    
 end
 
-function neuralcrn(;DIMS=5)
+function neuralcrn(; DIMS=5, NUM_CLASSES=3, out_dir="julia/iris")
 
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
+        
         train, val = create_iris_dataset()
+        maxs, mins, train_norm = normalize_dataset(train)
+        @show maxs, mins
+        _, _, val_norm = normalize_dataset(val, trainmaxs=maxs, trainmins=mins)
+
         t0 = 0.0
-        t1 = 0.5
+        t1 = 0.6
         AUGVAL = 1.0
         tspan = (t0, t1)
-        params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
+        params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3, num_classes=NUM_CLASSES)
         
         @show params_orig
 
         println("===============================")
-        vars = crn_main(params_orig, train, val, EPOCHS=40, dims=DIMS, LR=0.003, tspan=tspan, augval=AUGVAL)
-        # @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
+        vars = crn_main(params_orig, train_norm, val_norm, EPOCHS=40, dims=DIMS, LR=1e-2, tspan=tspan, augval=AUGVAL, num_classes=NUM_CLASSES, out_dir=out_dir)
         end
     end
 end
 
-neuralcrn(DIMS=5)
-#=
-Things to do further
-1. k_ann = 100.0 in the reactionsReLU for the annihilation reactions. Maybe change it to 10.0
-
-=# 
+neuralcrn(DIMS=5, NUM_CLASSES=3, out_dir="julia/iris")
