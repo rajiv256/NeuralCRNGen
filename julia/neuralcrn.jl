@@ -256,10 +256,10 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
     end
     plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
     plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4), markershape=markers) # Color: based on output, shape based on target label. 
-    png(plt_state1, "julia/images/crn_before_aug.png")
-    png(plt_state2, "julia/images/crn_after_aug.png")
+    png(plt_state1, "julia/rings/images/crn_before_aug.png")
+    png(plt_state2, "julia/rings/images/crn_after_aug.png")
     pltyhats = scatter(getindex.(yhats, 1), getindex.(yhats, 2), group=getindex.(yhats, 4))
-    png(pltyhats, "julia/images/crn_yhats.png")
+    png(pltyhats, "julia/rings/images/crn_yhats.png")
 end
 
 
@@ -316,7 +316,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
     # Colors (index = 4) represent the original class the data point belongs to
     # Shapes (index = 3) represent the predicted class of the data point 
     sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3)) # output is the label
-    png(sca, "julia/images/crn_accuracy_plot.png")
+    png(sca, "julia/rings/images/crn_accuracy_plot.png")
     println("Accuracy: $(acc/length(dataset))")
     return acc/length(dataset)
 end
@@ -550,24 +550,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             x, y = get_one(train, i)
             x = augment(x, dims-length(x), augval=augval)
 
-            println("ODE | Ideal ReLU | ", relu.(theta*x + beta))
-            
-            # # gradients: tuple, node_params: usual params vector
-            # odez, odeyhat, odeloss, odegradients, node_params = one_step_node(x, y, node_params, LR, dims=dims, threshold=threshold)
-            # println("ODE | node_params after update | ", node_params)   
-            # println("ODE | odez | ", odez)
-            # println("ODE | odeyhat | ", odeyhat)
-            # println("ODE | odeloss | ", odeloss)     
-            # _, _, odethetagrads, odebetagrads, odewgrads, odegdt = odegradients
-            # println("ODE | odewgrads in crn_main | ", odewgrads)
-            # println("ODE | odethetagrads in crn_main | ", odethetagrads)
-            # println("ODE | odebetagrads in crn_main | ", odebetagrads)
-            
-            # _, node_theta, node_beta, node_w, _, _, _ = sequester_params(node_params)
-            # println("ODE | node_theta | ", reshape(node_theta, (dims, dims)))
-            # println("ODE | node_beta in crn_main | ", node_beta)
-            # println("ODE | node_w in crn_main | ", node_w)
-
             println("-------------------- CRN ---------------------")
             @show x, y
             
@@ -743,7 +725,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         val_acc /= length(val)
         @show epoch, val_acc
         crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
-        png(crn_losses_plt, "julia/images/crn_train_lossplts.png")
+        png(crn_losses_plt, "julia/rings/images/crn_train_lossplts.png")
         plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval)
         @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval)
 
@@ -758,35 +740,19 @@ function neuralcrn(;DIMS=3)
         redirect_stdout(fileio) do 
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
-            # train = create_annular_rings_dataset(100)
-            # val = create_annular_rings_dataset(200)
-            train = create_xor_dataset(100)
-            # train = create_and_dataset(100)
-            # val = create_xor_dataset(200)
-            val = []
-            for i in range(0, 100, 20)
-                for j in range(0, 100, 20)
-                    x1 = i/100
-                    x2 = j/100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b ⊻ x2b)
-                    push!(val, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(val)
+            train = create_annular_rings_dataset(100)
+            val = create_annular_rings_dataset(200)
 
             t0 = 0.0
             t1 = 0.6
             AUGVAL = 1.0
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
-            # params_orig = [3.0, 0.2697779992819037, 2.026282606542241, -1.0067229829617201, -0.1700254396853754, 0.5966524995837073, -0.14944691903686885, -0.84292623916242, -0.6706454093792844, -1.4894152648053163, 0.1, 0.1, 0.1, 0.24786196828161378, -1.097383662372927, 1.4350793439863558, 0.3, 0.0, 0.6]
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
+            vars = crn_main(params_orig, train, val, EPOCHS=40, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
