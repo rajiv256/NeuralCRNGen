@@ -58,10 +58,11 @@ rn_dual_dot = @reaction_network begin
 end
 
 rn_dual_subtract = @reaction_network rn_dual_subtract begin
-    1.0, Ap --> Yp
-    1.0, Am --> Ym
-    1.0, Bp --> Ym
-    1.0, Bm --> Yp
+    10.0, Ap --> Yp
+    10.0, Am --> Ym
+    10.0, Bp --> Ym
+    10.0, Bm --> Yp
+    100.0, Yp + Ym --> 0
 end
 
 rn_dual_add = @reaction_network begin
@@ -149,7 +150,7 @@ rn_param_update = @reaction_network rn_param_update begin
     k2, G22p --> 0
     k2, G22m --> 0
 
-end k1 k2
+end
 
 rn_final_layer_update = @reaction_network rn_final_layer_update begin
     k1, M1m --> W1p
@@ -161,7 +162,7 @@ rn_final_layer_update = @reaction_network rn_final_layer_update begin
     k2, M1p --> 0
     k2, M2p --> 0
     k2, M2m --> 0
-end k1 k2
+end
 
 
 rn_dissipate_reactions = @reaction_network rn_annihilation_reactions begin
@@ -199,8 +200,11 @@ end
 
 
 rn_create_error_species = @reaction_network rn_create_error_species begin
-    1.0, Op + Ym --> Ep + Op + Ym
-    1.0, Om + Yp --> Em + Om + Yp
+    10.0, Op --> Ep 
+    10.0, Om --> Em
+    10.0, Ym --> Ep 
+    10.0, Yp --> Em
+    100.0, Ep + Em --> 0
 end
 
 rn_dual_binary_scalar_mult = @reaction_network rn_dual_binary_scalar_mult begin
