@@ -799,8 +799,8 @@ function neuralcrn(;DIMS=3)
             train = create_or_dataset(100)
             # val = create_and_dataset(400)
             val = []
-            for i in range(0, 100, 15)
-                for j in range(0, 100, 15)
+            for i in range(0, 100, 10)
+                for j in range(0, 100, 10)
                     x1 = i/100
                     x2 = j/100
                     x1b = Bool(floor(x1 + 0.5))
