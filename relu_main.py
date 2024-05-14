@@ -117,7 +117,7 @@ if __name__ == '__main__':
 
     # A backward
     aphdmd = a._hadamard(p)
-    bwd_apx_ode = ode.ODESystem(lhs=a, rhs=[aphdmd, x], parity=-1)
+    bwd_apx_ode = ode.ODESystem(lhs=a, rhs=[aphdmd, x], parity=1)
     bwd_apx_crn = bwd_apx_ode.dual_rail_crn()
     print("\n# da_i/dt = a_i p_ij x_j") # f--> -f
     lcs = utils.print_crn(bwd_apx_crn)
