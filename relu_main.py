@@ -155,9 +155,9 @@ if __name__ == '__main__':
     
     # A backward
     aphdmd = a._hadamard(p)
-    bwd_apx_ode = ode.ODESystem(lhs=a, rhs=[aphdmd, x], parity=-1)
+    bwd_apx_ode = ode.ODESystem(lhs=a, rhs=[aphdmd, x], parity=1) # May 14, 2024, changed the parity to 1
     bwd_apx_crn = bwd_apx_ode.dual_rail_crn()
-    print("\n# da_i/dt = a_i p_ij x_j") # f--> -f
+    print("\n# da_i/dt = a_i p_ij x_j")
     lcs = utils.print_crn(bwd_apx_crn)
     
     # Gradients
