@@ -761,8 +761,8 @@ end
 
 function neuralcrn(;DIMS=4)
 
-    # open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
-    #     redirect_stdout(fileio) do 
+    open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
+        redirect_stdout(fileio) do 
     POS = 1.0
     NEG = 0.0
     THRESHOLD = 0.5
@@ -773,8 +773,8 @@ function neuralcrn(;DIMS=4)
     # val = create_logistic_dataset(200, pos=POS, neg=NEG, threshold=THRESHOLD)
 
     val = []
-    for i in range(0, 100, 20)
-        for j in range(0, 100, 20)
+    for i in range(0, 100, 10)
+        for j in range(0, 100, 10)
             x1 = i / 100
             x2 = j / 100
             x1b = Bool(floor(x1 + 0.5))
@@ -793,8 +793,8 @@ function neuralcrn(;DIMS=4)
     # @show params_orig_copy
     println("===============================", params_orig)
     vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD, CLIPGRAD=20.0, augval=0.8)
-    #     end
-    # end
+        end
+    end
 
 end
 
