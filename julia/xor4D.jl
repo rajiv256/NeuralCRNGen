@@ -348,134 +348,262 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
 1.0, Z4m + Z4m --> Z4m + Z4m + Z4m
 
 # da_i/dt = a_i p_ij x_j
-1.0, A1p + P11p + X1m --> A1p + A1p + P11p + X1m
-1.0, A1m + P11m + X1m --> A1p + A1m + P11m + X1m
-1.0, A1p + P11m + X1p --> A1p + A1p + P11m + X1p
-1.0, A1m + P11p + X1p --> A1p + A1m + P11p + X1p
-1.0, A1p + P11p + X1p --> A1m + A1p + P11p + X1p
-1.0, A1m + P11m + X1p --> A1m + A1m + P11m + X1p
-1.0, A1p + P11m + X1m --> A1m + A1p + P11m + X1m
-1.0, A1m + P11p + X1m --> A1m + A1m + P11p + X1m
-1.0, A1p + P12p + X2m --> A1p + A1p + P12p + X2m
-1.0, A1m + P12m + X2m --> A1p + A1m + P12m + X2m
-1.0, A1p + P12m + X2p --> A1p + A1p + P12m + X2p
-1.0, A1m + P12p + X2p --> A1p + A1m + P12p + X2p
-1.0, A1p + P12p + X2p --> A1m + A1p + P12p + X2p
-1.0, A1m + P12m + X2p --> A1m + A1m + P12m + X2p
-1.0, A1p + P12m + X2m --> A1m + A1p + P12m + X2m
-1.0, A1m + P12p + X2m --> A1m + A1m + P12p + X2m
-1.0, A1p + P13p + X3m --> A1p + A1p + P13p + X3m
-1.0, A1m + P13m + X3m --> A1p + A1m + P13m + X3m
-1.0, A1p + P13m + X3p --> A1p + A1p + P13m + X3p
-1.0, A1m + P13p + X3p --> A1p + A1m + P13p + X3p
-1.0, A1p + P13p + X3p --> A1m + A1p + P13p + X3p
-1.0, A1m + P13m + X3p --> A1m + A1m + P13m + X3p
-1.0, A1p + P13m + X3m --> A1m + A1p + P13m + X3m
-1.0, A1m + P13p + X3m --> A1m + A1m + P13p + X3m
-1.0, A1p + P14p + X4m --> A1p + A1p + P14p + X4m
-1.0, A1m + P14m + X4m --> A1p + A1m + P14m + X4m
-1.0, A1p + P14m + X4p --> A1p + A1p + P14m + X4p
-1.0, A1m + P14p + X4p --> A1p + A1m + P14p + X4p
-1.0, A1p + P14p + X4p --> A1m + A1p + P14p + X4p
-1.0, A1m + P14m + X4p --> A1m + A1m + P14m + X4p
-1.0, A1p + P14m + X4m --> A1m + A1p + P14m + X4m
-1.0, A1m + P14p + X4m --> A1m + A1m + P14p + X4m
-1.0, A2p + P21p + X1m --> A2p + A2p + P21p + X1m
-1.0, A2m + P21m + X1m --> A2p + A2m + P21m + X1m
-1.0, A2p + P21m + X1p --> A2p + A2p + P21m + X1p
-1.0, A2m + P21p + X1p --> A2p + A2m + P21p + X1p
-1.0, A2p + P21p + X1p --> A2m + A2p + P21p + X1p
-1.0, A2m + P21m + X1p --> A2m + A2m + P21m + X1p
-1.0, A2p + P21m + X1m --> A2m + A2p + P21m + X1m
-1.0, A2m + P21p + X1m --> A2m + A2m + P21p + X1m
-1.0, A2p + P22p + X2m --> A2p + A2p + P22p + X2m
-1.0, A2m + P22m + X2m --> A2p + A2m + P22m + X2m
-1.0, A2p + P22m + X2p --> A2p + A2p + P22m + X2p
-1.0, A2m + P22p + X2p --> A2p + A2m + P22p + X2p
-1.0, A2p + P22p + X2p --> A2m + A2p + P22p + X2p
-1.0, A2m + P22m + X2p --> A2m + A2m + P22m + X2p
-1.0, A2p + P22m + X2m --> A2m + A2p + P22m + X2m
-1.0, A2m + P22p + X2m --> A2m + A2m + P22p + X2m
-1.0, A2p + P23p + X3m --> A2p + A2p + P23p + X3m
-1.0, A2m + P23m + X3m --> A2p + A2m + P23m + X3m
-1.0, A2p + P23m + X3p --> A2p + A2p + P23m + X3p
-1.0, A2m + P23p + X3p --> A2p + A2m + P23p + X3p
-1.0, A2p + P23p + X3p --> A2m + A2p + P23p + X3p
-1.0, A2m + P23m + X3p --> A2m + A2m + P23m + X3p
-1.0, A2p + P23m + X3m --> A2m + A2p + P23m + X3m
-1.0, A2m + P23p + X3m --> A2m + A2m + P23p + X3m
-1.0, A2p + P24p + X4m --> A2p + A2p + P24p + X4m
-1.0, A2m + P24m + X4m --> A2p + A2m + P24m + X4m
-1.0, A2p + P24m + X4p --> A2p + A2p + P24m + X4p
-1.0, A2m + P24p + X4p --> A2p + A2m + P24p + X4p
-1.0, A2p + P24p + X4p --> A2m + A2p + P24p + X4p
-1.0, A2m + P24m + X4p --> A2m + A2m + P24m + X4p
-1.0, A2p + P24m + X4m --> A2m + A2p + P24m + X4m
-1.0, A2m + P24p + X4m --> A2m + A2m + P24p + X4m
-1.0, A3p + P31p + X1m --> A3p + A3p + P31p + X1m
-1.0, A3m + P31m + X1m --> A3p + A3m + P31m + X1m
-1.0, A3p + P31m + X1p --> A3p + A3p + P31m + X1p
-1.0, A3m + P31p + X1p --> A3p + A3m + P31p + X1p
-1.0, A3p + P31p + X1p --> A3m + A3p + P31p + X1p
-1.0, A3m + P31m + X1p --> A3m + A3m + P31m + X1p
-1.0, A3p + P31m + X1m --> A3m + A3p + P31m + X1m
-1.0, A3m + P31p + X1m --> A3m + A3m + P31p + X1m
-1.0, A3p + P32p + X2m --> A3p + A3p + P32p + X2m
-1.0, A3m + P32m + X2m --> A3p + A3m + P32m + X2m
-1.0, A3p + P32m + X2p --> A3p + A3p + P32m + X2p
-1.0, A3m + P32p + X2p --> A3p + A3m + P32p + X2p
-1.0, A3p + P32p + X2p --> A3m + A3p + P32p + X2p
-1.0, A3m + P32m + X2p --> A3m + A3m + P32m + X2p
-1.0, A3p + P32m + X2m --> A3m + A3p + P32m + X2m
-1.0, A3m + P32p + X2m --> A3m + A3m + P32p + X2m
-1.0, A3p + P33p + X3m --> A3p + A3p + P33p + X3m
-1.0, A3m + P33m + X3m --> A3p + A3m + P33m + X3m
-1.0, A3p + P33m + X3p --> A3p + A3p + P33m + X3p
-1.0, A3m + P33p + X3p --> A3p + A3m + P33p + X3p
-1.0, A3p + P33p + X3p --> A3m + A3p + P33p + X3p
-1.0, A3m + P33m + X3p --> A3m + A3m + P33m + X3p
-1.0, A3p + P33m + X3m --> A3m + A3p + P33m + X3m
-1.0, A3m + P33p + X3m --> A3m + A3m + P33p + X3m
-1.0, A3p + P34p + X4m --> A3p + A3p + P34p + X4m
-1.0, A3m + P34m + X4m --> A3p + A3m + P34m + X4m
-1.0, A3p + P34m + X4p --> A3p + A3p + P34m + X4p
-1.0, A3m + P34p + X4p --> A3p + A3m + P34p + X4p
-1.0, A3p + P34p + X4p --> A3m + A3p + P34p + X4p
-1.0, A3m + P34m + X4p --> A3m + A3m + P34m + X4p
-1.0, A3p + P34m + X4m --> A3m + A3p + P34m + X4m
-1.0, A3m + P34p + X4m --> A3m + A3m + P34p + X4m
-1.0, A4p + P41p + X1m --> A4p + A4p + P41p + X1m
-1.0, A4m + P41m + X1m --> A4p + A4m + P41m + X1m
-1.0, A4p + P41m + X1p --> A4p + A4p + P41m + X1p
-1.0, A4m + P41p + X1p --> A4p + A4m + P41p + X1p
-1.0, A4p + P41p + X1p --> A4m + A4p + P41p + X1p
-1.0, A4m + P41m + X1p --> A4m + A4m + P41m + X1p
-1.0, A4p + P41m + X1m --> A4m + A4p + P41m + X1m
-1.0, A4m + P41p + X1m --> A4m + A4m + P41p + X1m
-1.0, A4p + P42p + X2m --> A4p + A4p + P42p + X2m
-1.0, A4m + P42m + X2m --> A4p + A4m + P42m + X2m
-1.0, A4p + P42m + X2p --> A4p + A4p + P42m + X2p
-1.0, A4m + P42p + X2p --> A4p + A4m + P42p + X2p
-1.0, A4p + P42p + X2p --> A4m + A4p + P42p + X2p
-1.0, A4m + P42m + X2p --> A4m + A4m + P42m + X2p
-1.0, A4p + P42m + X2m --> A4m + A4p + P42m + X2m
-1.0, A4m + P42p + X2m --> A4m + A4m + P42p + X2m
-1.0, A4p + P43p + X3m --> A4p + A4p + P43p + X3m
-1.0, A4m + P43m + X3m --> A4p + A4m + P43m + X3m
-1.0, A4p + P43m + X3p --> A4p + A4p + P43m + X3p
-1.0, A4m + P43p + X3p --> A4p + A4m + P43p + X3p
-1.0, A4p + P43p + X3p --> A4m + A4p + P43p + X3p
-1.0, A4m + P43m + X3p --> A4m + A4m + P43m + X3p
-1.0, A4p + P43m + X3m --> A4m + A4p + P43m + X3m
-1.0, A4m + P43p + X3m --> A4m + A4m + P43p + X3m
-1.0, A4p + P44p + X4m --> A4p + A4p + P44p + X4m
-1.0, A4m + P44m + X4m --> A4p + A4m + P44m + X4m
-1.0, A4p + P44m + X4p --> A4p + A4p + P44m + X4p
-1.0, A4m + P44p + X4p --> A4p + A4m + P44p + X4p
-1.0, A4p + P44p + X4p --> A4m + A4p + P44p + X4p
-1.0, A4m + P44m + X4p --> A4m + A4m + P44m + X4p
-1.0, A4p + P44m + X4m --> A4m + A4p + P44m + X4m
-1.0, A4m + P44p + X4m --> A4m + A4m + P44p + X4m
+1.0, A1p + P11p + X1p --> A1p + A1p + P11p + X1p
+1.0, A1m + P11m + X1p --> A1p + A1m + P11m + X1p
+1.0, A1p + P11m + X1m --> A1p + A1p + P11m + X1m
+1.0, A1m + P11p + X1m --> A1p + A1m + P11p + X1m
+1.0, A1p + P11p + X1m --> A1m + A1p + P11p + X1m
+1.0, A1m + P11m + X1m --> A1m + A1m + P11m + X1m
+1.0, A1p + P11m + X1p --> A1m + A1p + P11m + X1p
+1.0, A1m + P11p + X1p --> A1m + A1m + P11p + X1p
+1.0, A1p + P12p + X2p --> A1p + A1p + P12p + X2p
+1.0, A1m + P12m + X2p --> A1p + A1m + P12m + X2p
+1.0, A1p + P12m + X2m --> A1p + A1p + P12m + X2m
+1.0, A1m + P12p + X2m --> A1p + A1m + P12p + X2m
+1.0, A1p + P12p + X2m --> A1m + A1p + P12p + X2m
+1.0, A1m + P12m + X2m --> A1m + A1m + P12m + X2m
+1.0, A1p + P12m + X2p --> A1m + A1p + P12m + X2p
+1.0, A1m + P12p + X2p --> A1m + A1m + P12p + X2p
+1.0, A1p + P13p + X3p --> A1p + A1p + P13p + X3p
+1.0, A1m + P13m + X3p --> A1p + A1m + P13m + X3p
+1.0, A1p + P13m + X3m --> A1p + A1p + P13m + X3m
+1.0, A1m + P13p + X3m --> A1p + A1m + P13p + X3m
+1.0, A1p + P13p + X3m --> A1m + A1p + P13p + X3m
+1.0, A1m + P13m + X3m --> A1m + A1m + P13m + X3m
+1.0, A1p + P13m + X3p --> A1m + A1p + P13m + X3p
+1.0, A1m + P13p + X3p --> A1m + A1m + P13p + X3p
+1.0, A1p + P14p + X4p --> A1p + A1p + P14p + X4p
+1.0, A1m + P14m + X4p --> A1p + A1m + P14m + X4p
+1.0, A1p + P14m + X4m --> A1p + A1p + P14m + X4m
+1.0, A1m + P14p + X4m --> A1p + A1m + P14p + X4m
+1.0, A1p + P14p + X4m --> A1m + A1p + P14p + X4m
+1.0, A1m + P14m + X4m --> A1m + A1m + P14m + X4m
+1.0, A1p + P14m + X4p --> A1m + A1p + P14m + X4p
+1.0, A1m + P14p + X4p --> A1m + A1m + P14p + X4p
+1.0, A2p + P21p + X1p --> A2p + A2p + P21p + X1p
+1.0, A2m + P21m + X1p --> A2p + A2m + P21m + X1p
+1.0, A2p + P21m + X1m --> A2p + A2p + P21m + X1m
+1.0, A2m + P21p + X1m --> A2p + A2m + P21p + X1m
+1.0, A2p + P21p + X1m --> A2m + A2p + P21p + X1m
+1.0, A2m + P21m + X1m --> A2m + A2m + P21m + X1m
+1.0, A2p + P21m + X1p --> A2m + A2p + P21m + X1p
+1.0, A2m + P21p + X1p --> A2m + A2m + P21p + X1p
+1.0, A2p + P22p + X2p --> A2p + A2p + P22p + X2p
+1.0, A2m + P22m + X2p --> A2p + A2m + P22m + X2p
+1.0, A2p + P22m + X2m --> A2p + A2p + P22m + X2m
+1.0, A2m + P22p + X2m --> A2p + A2m + P22p + X2m
+1.0, A2p + P22p + X2m --> A2m + A2p + P22p + X2m
+1.0, A2m + P22m + X2m --> A2m + A2m + P22m + X2m
+1.0, A2p + P22m + X2p --> A2m + A2p + P22m + X2p
+1.0, A2m + P22p + X2p --> A2m + A2m + P22p + X2p
+1.0, A2p + P23p + X3p --> A2p + A2p + P23p + X3p
+1.0, A2m + P23m + X3p --> A2p + A2m + P23m + X3p
+1.0, A2p + P23m + X3m --> A2p + A2p + P23m + X3m
+1.0, A2m + P23p + X3m --> A2p + A2m + P23p + X3m
+1.0, A2p + P23p + X3m --> A2m + A2p + P23p + X3m
+1.0, A2m + P23m + X3m --> A2m + A2m + P23m + X3m
+1.0, A2p + P23m + X3p --> A2m + A2p + P23m + X3p
+1.0, A2m + P23p + X3p --> A2m + A2m + P23p + X3p
+1.0, A2p + P24p + X4p --> A2p + A2p + P24p + X4p
+1.0, A2m + P24m + X4p --> A2p + A2m + P24m + X4p
+1.0, A2p + P24m + X4m --> A2p + A2p + P24m + X4m
+1.0, A2m + P24p + X4m --> A2p + A2m + P24p + X4m
+1.0, A2p + P24p + X4m --> A2m + A2p + P24p + X4m
+1.0, A2m + P24m + X4m --> A2m + A2m + P24m + X4m
+1.0, A2p + P24m + X4p --> A2m + A2p + P24m + X4p
+1.0, A2m + P24p + X4p --> A2m + A2m + P24p + X4p
+1.0, A3p + P31p + X1p --> A3p + A3p + P31p + X1p
+1.0, A3m + P31m + X1p --> A3p + A3m + P31m + X1p
+1.0, A3p + P31m + X1m --> A3p + A3p + P31m + X1m
+1.0, A3m + P31p + X1m --> A3p + A3m + P31p + X1m
+1.0, A3p + P31p + X1m --> A3m + A3p + P31p + X1m
+1.0, A3m + P31m + X1m --> A3m + A3m + P31m + X1m
+1.0, A3p + P31m + X1p --> A3m + A3p + P31m + X1p
+1.0, A3m + P31p + X1p --> A3m + A3m + P31p + X1p
+1.0, A3p + P32p + X2p --> A3p + A3p + P32p + X2p
+1.0, A3m + P32m + X2p --> A3p + A3m + P32m + X2p
+1.0, A3p + P32m + X2m --> A3p + A3p + P32m + X2m
+1.0, A3m + P32p + X2m --> A3p + A3m + P32p + X2m
+1.0, A3p + P32p + X2m --> A3m + A3p + P32p + X2m
+1.0, A3m + P32m + X2m --> A3m + A3m + P32m + X2m
+1.0, A3p + P32m + X2p --> A3m + A3p + P32m + X2p
+1.0, A3m + P32p + X2p --> A3m + A3m + P32p + X2p
+1.0, A3p + P33p + X3p --> A3p + A3p + P33p + X3p
+1.0, A3m + P33m + X3p --> A3p + A3m + P33m + X3p
+1.0, A3p + P33m + X3m --> A3p + A3p + P33m + X3m
+1.0, A3m + P33p + X3m --> A3p + A3m + P33p + X3m
+1.0, A3p + P33p + X3m --> A3m + A3p + P33p + X3m
+1.0, A3m + P33m + X3m --> A3m + A3m + P33m + X3m
+1.0, A3p + P33m + X3p --> A3m + A3p + P33m + X3p
+1.0, A3m + P33p + X3p --> A3m + A3m + P33p + X3p
+1.0, A3p + P34p + X4p --> A3p + A3p + P34p + X4p
+1.0, A3m + P34m + X4p --> A3p + A3m + P34m + X4p
+1.0, A3p + P34m + X4m --> A3p + A3p + P34m + X4m
+1.0, A3m + P34p + X4m --> A3p + A3m + P34p + X4m
+1.0, A3p + P34p + X4m --> A3m + A3p + P34p + X4m
+1.0, A3m + P34m + X4m --> A3m + A3m + P34m + X4m
+1.0, A3p + P34m + X4p --> A3m + A3p + P34m + X4p
+1.0, A3m + P34p + X4p --> A3m + A3m + P34p + X4p
+1.0, A4p + P41p + X1p --> A4p + A4p + P41p + X1p
+1.0, A4m + P41m + X1p --> A4p + A4m + P41m + X1p
+1.0, A4p + P41m + X1m --> A4p + A4p + P41m + X1m
+1.0, A4m + P41p + X1m --> A4p + A4m + P41p + X1m
+1.0, A4p + P41p + X1m --> A4m + A4p + P41p + X1m
+1.0, A4m + P41m + X1m --> A4m + A4m + P41m + X1m
+1.0, A4p + P41m + X1p --> A4m + A4p + P41m + X1p
+1.0, A4m + P41p + X1p --> A4m + A4m + P41p + X1p
+1.0, A4p + P42p + X2p --> A4p + A4p + P42p + X2p
+1.0, A4m + P42m + X2p --> A4p + A4m + P42m + X2p
+1.0, A4p + P42m + X2m --> A4p + A4p + P42m + X2m
+1.0, A4m + P42p + X2m --> A4p + A4m + P42p + X2m
+1.0, A4p + P42p + X2m --> A4m + A4p + P42p + X2m
+1.0, A4m + P42m + X2m --> A4m + A4m + P42m + X2m
+1.0, A4p + P42m + X2p --> A4m + A4p + P42m + X2p
+1.0, A4m + P42p + X2p --> A4m + A4m + P42p + X2p
+1.0, A4p + P43p + X3p --> A4p + A4p + P43p + X3p
+1.0, A4m + P43m + X3p --> A4p + A4m + P43m + X3p
+1.0, A4p + P43m + X3m --> A4p + A4p + P43m + X3m
+1.0, A4m + P43p + X3m --> A4p + A4m + P43p + X3m
+1.0, A4p + P43p + X3m --> A4m + A4p + P43p + X3m
+1.0, A4m + P43m + X3m --> A4m + A4m + P43m + X3m
+1.0, A4p + P43m + X3p --> A4m + A4p + P43m + X3p
+1.0, A4m + P43p + X3p --> A4m + A4m + P43p + X3p
+1.0, A4p + P44p + X4p --> A4p + A4p + P44p + X4p
+1.0, A4m + P44m + X4p --> A4p + A4m + P44m + X4p
+1.0, A4p + P44m + X4m --> A4p + A4p + P44m + X4m
+1.0, A4m + P44p + X4m --> A4p + A4m + P44p + X4m
+1.0, A4p + P44p + X4m --> A4m + A4p + P44p + X4m
+1.0, A4m + P44m + X4m --> A4m + A4m + P44m + X4m
+1.0, A4p + P44m + X4p --> A4m + A4p + P44m + X4p
+1.0, A4m + P44p + X4p --> A4m + A4m + P44p + X4p
+# 1.0, A1p + P11p + X1m --> A1p + A1p + P11p + X1m
+# 1.0, A1m + P11m + X1m --> A1p + A1m + P11m + X1m
+# 1.0, A1p + P11m + X1p --> A1p + A1p + P11m + X1p
+# 1.0, A1m + P11p + X1p --> A1p + A1m + P11p + X1p
+# 1.0, A1p + P11p + X1p --> A1m + A1p + P11p + X1p
+# 1.0, A1m + P11m + X1p --> A1m + A1m + P11m + X1p
+# 1.0, A1p + P11m + X1m --> A1m + A1p + P11m + X1m
+# 1.0, A1m + P11p + X1m --> A1m + A1m + P11p + X1m
+# 1.0, A1p + P12p + X2m --> A1p + A1p + P12p + X2m
+# 1.0, A1m + P12m + X2m --> A1p + A1m + P12m + X2m
+# 1.0, A1p + P12m + X2p --> A1p + A1p + P12m + X2p
+# 1.0, A1m + P12p + X2p --> A1p + A1m + P12p + X2p
+# 1.0, A1p + P12p + X2p --> A1m + A1p + P12p + X2p
+# 1.0, A1m + P12m + X2p --> A1m + A1m + P12m + X2p
+# 1.0, A1p + P12m + X2m --> A1m + A1p + P12m + X2m
+# 1.0, A1m + P12p + X2m --> A1m + A1m + P12p + X2m
+# 1.0, A1p + P13p + X3m --> A1p + A1p + P13p + X3m
+# 1.0, A1m + P13m + X3m --> A1p + A1m + P13m + X3m
+# 1.0, A1p + P13m + X3p --> A1p + A1p + P13m + X3p
+# 1.0, A1m + P13p + X3p --> A1p + A1m + P13p + X3p
+# 1.0, A1p + P13p + X3p --> A1m + A1p + P13p + X3p
+# 1.0, A1m + P13m + X3p --> A1m + A1m + P13m + X3p
+# 1.0, A1p + P13m + X3m --> A1m + A1p + P13m + X3m
+# 1.0, A1m + P13p + X3m --> A1m + A1m + P13p + X3m
+# 1.0, A1p + P14p + X4m --> A1p + A1p + P14p + X4m
+# 1.0, A1m + P14m + X4m --> A1p + A1m + P14m + X4m
+# 1.0, A1p + P14m + X4p --> A1p + A1p + P14m + X4p
+# 1.0, A1m + P14p + X4p --> A1p + A1m + P14p + X4p
+# 1.0, A1p + P14p + X4p --> A1m + A1p + P14p + X4p
+# 1.0, A1m + P14m + X4p --> A1m + A1m + P14m + X4p
+# 1.0, A1p + P14m + X4m --> A1m + A1p + P14m + X4m
+# 1.0, A1m + P14p + X4m --> A1m + A1m + P14p + X4m
+# 1.0, A2p + P21p + X1m --> A2p + A2p + P21p + X1m
+# 1.0, A2m + P21m + X1m --> A2p + A2m + P21m + X1m
+# 1.0, A2p + P21m + X1p --> A2p + A2p + P21m + X1p
+# 1.0, A2m + P21p + X1p --> A2p + A2m + P21p + X1p
+# 1.0, A2p + P21p + X1p --> A2m + A2p + P21p + X1p
+# 1.0, A2m + P21m + X1p --> A2m + A2m + P21m + X1p
+# 1.0, A2p + P21m + X1m --> A2m + A2p + P21m + X1m
+# 1.0, A2m + P21p + X1m --> A2m + A2m + P21p + X1m
+# 1.0, A2p + P22p + X2m --> A2p + A2p + P22p + X2m
+# 1.0, A2m + P22m + X2m --> A2p + A2m + P22m + X2m
+# 1.0, A2p + P22m + X2p --> A2p + A2p + P22m + X2p
+# 1.0, A2m + P22p + X2p --> A2p + A2m + P22p + X2p
+# 1.0, A2p + P22p + X2p --> A2m + A2p + P22p + X2p
+# 1.0, A2m + P22m + X2p --> A2m + A2m + P22m + X2p
+# 1.0, A2p + P22m + X2m --> A2m + A2p + P22m + X2m
+# 1.0, A2m + P22p + X2m --> A2m + A2m + P22p + X2m
+# 1.0, A2p + P23p + X3m --> A2p + A2p + P23p + X3m
+# 1.0, A2m + P23m + X3m --> A2p + A2m + P23m + X3m
+# 1.0, A2p + P23m + X3p --> A2p + A2p + P23m + X3p
+# 1.0, A2m + P23p + X3p --> A2p + A2m + P23p + X3p
+# 1.0, A2p + P23p + X3p --> A2m + A2p + P23p + X3p
+# 1.0, A2m + P23m + X3p --> A2m + A2m + P23m + X3p
+# 1.0, A2p + P23m + X3m --> A2m + A2p + P23m + X3m
+# 1.0, A2m + P23p + X3m --> A2m + A2m + P23p + X3m
+# 1.0, A2p + P24p + X4m --> A2p + A2p + P24p + X4m
+# 1.0, A2m + P24m + X4m --> A2p + A2m + P24m + X4m
+# 1.0, A2p + P24m + X4p --> A2p + A2p + P24m + X4p
+# 1.0, A2m + P24p + X4p --> A2p + A2m + P24p + X4p
+# 1.0, A2p + P24p + X4p --> A2m + A2p + P24p + X4p
+# 1.0, A2m + P24m + X4p --> A2m + A2m + P24m + X4p
+# 1.0, A2p + P24m + X4m --> A2m + A2p + P24m + X4m
+# 1.0, A2m + P24p + X4m --> A2m + A2m + P24p + X4m
+# 1.0, A3p + P31p + X1m --> A3p + A3p + P31p + X1m
+# 1.0, A3m + P31m + X1m --> A3p + A3m + P31m + X1m
+# 1.0, A3p + P31m + X1p --> A3p + A3p + P31m + X1p
+# 1.0, A3m + P31p + X1p --> A3p + A3m + P31p + X1p
+# 1.0, A3p + P31p + X1p --> A3m + A3p + P31p + X1p
+# 1.0, A3m + P31m + X1p --> A3m + A3m + P31m + X1p
+# 1.0, A3p + P31m + X1m --> A3m + A3p + P31m + X1m
+# 1.0, A3m + P31p + X1m --> A3m + A3m + P31p + X1m
+# 1.0, A3p + P32p + X2m --> A3p + A3p + P32p + X2m
+# 1.0, A3m + P32m + X2m --> A3p + A3m + P32m + X2m
+# 1.0, A3p + P32m + X2p --> A3p + A3p + P32m + X2p
+# 1.0, A3m + P32p + X2p --> A3p + A3m + P32p + X2p
+# 1.0, A3p + P32p + X2p --> A3m + A3p + P32p + X2p
+# 1.0, A3m + P32m + X2p --> A3m + A3m + P32m + X2p
+# 1.0, A3p + P32m + X2m --> A3m + A3p + P32m + X2m
+# 1.0, A3m + P32p + X2m --> A3m + A3m + P32p + X2m
+# 1.0, A3p + P33p + X3m --> A3p + A3p + P33p + X3m
+# 1.0, A3m + P33m + X3m --> A3p + A3m + P33m + X3m
+# 1.0, A3p + P33m + X3p --> A3p + A3p + P33m + X3p
+# 1.0, A3m + P33p + X3p --> A3p + A3m + P33p + X3p
+# 1.0, A3p + P33p + X3p --> A3m + A3p + P33p + X3p
+# 1.0, A3m + P33m + X3p --> A3m + A3m + P33m + X3p
+# 1.0, A3p + P33m + X3m --> A3m + A3p + P33m + X3m
+# 1.0, A3m + P33p + X3m --> A3m + A3m + P33p + X3m
+# 1.0, A3p + P34p + X4m --> A3p + A3p + P34p + X4m
+# 1.0, A3m + P34m + X4m --> A3p + A3m + P34m + X4m
+# 1.0, A3p + P34m + X4p --> A3p + A3p + P34m + X4p
+# 1.0, A3m + P34p + X4p --> A3p + A3m + P34p + X4p
+# 1.0, A3p + P34p + X4p --> A3m + A3p + P34p + X4p
+# 1.0, A3m + P34m + X4p --> A3m + A3m + P34m + X4p
+# 1.0, A3p + P34m + X4m --> A3m + A3p + P34m + X4m
+# 1.0, A3m + P34p + X4m --> A3m + A3m + P34p + X4m
+# 1.0, A4p + P41p + X1m --> A4p + A4p + P41p + X1m
+# 1.0, A4m + P41m + X1m --> A4p + A4m + P41m + X1m
+# 1.0, A4p + P41m + X1p --> A4p + A4p + P41m + X1p
+# 1.0, A4m + P41p + X1p --> A4p + A4m + P41p + X1p
+# 1.0, A4p + P41p + X1p --> A4m + A4p + P41p + X1p
+# 1.0, A4m + P41m + X1p --> A4m + A4m + P41m + X1p
+# 1.0, A4p + P41m + X1m --> A4m + A4p + P41m + X1m
+# 1.0, A4m + P41p + X1m --> A4m + A4m + P41p + X1m
+# 1.0, A4p + P42p + X2m --> A4p + A4p + P42p + X2m
+# 1.0, A4m + P42m + X2m --> A4p + A4m + P42m + X2m
+# 1.0, A4p + P42m + X2p --> A4p + A4p + P42m + X2p
+# 1.0, A4m + P42p + X2p --> A4p + A4m + P42p + X2p
+# 1.0, A4p + P42p + X2p --> A4m + A4p + P42p + X2p
+# 1.0, A4m + P42m + X2p --> A4m + A4m + P42m + X2p
+# 1.0, A4p + P42m + X2m --> A4m + A4p + P42m + X2m
+# 1.0, A4m + P42p + X2m --> A4m + A4m + P42p + X2m
+# 1.0, A4p + P43p + X3m --> A4p + A4p + P43p + X3m
+# 1.0, A4m + P43m + X3m --> A4p + A4m + P43m + X3m
+# 1.0, A4p + P43m + X3p --> A4p + A4p + P43m + X3p
+# 1.0, A4m + P43p + X3p --> A4p + A4m + P43p + X3p
+# 1.0, A4p + P43p + X3p --> A4m + A4p + P43p + X3p
+# 1.0, A4m + P43m + X3p --> A4m + A4m + P43m + X3p
+# 1.0, A4p + P43m + X3m --> A4m + A4p + P43m + X3m
+# 1.0, A4m + P43p + X3m --> A4m + A4m + P43p + X3m
+# 1.0, A4p + P44p + X4m --> A4p + A4p + P44p + X4m
+# 1.0, A4m + P44m + X4m --> A4p + A4m + P44m + X4m
+# 1.0, A4p + P44m + X4p --> A4p + A4p + P44m + X4p
+# 1.0, A4m + P44p + X4p --> A4p + A4m + P44p + X4p
+# 1.0, A4p + P44p + X4p --> A4m + A4p + P44p + X4p
+# 1.0, A4m + P44m + X4p --> A4m + A4m + P44m + X4p
+# 1.0, A4p + P44m + X4m --> A4m + A4p + P44m + X4m
+# 1.0, A4m + P44p + X4m --> A4m + A4m + P44p + X4m
 # dg_ij/dt = a_i z_i x_j
 1.0, A1p + Z1p + X1p --> G11p + A1p + Z1p + X1p
 1.0, A1m + Z1m + X1p --> G11p + A1m + Z1m + X1p

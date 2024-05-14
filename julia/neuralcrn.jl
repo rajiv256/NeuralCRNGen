@@ -303,7 +303,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
     # plot()
     # Colors (index = 4) represent the original class the data point belongs to
     # Shapes (index = 3) represent the predicted class of the data point 
-    sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group=getindex.(preds2d, 3), markershape=:rect, markersize=11)
+    sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group=getindex.(preds2d, 3), markershape=:circle, markersize=5)
     png(sca, "julia/images/crn_accuracy_plot.png")
     println("Accuracy: $(acc/length(dataset))")
     return acc/length(dataset)
@@ -770,8 +770,8 @@ function neuralcrn(;DIMS=4)
         train = create_logistic_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
         # val = create_logistic_dataset(200, pos=POS, neg=NEG, threshold=THRESHOLD)
         val = []
-        for i in range(0, 100, 5)
-            for j in range(0, 100, 5)
+        for i in range(0, 100, 20)
+            for j in range(0, 100, 20)
                 # x1binary = Bool(floor(i/100 + 0.5))
                 # x2binary = Bool(floor(j/100 + 0.5))
                 # ybin = Float32(x1binary & x2binary)
