@@ -452,7 +452,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=100.0, augval=1.0)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=100.0, augval=1.0)
 
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
