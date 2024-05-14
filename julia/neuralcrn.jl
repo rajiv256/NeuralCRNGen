@@ -243,7 +243,7 @@ end
 function crn_subtract(a, b; max_val=40.0, default=0.0)
     u = [
         :Ap => a[1], :Am => a[2], :Bp => b[1], :Bm => b[2],
-        :Yp => default, :Ym => default
+        :Yp => 0.0, :Ym => 0.0
     ]
     p = []
     sol = simulate_reaction_network(rn_dual_subtract, u, p, tspan=(0.0, max_val))
@@ -252,6 +252,7 @@ function crn_subtract(a, b; max_val=40.0, default=0.0)
     yp = sol[end][get_index_of("Yp", ss)]
     ym = sol[end][get_index_of("Ym", ss)]
     y = [yp ym]
+    println(a, b, y, "=======")
     return y
 end
 
@@ -320,7 +321,7 @@ end
 
 
 
-function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0))
+function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0))
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -362,11 +363,8 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
             println("=================EPOCH: $epoch | ITERATION: $i ==============")
             x, y = get_one(train, i)
             x = augment(x, dims-length(x))
-            # yvec = [0.0 0.0]
-            # if y == 1.0
-            #     yvec = [1.0 0.0]
-            # end
-            yvec = [y 1-y]
+
+            yvec = [y 0.0] # 14 May 2024 change.
 
             node_params = one_step_node(x, y, node_params, LR, dims)
 
@@ -392,10 +390,11 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
             vars["Om"] = yhat[2]
 
             # Create error species
-            err = crn_subtract(yhat, yvec)
+            err = crn_subtract(yhat, yvec)    
             vars["Ep"] = err[1]
             vars["Em"] = err[2]
             _print_vars(vars, "E", title="CRN | Error at t=T")
+
             # Epoch loss function
             tr_epoch_loss += 0.5*(err[1]-err[2])^2
 
@@ -418,7 +417,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.001, tspan=(0.0, 1
             # Backpropagate and calculate parameter gradients 
             crn_dual_backprop(vars, tspan)
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
-            
+            _print_vars(vars, "A", title="CRN | Adjoint at t=0")
 
             # Update the final layer Weights
             crn_final_layer_update(vars, LR, (0.0, 100.0))
@@ -454,13 +453,16 @@ end
 
 function neuralcrn(;DIMS=2)
     train = create_linearly_separable_dataset(100, linear, threshold=0.0)
-    val = create_linearly_separable_dataset(40, linear, threshold=0.0)
+    val = create_linearly_separable_dataset(100, linear, threshold=0.0)
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
-    
-    println("===============================")
-    vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0))
-    
-    @show calculate_accuracy(val, copy(vars), dims=2)
+    open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
+        redirect_stdout(fileio) do 
+            println("===============================")
+            vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0))
+            
+            @show calculate_accuracy(val, copy(vars), dims=2)
+        end
+    end
 end
 
 neuralcrn()
