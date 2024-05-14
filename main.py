@@ -44,7 +44,7 @@ def print_gradient_update_crn(k1="k1", k2="k2", P = "P", G="G", dims=[], title='
 
 
 if __name__ == '__main__':
-    D = 3
+    D = 2
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
     p = ode.Matrix2D(symbol='p', dims=[D, D])
     p.matrix()
@@ -98,6 +98,7 @@ if __name__ == '__main__':
         )
     bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
     bwd_g_crn = bwd_g_ode.dual_rail_crn()
+    lcs = list(set(utils.print_crn(bwd_g_crn, "CRN for gradient backprop")))
     print("end")
 
     print("\n\n")
