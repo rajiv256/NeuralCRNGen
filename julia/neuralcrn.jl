@@ -21,8 +21,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("relu4D.jl")
-include("neuralode.jl")
+include("linear_reduced2D.jl")
 
 
 function _convert_species2var(sp)
@@ -759,15 +758,14 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
     return vars    
 end
 
-function neuralcrn(;DIMS=4)
+function neuralcrn(;DIMS=2)
 
     # open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
     #     redirect_stdout(fileio) do 
     POS = 1.0
     NEG = 0.0
     THRESHOLD = 0.5
-    train = create_and_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
-    # val = create_and_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
+    train = create_linearly_separable_dataset(100, linear)
 
     # train = create_logistic_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
     # val = create_logistic_dataset(200, pos=POS, neg=NEG, threshold=THRESHOLD)
@@ -786,19 +784,19 @@ function neuralcrn(;DIMS=4)
     Random.shuffle!(val)
 
     t0 = 0.0
-    t1 = 0.4
+    t1 = 1.0
     tspan = (t0, t1)
-    params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
+    params_orig = create_node_params(DIMS, t0=t0, t1=t1)
     params_orig_copy = copy(params_orig)
     # @show params_orig_copy
     println("===============================", params_orig)
-    vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD, CLIPGRAD=20.0, augval=0.8)
+    vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
     #     end
     # end
 
 end
 
-neuralcrn(DIMS=4)
+neuralcrn(DIMS=2)
 #=
 Things to do further
 1. k_ann = 100.0 in the reactionsReLU for the annihilation reactions. Maybe change it to 10.0
