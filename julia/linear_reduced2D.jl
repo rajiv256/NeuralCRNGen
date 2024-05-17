@@ -21,14 +21,15 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, P2m + Z2m --> Z2m + P2m + Z2m
 
     # da_i/dt = a_i p_i
-    1.0, A1p + P1m --> A1p + A1p + P1m
-    1.0, A1m + P1p --> A1p + A1m + P1p
-    1.0, A1p + P1p --> A1m + A1p + P1p
-    1.0, A1m + P1m --> A1m + A1m + P1m
-    1.0, A2p + P2m --> A2p + A2p + P2m
-    1.0, A2m + P2p --> A2p + A2m + P2p
-    1.0, A2p + P2p --> A2m + A2p + P2p
-    1.0, A2m + P2m --> A2m + A2m + P2m
+    1.0, A1p + P1p --> A1p + A1p + P1p
+    1.0, A1m + P1m --> A1p + A1m + P1m
+    1.0, A1p + P1m --> A1m + A1p + P1m
+    1.0, A1m + P1p --> A1m + A1m + P1p
+    1.0, A2p + P2p --> A2p + A2p + P2p
+    1.0, A2m + P2m --> A2p + A2m + P2m
+    1.0, A2p + P2m --> A2m + A2p + P2m
+    1.0, A2m + P2p --> A2m + A2m + P2p
+
     # dg_i/dt = a_i z_i
     1.0, A1p + Z1p --> G1p + A1p + Z1p
     1.0, A1m + Z1m --> G1p + A1m + Z1m
@@ -38,6 +39,9 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, A2m + Z2m --> G2p + A2m + Z2m
     1.0, A2p + Z2m --> G2m + A2p + Z2m
     1.0, A2m + Z2p --> G2m + A2m + Z2p
+
+    100.0, G1p + G1m --> 0
+    100.0, G2p + G2m --> 0
 end
 
 rn_dual_mult = @reaction_network rn_dual_mult begin
@@ -52,22 +56,14 @@ rn_dual_mult = @reaction_network rn_dual_mult begin
 end
 
 rn_param_update = @reaction_network rn_param_update begin
-    k1, G11p --> P11m
-    k1, G11m --> P11p
-    k1, G12p --> P12m
-    k1, G12m --> P12p
-    k1, G21p --> P21m
-    k1, G21m --> P21p
-    k1, G22p --> P22m
-    k1, G22m --> P22p
-    k2, G11p --> 0
-    k2, G11m --> 0
-    k2, G12p --> 0
-    k2, G12m --> 0
-    k2, G21p --> 0
-    k2, G21m --> 0
-    k2, G22p --> 0
-    k2, G22m --> 0
+    k1, G1p --> P1m
+    k1, G1m --> P1p
+    k2, G1p --> 0
+    k2, G1m --> 0
+    k1, G2p --> P2m
+    k1, G2m --> P2p
+    k2, G2p --> 0
+    k2, G2m --> 0
 end
 
 rn_final_layer_update = @reaction_network rn_final_layer_update begin
@@ -82,14 +78,10 @@ rn_final_layer_update = @reaction_network rn_final_layer_update begin
 end
 
 rn_dissipate_reactions = @reaction_network rn_dissipate_reactions begin
-    1.0, G11p --> 0
-    1.0, G11m --> 0
-    1.0, G12p --> 0
-    1.0, G12m --> 0
-    1.0, G21p --> 0
-    1.0, G21m --> 0
-    1.0, G22p --> 0
-    1.0, G22m --> 0
+    1.0, G1p --> 0
+    1.0, G1m --> 0
+    1.0, G2p --> 0
+    1.0, G2m --> 0
     1.0, M1p --> 0
     1.0, M1m --> 0
     1.0, M2p --> 0
@@ -148,10 +140,11 @@ end
 
 
 rn_create_error_species = @reaction_network rn_create_error_species begin
-    1.0, Op --> Ep + Op
-    1.0, Ym --> Ep + Ym
-    1.0, Om --> Em + Om
-    1.0, Yp --> Em + Yp
+    10.0, Op --> Ep
+    10.0, Ym --> Ep
+    10.0, Om --> Em
+    10.0, Yp --> Em
+    100.0, Ep + Em --> 0
 end
 
 rn_dual_binary_scalar_mult = @reaction_network rn_dual_binary_scalar_mult begin
