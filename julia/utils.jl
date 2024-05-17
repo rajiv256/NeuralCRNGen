@@ -123,22 +123,13 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.3, precision=10)
     # theta = rand(Normal(0.5, 0.1), dims^2)
     # theta = theta / sqrt(dims)
     # theta = randn(dims^2)
-    theta = rand(Normal(0, 1.0), dims^2)
-    theta = theta/sqrt(dims)
-
+    theta = ones(dims)
     append!(params, theta)
-    beta = ones(dims)*0.1
-    # beta = beta / sqrt(dims)
-    append!(params, beta)
 
     # w = rand(Normal(0.5, 0.1), dims)
     # w = w / sqrt(dims)
-    w = rand(Normal(0.0, 1.0), dims)
-    w = w/sqrt(dims)
-
+    w = ones(dims)
     append!(params, w)
-
-    push!(params, h)
 
     push!(params, t0)
     push!(params, t1)
@@ -159,15 +150,13 @@ end
 function sequester_params(p) 
     dims = Int32(p[1])
     p = p[2:end]
-    theta = zeros(dims, dims)
-    for i in 1:dims^2
-        theta[(i-1)÷dims + 1, (i-1)%dims + 1] = p[i]
+    theta = zeros(dims)
+    for i in 1:dims
+        theta[i] = p[i]
     end
-    beta = p[dims^2+1:dims^2 + dims]
-    w = p[dims^2 + dims+1:dims^2 + 2*dims]
-    h = p[dims^2 + 2*dims + 1]
-    t0 = p[dims^2 + 2*dims + 2]
-    t1 = p[dims^2 + 2*dims + 3]
+    w = p[dims+1: 2*dims]
+    t0 = p[2*dims + 1]
+    t1 = p[2*dims + 2]
     
-    return dims, theta, beta, w, h, t0, t1
+    return dims, theta, w, t0, t1
 end

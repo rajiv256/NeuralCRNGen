@@ -157,7 +157,7 @@ function crn_error_binary_scalar_mult(vars, subS, subP; max_val=40.0)
             vars[varkey] = sol[end][i]
         end
     end
-    # _print_vars(vars, "$subP", title="CRN | $subP at t=T")
+    _print_vars(vars, "$subP", title="CRN | $subP at t=T")
 end
 
 
@@ -184,11 +184,10 @@ function crn_create_error_species(vars)
     p = []
     # Due to the way in which `rn_create_error_species` is setup, the tspan has to be (0.0, 1.0)
     sol = simulate_reaction_network(rn_create_error_species, u, p, tspan=(0.0,1.0))
-    println("CRN | error species | ", sol[end])
     for i in eachindex(ss)
         vars[_convert_species2var(ss[i])] = sol[end][i]
     end
-    # _print_vars(vars, "E", title="CRN | Error species at t=T")
+    _print_vars(vars, "E", title="CRN | Error species at t=T")
 end
 
 
@@ -267,12 +266,6 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
                 varscopy[k] = v
             end
         end
-        for zi in eachindex(x)
-            d = _index1Dvar("X", zi, x[zi], dims=dims)
-            for (k, v) in d
-                varscopy[k] = v
-            end
-        end
 
         
         crn_dual_node_fwd(rn_dual_node_relu_fwd, varscopy, tspan=tspan)
@@ -336,11 +329,6 @@ function crn_param_update(rn, vars, eta, tspan)
     sol = simulate_reaction_network(rn, u, p, tspan=tspan)
     for i in eachindex(ss)
         if startswith(string(ss[i]), "P")
-            vars[_convert_species2var(ss[i])] = sol[end][i]
-        end
-    end
-    for i in eachindex(ss)
-        if startswith(string(ss[i]), "B")
             vars[_convert_species2var(ss[i])] = sol[end][i]
         end
     end
@@ -417,8 +405,8 @@ function crn_dot(rn, vars, subJ, subK; max_val=40.0, reltol=1e-8, abstol=1e-8, d
     dotss = species(rn)
     # Initial concentration values
     varkeys = [_convert_species2var(sp) for sp in dotss]
-    varkeys = [replace(k, "J" => subJ) for k in varkeys]
-    varkeys = [replace(k, "K" => subK) for k in varkeys]
+    varkeys = [replace(k, "A" => subJ) for k in varkeys]
+    varkeys = [replace(k, "B" => subK) for k in varkeys]
     uvalues = [get(vars, k, default) for k in varkeys]
     # # @show varkeys
     # # @show uvalues
@@ -427,8 +415,8 @@ function crn_dot(rn, vars, subJ, subK; max_val=40.0, reltol=1e-8, abstol=1e-8, d
     sol = simulate_reaction_network(rn, u, p, tspan=(0, max_val))
 
     # Collect the outputs
-    yhatp = sol[end][get_index_of("Lp", dotss)]
-    yhatm = sol[end][get_index_of("Lm", dotss)]
+    yhatp = sol[end][get_index_of("Yp", dotss)]
+    yhatm = sol[end][get_index_of("Ym", dotss)]
     yhat = [yhatp yhatm]
     return yhat
 end
@@ -450,7 +438,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=100.0, augval=1.0)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=1000.0, augval=1.0)
 
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
@@ -466,14 +454,14 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
     end
 
     node_params = copy(params)
-    _, theta, beta, w, h, t0, t1 = sequester_params(node_params)
+    _, theta, w, t0, t1 = sequester_params(node_params)
 
     # It seems like the major axis is off for this. So need to apply transpose. 
     # This is correct. We verified! Trust old rajiv, later rajiv.
     crn_theta = vec(transpose(theta)) 
     # Assign the values of the parameters
     for tindex in eachindex(crn_theta)
-        d = _index2Dvar("P", tindex, crn_theta[tindex], dims=dims)
+        d = _index1Dvar("P", tindex, crn_theta[tindex], dims=dims)
         for (k, v) in d
             vars[k] = v
         end
@@ -487,26 +475,9 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         end
     end
 
-    # Assign h parameter
-    hvec = ones(dims)*h
-    for hindex in eachindex(hvec)
-        d = _index1Dvar("H", hindex, hvec[hindex], dims=dims)
-        for (k,v) in d
-            vars[k] = v
-        end
-    end
-
     # Adding time species, although we don't manipulate them now
     vars["T0"] = t0
     vars["T1"] = t1
-
-    # Assign the beta parameters
-    for betaindex in eachindex(beta)
-        d = _index1Dvar("B", betaindex, beta[betaindex], dims=dims)
-        for (k,v) in d
-            vars[k] = v
-        end
-    end
 
     ##################### Initialization complete ################
     tr_losses = []
@@ -539,12 +510,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 end
             end
             
-            for xindex in eachindex(x)
-                d = _index1Dvar("X", xindex, x[xindex], dims=dims)
-                for (k, v) in d
-                    vars[k] = v
-                end
-            end
 
             if y <= 0.0
                 vars["Yp"] = 0.0
@@ -557,15 +522,18 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             println("---- y : ", y)
             _print_vars(vars, "Y", title="CRN | Y at t=T")
             _print_vars(vars, "Z", title="CRN | z at t=0")
-            _print_vars(vars, "H", title="CRN | h at t=0")
+            _print_vars(vars, "P", title="CRN | p at t=0")
 
             # Forward stage
             crn_dual_node_fwd(rn_dual_node_relu_fwd, vars, tspan=tspan)
-            
+            _print_vars(vars, "Z", title="CRN | Z at t=T")
+            _print_vars(vars, "W", title="CRN | W at t=T")
+
             # Calculate yhat
             yhat = crn_dot(rn_dual_dot, vars, "Z", "W", max_val=40.0)
-            yhatval = yhat[1] - yhat[2]
-            # @show yhatval
+            yhatval = yhat[1] - yhat[2]  
+            @show yhatval
+
             if yhatval <= 0.0
                 vars["Op"] = 0.0
                 vars["Om"] = -yhatval 
@@ -591,8 +559,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             # Calculate the adjoint
             crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
             
-            #--------------- BACKPROPAGATION BEGIN ----------------#
-            
             println("-------BACKPROP-------")
             
             # Backpropagate and calculate parameter gradients 
@@ -600,14 +566,13 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
             # Clip the gradient values
             for k in keys(vars)
-                if startswith(k, "G") || startswith(k, "M") || startswith(k, "V")
+                if startswith(k, "G") || startswith(k, "M")
                     vars[k] = min(vars[k], CLIPGRAD)
                 end
             end
             _print_vars(vars, "Z", title="CRN | Z after backprop at t=0 | ")
             _print_vars(vars, "A", title="CRN | A at t=0")
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
-            _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
 
             # Tracking parameters
             for (k, v) in vars
@@ -616,17 +581,15 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
             # Update the final layer weights
             crn_final_layer_update(vars, LR, (0.0, 40.0))
-            # _print_vars(vars, "W", title="CRN | Final layer after update |")
 
             # Update the parameters
             crn_param_update(rn_param_update, vars, LR, (0.0, 40.0))
-            _print_vars(vars, "P", title="CRN | params after update |")
-            _print_vars(vars, "B", title="CRN | beta after update |")
-
-
+            # if i == 2
+            #     return 
+            # end
 
             for k in keys(vars)
-                if startswith(k, "P") || startswith(k, "W") || startswith(k, "B") || startswith(k, "H") || startswith(k, "G") || startswith(k, "M") || startswith(k, "V")
+                if startswith(k, "P") || startswith(k, "W") || startswith(k, "G") || startswith(k, "M")
                     if endswith(k, "p")
                         m = replace(k, "p"=>"m")
                         tmp = vars[k]-vars[m]
@@ -642,13 +605,14 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         
         tr_epoch_loss /= length(train)
         # @show tr_epoch_loss
-        
+
+        if epoch % 10 != 0
+            continue
+        end
 
         ###################################################
         ################## VALIDATION #####################
-        if epoch % 10 != 1
-            continue 
-        end
+        
         val_epoch_loss = 0.0
         val_acc = 0.0
         for i in eachindex(val)
@@ -666,12 +630,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 end
             end
 
-            for zi in eachindex(x)
-                d = _index1Dvar("X", zi, x[zi], dims=dims)
-                for (k, v) in d
-                    vars[k] = v
-                end
-            end
         
             # Forward stage
             crn_dual_node_fwd(rn_dual_node_relu_fwd, vars, tspan=tspan)
@@ -718,7 +676,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
             # Cancel the dual rail variables to prevent parameters from blowing up
             for k in keys(vars)
-                if startswith(k, "P") || startswith(k, "W") || startswith(k, "B") || startswith(k, "H")
+                if startswith(k, "P") || startswith(k, "W")
                     if endswith(k, "p")
                         m = replace(k, "p" => "m")
                         tmp = vars[k] - vars[m]
@@ -741,7 +699,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         
         # Plot tracking information
         for k in keys(vars)
-            if startswith(k, "P") || startswith(k, "W") || startswith(k, "B") || startswith(k, "G") || startswith(k, "M") || startswith(k, "V")
+            if startswith(k, "P") || startswith(k, "W") || startswith(k, "G") || startswith(k, "M")
                 if endswith(k, "p")
                     m = replace(k, "p" => "m")
                     diffarr = crn_tracking[k] - crn_tracking[m]
@@ -759,40 +717,21 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 end
 
 function neuralcrn(;DIMS=2)
-
-    # open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
-    #     redirect_stdout(fileio) do 
+ 
     POS = 1.0
     NEG = 0.0
     THRESHOLD = 0.5
-    train = create_linearly_separable_dataset(100, linear)
-
-    # train = create_logistic_dataset(100, pos=POS, neg=NEG, threshold=THRESHOLD)
-    # val = create_logistic_dataset(200, pos=POS, neg=NEG, threshold=THRESHOLD)
-
-    val = []
-    for i in range(0, 100, 20)
-        for j in range(0, 100, 20)
-            x1 = i / 100
-            x2 = j / 100
-            x1b = Bool(floor(x1 + 0.5))
-            x2b = Bool(floor(x2 + 0.5))
-            y = Float32(x1b & x2b)
-            push!(val, [x1 x2 y])
-        end
-    end
-    Random.shuffle!(val)
+    train = create_linearly_separable_dataset(100, linear, threshold=0.5)
+    val = create_linearly_separable_dataset(50, linear, threshold=0.5)
 
     t0 = 0.0
-    t1 = 1.0
+    t1 = 0.4
     tspan = (t0, t1)
     params_orig = create_node_params(DIMS, t0=t0, t1=t1)
     params_orig_copy = copy(params_orig)
     # @show params_orig_copy
     println("===============================", params_orig)
-    vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
-    #     end
-    # end
+    vars = crn_main(params_orig, train, val, EPOCHS=380, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
 
 end
 

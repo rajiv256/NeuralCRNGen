@@ -1,7 +1,7 @@
 import numpy as np
 import src.ode as ode
 import utils
-from src.algebra import Scalar
+from src.algebra import Scalar, Term
 import itertools
 
 
@@ -47,86 +47,45 @@ def print_gradient_update_crn(
 
 
 if __name__ == '__main__':
-    D = 3  # TODO: INPUT
+
+    D = 2  # Input
     
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
-    zrow = [Scalar(name=f'z{i}') for i in range(1, 4) for j in range(3)]
-    for i in zrow:
-        print(i)
-    zspecial = ode.Matrix2D(dims=[D, D], data=zrow)
-    zmat = zspecial.matrix()
-    # z = ode.Matrix2D(symbol='z', dims=[D, 1])
-    x = ode.Matrix2D(symbol='x', dims=[D, 1])
-    p = ode.Matrix2D(symbol='p', dims=[D, D])
-    pmat = p.matrix()
-    pz = utils.np_hadamard_scalar_matrices_2d(pmat, zmat)
-    pzmat = ode.Matrix2D(data=pz.tolist(), dims=[D, D])
+    p = ode.Matrix2D(symbol='p', dims=[D, 1])
     a = ode.Matrix2D(symbol='a', dims=[D, 1])
-    g = ode.Matrix2D(symbol='g', dims=[D, D])
-    gmat = g.matrix()  # This assigns g.data to a proper value
-    # TODO: The value of dfdz is okay for now but changes when $f$ changes
-    #  from \theta z to RelU
-    dfdz = ode.Matrix2D(symbol='dfdz', dims=[D, D], data=p.data)
-    dfdtheta_data = ode.create_dfdtheta(D, prefix='z')
-    dfdtheta = ode.Matrix2D(
-        symbol='dfdtheta', dims=[D, D ** 2],
-        data=ode.create_dfdtheta(D, prefix='z')
-    )
+    grads = ode.Matrix2D(symbol='g', dims=[D, 1])
+    
 
-    # Node fwd 
-    # For `relu`: dz/dt = z*xT*PT
+    # ReLU node forward
     print("rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin")
-    fwd_z_ode = ode.ODESystem(lhs=z, rhs=[pzmat, x], parity=1)
-    fwd_z_crn = fwd_z_ode.dual_rail_crn()
-    lcs = utils.print_crn(fwd_z_crn, title='NA')
+    
+    ## dz/dt = p Hadamard z (It's okay because Bi is not used anywhere else)
+    pzhdmd = p._hadamard(z)
+    fwd_pz_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd])
+    print("# dz_i/dt = p_iz_i")
+    fwd_pz_crn = fwd_pz_ode.dual_rail_crn()
+    lcs = utils.print_crn(fwd_pz_crn)
+    print("end")
+   
+    ################## Backprop
+    print("rn_dual_backprop = @reaction_network rn_dual_backprop begin")
+    bwd_pz_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd], parity=-1)
+    bwd_pz_crn = bwd_pz_ode.dual_rail_crn()
+    print("# dz/dt = -p_i z_i")
+    lcs = utils.print_crn(bwd_pz_crn)
 
-    # Node fwd
-    # print("rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin")
-    # fwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=1)
-    # fwd_z_crn = fwd_z_ode.dual_rail_crn()
-    # lcs = utils.print_crn(fwd_z_crn, title='NA')
-    # print("end")
-    # print("\n\n")
-
-    # # Z backprop
-    # print("rn_dual_backprop = @reaction_network rn_dual_backprop begin")
-    # print("## Hidden state backprop")
-    # bwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=-1)
-    # bwd_z_crn = bwd_z_ode.dual_rail_crn()
-    # lcs = list(set(utils.print_crn(bwd_z_crn, title="CRN for Z Backprop")))
-
-    # # Adjoint Backprop
-    # print("## Adjoint state backprop")
-    # aT = ode.transpose_matrix(a)  # Use suffix T only for transpose
-
-    # # TODO: Requires parity check
-    # bwd_adj_ode = ode.ODESystem(lhs=aT, rhs=[aT, dfdz], parity=1)
-    # bwd_adj_crn = bwd_adj_ode.dual_rail_crn()
-    # lcs = list(
-        # set(
-            # utils.print_crn(
-                # bwd_adj_crn, title="CRN for "
-                                   # "Adjoint "
-                                   # "Backprop"
-            # )
-        # )
-    # )
-
-    # # Gradient backprop
-    # print("## Gradient backprop")
-    # gg = ode.Matrix2D(
-        # symbol=g.symbol, data=np.array(g.data).flatten().reshape(1, -1)
-    # )
-    # bwd_g_ode = ode.ODESystem(lhs=gg, rhs=[aT, dfdtheta], parity=1)
-    # bwd_g_crn = bwd_g_ode.dual_rail_crn()
-    # lcs = list(set(utils.print_crn(bwd_g_crn, title='NA')))
-    # print("end")
-    # print("\n\n")
-
-    # print_dual_dot_crn()  # This is a generic CRN.
-
-    # print_gradient_update_crn(title="rn_gradient_update", dims=[D, D])
-    # print_gradient_update_crn(title="rn_final_layer_update",
-                              # P="W", G="M", dims=[D])
-
-    #
+    # A backward
+    aphdmd = a._hadamard(p)
+    bwd_ap_ode = ode.ODESystem(lhs=a, rhs=[aphdmd], parity=1) # May 14, 2024 changed parity 1.
+    bwd_ap_crn = bwd_ap_ode.dual_rail_crn()
+    print("\n# da_i/dt = a_i p_i") # f--> -f
+    lcs = utils.print_crn(bwd_ap_crn)
+    
+    # Parameter gradients
+    azhdmd = a._hadamard(z)
+    bwd_pgrads_ode = ode.ODESystem(lhs=grads, rhs=[azhdmd], parity=1)
+    bwd_pgrads_crn = bwd_pgrads_ode.dual_rail_crn()
+    print("# dg_i/dt = a_i z_i") # f--> -f, parity = 1
+    lcs = utils.print_crn(bwd_pgrads_crn)
+    print("end")
+    

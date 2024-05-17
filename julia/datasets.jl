@@ -93,25 +93,33 @@ function create_dataset!(n, yfunc)
     return dataset
 end
 
-function create_linearly_separable_dataset(n, yfunc; threshold=1.0)
+function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
     dataset = []
-    nneg = 0
-    for i in 1:n
+    while length(dataset) <= n÷2
         x1 = convert(Float64, randn(rng, 1)[1])
         x2 = convert(Float64, randn(rng, 1)[1])
-        y = convert(Float64, yfunc(x1, x2)) # only positive for now
+        y = convert(Float64, yfunc(x1, x2))
+        if y <= threshold
+            y = 0.0
+            data_item = Vector{Float64}()
+            append!(data_item, [x1, x2, y])
+            data_item = reshape(data_item, (length(data_item), 1))
+            push!(dataset, data_item)
+        end
+    end
+    
+    while length(dataset) <= n
+        x1 = convert(Float64, randn(rng, 1)[1])
+        x2 = convert(Float64, randn(rng, 1)[1])
+        y = convert(Float64, yfunc(x1, x2))
         if y > threshold
             y = 1.0
-        else
-            y = 0.0
-            nneg += 1
+            data_item = Vector{Float64}()
+            append!(data_item, [x1, x2, y])
+            data_item = reshape(data_item, (length(data_item), 1))
+            push!(dataset, data_item)
         end
-        data_item = Vector{Float64}()
-        append!(data_item, [x1, x2, y])
-        data_item = reshape(data_item, (length(data_item), 1))
-        push!(dataset, data_item)
     end
-    print("nneg: ", nneg, " npos: ", length(dataset) - nneg)
     return dataset
 end
 
