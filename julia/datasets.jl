@@ -215,6 +215,41 @@ function create_and_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
     Random.shuffle!(dataset)
     return dataset
 end
+
+function create_or_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+
+    dataset = []
+    uniform = Uniform(0, 1)
+
+    while length(dataset) <= n ÷ 2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary | x2binary)
+        if y == 0.0
+            push!(dataset, [x1 x2 neg])
+        end
+    end
+
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary | x2binary)
+        if y == 1.0
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
 # # # This part has to be changed into a function call 
 # N = 150
 # # Nval = 20
