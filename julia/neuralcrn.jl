@@ -420,7 +420,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "A", title="CRN | Adjoint at t=0")
 
             # Update the final layer Weights
-            crn_final_layer_update(vars, LR, (0.0, 100.0))
+            # crn_final_layer_update(vars, LR, (0.0, 100.0))
             _print_vars(vars, "W", title="CRN | Final layer at t=0|")
             # Update the parameters
             crn_param_update(vars, LR, (0.0, 100.0))
