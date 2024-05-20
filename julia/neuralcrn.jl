@@ -191,7 +191,7 @@ function crn_create_error_species(vars)
 end
 
 
-function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0, augval=augval)
+function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0, augval=augval, output_dir="")
     aug_x = []
     reg_x = []
     yhats = []
@@ -256,14 +256,14 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
     end
     plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
     plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4), markershape=markers) # Color: based on output, shape based on target label. 
-    png(plt_state1, "julia/rings/images/crn_before_aug.png")
-    png(plt_state2, "julia/rings/images/crn_after_aug.png")
+    png(plt_state1, "julia/$output_dir/images/crn_before_aug.png")
+    png(plt_state2, "julia/$output_dir/images/crn_after_aug.png")
     pltyhats = scatter(getindex.(yhats, 1), getindex.(yhats, 2), group=getindex.(yhats, 4))
-    png(pltyhats, "julia/rings/images/crn_yhats.png")
+    png(pltyhats, "julia/$output_dir/images/crn_yhats.png")
 end
 
 
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0)
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0, output_dir="")
     acc = 0
     preds2d = []
     for i in 1:length(dataset)
@@ -316,7 +316,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
     # Colors (index = 4) represent the original class the data point belongs to
     # Shapes (index = 3) represent the predicted class of the data point 
     sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3)) # output is the label
-    png(sca, "julia/rings/images/crn_accuracy_plot.png")
+    png(sca, "julia/$output_dir/images/crn_accuracy_plot.png")
     println("Accuracy: $(acc/length(dataset))")
     return acc/length(dataset)
 end
@@ -467,7 +467,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="")
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -725,9 +725,9 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         val_acc /= length(val)
         @show epoch, val_acc
         crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
-        png(crn_losses_plt, "julia/rings/images/crn_train_lossplts.png")
-        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval)
-        @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval)
+        png(crn_losses_plt, "julia/$output_dir/images/crn_train_lossplts.png")
+        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
 
         
     end
@@ -740,8 +740,24 @@ function neuralcrn(;DIMS=3)
         redirect_stdout(fileio) do 
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
+           
+            # Rings 
             train = create_annular_rings_dataset(100)
             val = create_annular_rings_dataset(200)
+
+            # train = create_and_dataset(100)
+            # val = []
+            # for i in range(0, 100, 20)
+            #     for j in range(0, 100, 20)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b & x2b)
+            #         push!(val, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             t0 = 0.0
             t1 = 0.6
@@ -752,7 +768,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=40, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL)
+            vars = crn_main(params_orig, train, val, EPOCHS=40, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir="rings")
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
