@@ -471,6 +471,14 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
+    # Create an output dir and images dir inside it.
+    if !isdir("julia/$output_dir")
+        mkdir("julia/$output_dir")
+        if !isdir("julia/$output_dir/images")
+            mkdir("julia/$output_dir/images")
+        end
+    end
+
     # Get all the involved CRNs and add their species to the vars
     crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, 
             rn_final_layer_update, rn_dissipate_reactions ]
@@ -610,8 +618,8 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
             _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
             
-            # Update the final layer weights
-            crn_final_layer_update(vars, LR, (0.0, 40.0))
+            # # Update the final layer weights
+            # crn_final_layer_update(vars, LR, (0.0, 40.0))
             _print_vars(vars, "W", title="CRN | Final layer after update |")
             
             # Update the parameters
@@ -741,34 +749,34 @@ function neuralcrn(;DIMS=3)
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
-            # Rings 
-            train = create_annular_rings_dataset(100)
-            val = create_annular_rings_dataset(200)
+            # # Rings 
+            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
+            # val = create_annular_rings_dataset(300, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
 
-            # train = create_and_dataset(100)
-            # val = []
-            # for i in range(0, 100, 20)
-            #     for j in range(0, 100, 20)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b & x2b)
-            #         push!(val, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            train = create_and_dataset(50)
+            val = []
+            for i in range(0, 100, 10)
+                for j in range(0, 100, 10)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b & x2b)
+                    push!(val, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             t0 = 0.0
-            t1 = 0.6
-            AUGVAL = 1.0
+            t1 = 0.4
+            AUGVAL = 0.4
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=40, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir="rings")
+            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir="and")
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
