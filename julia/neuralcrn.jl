@@ -688,7 +688,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
             
             # Update the final layer weights
-            crn_final_layer_update(vars, LR, (0.0, 100.0))
+            crn_final_layer_update(vars, LR, (0.0, 100.0)) # Freezing final layer weights.
             _print_vars(vars, "W", title="CRN | Final layer after update |")
             
             # Update the parameters
