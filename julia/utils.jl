@@ -126,9 +126,9 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
     beta = ones(dims)*0.1 
     append!(params, beta)
 
-    w = rand(Normal(0.0, 2.0), dims)
-    w = w/sqrt(dims)
-    # w = ones(dims)*0.8
+    # w = rand(Normal(0.0, 2.0), dims)
+    # w = w/sqrt(dims)
+    w = ones(dims)*0.8
     append!(params, w)
 
     push!(params, h)

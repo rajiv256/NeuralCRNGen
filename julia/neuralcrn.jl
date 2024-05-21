@@ -752,8 +752,9 @@ function neuralcrn(;DIMS=3)
             # # Rings 
             # train = create_annular_rings_dataset(100, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
             # val = create_annular_rings_dataset(300, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
-
-            train = create_and_dataset(50)
+            
+            output_dir = "xor"
+            train = create_xor_dataset(100)
             val = []
             for i in range(0, 100, 10)
                 for j in range(0, 100, 10)
@@ -761,22 +762,32 @@ function neuralcrn(;DIMS=3)
                     x2 = j / 100
                     x1b = Bool(floor(x1 + 0.5))
                     x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b & x2b)
+                    y = Float32(x1b ⊻ x2b)
                     push!(val, [x1 x2 y])
                 end
             end
             Random.shuffle!(train)
 
+            if !isdir("julia/$output_dir")
+                mkdir("julia/$output_dir")
+                if !isdir("julia/$output_dir/images")
+                    mkdir("julia/$output_dir/images")
+                end
+            end
+            plt = scatter(getindex.(train, 1), getindex.(train, 2), group=getindex.(train, 3))
+            png(plt, "julia/$output_dir/images/$output_dir.png")
+
+
             t0 = 0.0
-            t1 = 0.4
-            AUGVAL = 0.4
+            t1 = 0.6
+            AUGVAL = 0.8
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir="and")
+            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end
