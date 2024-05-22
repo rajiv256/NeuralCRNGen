@@ -19,8 +19,8 @@ using Catalyst;
 
 
 rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
-1.0, P11p + Z1p --> Z1p + P11p + Z1p
-1.0, P11m + Z1m --> Z1p + P11m + Z1m
+1.0, P1p + Z1p --> Z1p + P1p + Z1p
+1.0, P1m + Z1m --> Z1p + P1m + Z1m
 1.0, P11p + Z1m --> Z1m + P11p + Z1m
 1.0, P11m + Z1p --> Z1m + P11m + Z1p
 1.0, P12p + Z2p --> Z1p + P12p + Z2p
@@ -35,6 +35,8 @@ rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
 1.0, P22m + Z2m --> Z2p + P22m + Z2m
 1.0, P22p + Z2m --> Z2m + P22p + Z2m
 1.0, P22m + Z2p --> Z2m + P22m + Z2p
+100.0, Z1p + Z1m --> 0
+100.0, Z2p + Z2m --> 0
 end
 
 
@@ -91,6 +93,8 @@ rn_dual_backprop = @reaction_network rn_dual_backprop begin
 1.0, A2m + Z2m --> G22p + A2m + Z2m
 1.0, A2p + Z2m --> G22m + A2p + Z2m
 1.0, A2m + Z2p --> G22m + A2m + Z2p
+100.0, Z1p + Z1m --> 0
+100.0, Z2p + Z2m --> 0
 end
 
 rn_dual_mult = @reaction_network rn_dual_mult begin
