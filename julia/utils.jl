@@ -120,10 +120,8 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.3, precision=10)
     params = []
 
     push!(params, Float64(dims))
-    # theta = rand(Normal(0.5, 0.1), dims^2)
-    # theta = theta / sqrt(dims)
-    # theta = randn(dims^2)
-    theta = ones(dims)
+    theta = rand(Uniform(0.5, 1.5), dims^2)
+    theta = theta / sqrt(dims)
     append!(params, theta)
 
     # w = rand(Normal(0.5, 0.1), dims)

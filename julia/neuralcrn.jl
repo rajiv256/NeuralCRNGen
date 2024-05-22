@@ -557,7 +557,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
              
             # Calculate the adjoint
-            crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
+            crn_error_binary_scalar_mult(vars, "W", "E", max_val=40.0)
             
             println("-------BACKPROP-------")
             
@@ -580,7 +580,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             end
 
             # Update the final layer weights
-            crn_final_layer_update(vars, LR, (0.0, 40.0))
+            # crn_final_layer_update(vars, LR, (0.0, 40.0))
 
             # Update the parameters
             crn_param_update(rn_param_update, vars, LR, (0.0, 40.0))
@@ -725,13 +725,13 @@ function neuralcrn(;DIMS=2)
     val = create_linearly_separable_dataset(50, linear, threshold=0.5)
 
     t0 = 0.0
-    t1 = 0.4
+    t1 = 1.0
     tspan = (t0, t1)
     params_orig = create_node_params(DIMS, t0=t0, t1=t1)
     params_orig_copy = copy(params_orig)
     # @show params_orig_copy
     println("===============================", params_orig)
-    vars = crn_main(params_orig, train, val, EPOCHS=380, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
+    vars = crn_main(params_orig, train, val, EPOCHS=3, dims=DIMS, LR=0.1, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
 
 end
 
