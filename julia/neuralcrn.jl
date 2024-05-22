@@ -557,7 +557,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
              
             # Calculate the adjoint
-            crn_error_binary_scalar_mult(vars, "W", "E", max_val=40.0)
+            crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
             
             println("-------BACKPROP-------")
             
@@ -731,7 +731,7 @@ function neuralcrn(;DIMS=2)
     params_orig_copy = copy(params_orig)
     # @show params_orig_copy
     println("===============================", params_orig)
-    vars = crn_main(params_orig, train, val, EPOCHS=3, dims=DIMS, LR=0.1, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
+    vars = crn_main(params_orig, train, val, EPOCHS=3, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
 
 end
 
