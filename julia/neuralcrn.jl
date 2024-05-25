@@ -589,7 +589,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             # end
 
             for k in keys(vars)
-                if startswith(k, "P") || startswith(k, "W") || startswith(k, "G") || startswith(k, "M")
+                if startswith(k, "P") || startswith(k, "W")
                     if endswith(k, "p")
                         m = replace(k, "p"=>"m")
                         tmp = vars[k]-vars[m]
@@ -606,7 +606,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
         tr_epoch_loss /= length(train)
         # @show tr_epoch_loss
 
-        if epoch % 10 != 0
+        if epoch % 2 != 0
             continue
         end
 
@@ -717,21 +717,25 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
 end
 
 function neuralcrn(;DIMS=2)
- 
-    POS = 1.0
-    NEG = 0.0
-    THRESHOLD = 0.5
-    train = create_linearly_separable_dataset(100, linear, threshold=0.5)
-    val = create_linearly_separable_dataset(50, linear, threshold=0.5)
 
-    t0 = 0.0
-    t1 = 1.0
-    tspan = (t0, t1)
-    params_orig = create_node_params(DIMS, t0=t0, t1=t1)
-    params_orig_copy = copy(params_orig)
-    # @show params_orig_copy
-    println("===============================", params_orig)
-    vars = crn_main(params_orig, train, val, EPOCHS=3, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
+    open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
+        redirect_stdout(fileio) do    
+        POS = 1.0
+        NEG = 0.0
+        THRESHOLD = 0.5
+        train = create_linearly_separable_dataset(100, linear, threshold=1.0)
+        val = create_linearly_separable_dataset(100, linear, threshold=1.0)
+
+        t0 = 0.0
+        t1 = 1.0
+        tspan = (t0, t1)
+        params_orig = create_node_params(DIMS, t0=t0, t1=t1)
+        params_orig_copy = copy(params_orig)
+        # @show params_orig_copy
+        println("===============================", params_orig)
+        vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
+        end
+    end
 
 end
 

@@ -8,6 +8,15 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P2m + Z2m --> Z2p + P2m + Z2m
     1.0, P2p + Z2m --> Z2m + P2p + Z2m
     1.0, P2m + Z2p --> Z2m + P2m + Z2p
+    # dz_i/dt = -z_i^2
+    # # Not sure if this is hacky
+    # 1.0, Z1p + Z1p --> Z1p
+    # 1.0, Z1m + Z1m --> Z1m
+    # 100.0, Z1p + Z1m --> 0
+
+    # 1.0, Z2p + Z2p --> Z2p
+    # 1.0, Z2m + Z2m --> Z2m
+    # 100.0, Z2p + Z2m --> 0
 end
 rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     # dz/dt = -p_i z_i
@@ -40,8 +49,13 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, A2p + Z2m --> G2m + A2p + Z2m
     1.0, A2m + Z2p --> G2m + A2m + Z2p
 
-    100.0, G1p + G1m --> 0
-    100.0, G2p + G2m --> 0
+    # 100.0, Z1p + Z1m --> 0
+    # 1.0, Z1p + Z1p --> Z1p + Z1p + Z1p
+    # 1.0, Z1m + Z1m --> Z1m + Z1m + Z1m
+
+    # 100.0, Z2p + Z2m --> 0
+    # 1.0, Z2p + Z2p --> Z2p + Z2p + Z2p
+    # 1.0, Z2m + Z2m --> Z2m + Z2m + Z2m
 end
 
 rn_dual_mult = @reaction_network rn_dual_mult begin

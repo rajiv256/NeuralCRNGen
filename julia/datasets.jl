@@ -96,9 +96,9 @@ end
 function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
     dataset = []
     while length(dataset) <= n÷2
-        x1 = convert(Float64, randn(rng, 1)[1])
-        x2 = convert(Float64, randn(rng, 1)[1])
-        y = convert(Float64, yfunc(x1, x2))
+        x1 = abs(convert(Float64, rand(Normal(0, 1))))
+        x2 = abs(convert(Float64, rand(Normal(0, 1))))
+        y = x1 + x2
         if y <= threshold
             y = 0.0
             data_item = Vector{Float64}()
@@ -109,9 +109,9 @@ function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
     end
     
     while length(dataset) <= n
-        x1 = convert(Float64, randn(rng, 1)[1])
-        x2 = convert(Float64, randn(rng, 1)[1])
-        y = convert(Float64, yfunc(x1, x2))
+        x1 = abs(convert(Float64, rand(Normal(0, 1))))
+        x2 = abs(convert(Float64, rand(Normal(0, 1))))
+        y = x1 + x2
         if y > threshold
             y = 1.0
             data_item = Vector{Float64}()
@@ -122,6 +122,10 @@ function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
     end
     return dataset
 end
+
+train = create_linearly_separable_dataset(100, linear, threshold=1.0)
+gg = scatter(getindex.(train, 1), getindex.(train, 2), group=getindex.(train, 3))
+png(gg, "julia/images/linear_dataset.png")
 
 
 # This is a classification dataset with nonlinearly separable data
