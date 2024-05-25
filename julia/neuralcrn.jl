@@ -322,20 +322,6 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
 end
 
 
-function dissipate_and_annihilate(vars, tspan)
-    ss = species(rn_dissipate_reactions)
-    u = [vars[_convert_species2var(sp)] for sp in ss]
-    p = []
-
-    sol = simulate_reaction_network(rn_dissipate_reactions, u, p, tspan=tspan)
-    
-    for i in eachindex(ss)
-        vars[_convert_species2var(ss[i])] = sol[end][i]
-    end
-
-end
-
-
 function crn_param_update(rn, vars, eta, tspan)
 
     ss = species(rn)
@@ -480,8 +466,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
     end
 
     # Get all the involved CRNs and add their species to the vars
-    crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, 
-            rn_final_layer_update, rn_dissipate_reactions ]
+    crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, rn_create_error_species]
     for crn in crns
         crn_species = species(crn)
         for sp in crn_species
@@ -495,15 +480,15 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
     # A: adjoint
     # W: w
     # Z: z
-    node_params = copy(params)
-    _, theta, beta, w, h, t0, t1 = sequester_params(node_params)
+    
+    _, theta, beta, w, h, t0, t1 = sequester_params(params)
 
     # It seems like the major axis is off for this. So need to apply transpose. 
     # This is correct. We verified! Trust old rajiv, later rajiv.
     crn_theta = vec(transpose(theta)) 
     # Assign the values of the parameters
     for tindex in eachindex(crn_theta)
-        d = _index2Dvar("P", tindex, crn_theta[tindex], dims=dims)
+        d = _index1Dvar("P", tindex, crn_theta[tindex], dims=dims)
         for (k, v) in d
             vars[k] = v
         end
@@ -537,6 +522,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             vars[k] = v
         end
     end
+    print(vars) 
 
     ##################### Initialization complete ################
     tr_losses = []
@@ -564,13 +550,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             for xindex in eachindex(x)
                 d = _index1Dvar("Z", xindex, x[xindex], dims=dims)
                 for (k,v) in d
-                    vars[k] = v
-                end
-            end
-            
-            for xindex in eachindex(x)
-                d = _index1Dvar("X", xindex, x[xindex], dims=dims)
-                for (k, v) in d
                     vars[k] = v
                 end
             end
@@ -602,8 +581,8 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             # Epoch loss function
             tr_epoch_loss += 0.5*(err[1]-err[2])^2
             
-            # Calculate the output layer gradients
-            crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
+            # # Calculate the output layer gradients
+            # crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
             
             # Calculate the adjoint
             crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
@@ -616,16 +595,24 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             _print_vars(vars, "Z", title="CRN | Z after backprop at t=0 | ")
             _print_vars(vars, "A", title="CRN | A at t=0")
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
-            _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
             
             # # Update the final layer weights
             # crn_final_layer_update(vars, LR, (0.0, 40.0))
             _print_vars(vars, "W", title="CRN | Final layer after update |")
             
+            # Clip gradients
+            for k in keys(vars)
+                if startswith(k, "G")
+                    if vars[k] >  10.0
+                        vars[k] = 0.0
+                    end
+                end
+            end
+
+
             # Update the parameters
             crn_param_update(rn_param_update, vars, LR, (0.0, 40.0))
             _print_vars(vars, "P", title="CRN | params after update |")
-            _print_vars(vars, "B", title="CRN | beta after update |")
             
             # Tracking parameters
             for (k, v) in vars
@@ -635,7 +622,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
             # dissipate_and_annihilate(vars, (0.0, 10.0))
             # _print_vars(vars, "G", title="CRN | Gradients after annihilation")
             for k in keys(vars)
-                if startswith(k, "P") || startswith(k, "W") || startswith(k, "B") || startswith(k, "H")
+                if startswith(k, "P") || startswith(k, "W") || startswith(k, "H") || startswith(k, "B")
                     if endswith(k, "p")
                         m = replace(k, "p"=>"m")
                         tmp = vars[k]-vars[m]
@@ -656,7 +643,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         val_epoch_loss = 0.0
         val_acc = 0.0
         
-        if epoch % 10 != 0
+        if epoch % 2 != 0
             continue
         end
         
@@ -681,13 +668,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 end
             end
 
-            for zi in eachindex(x)
-                d = _index1Dvar("X", zi, x[zi], dims=dims)
-                for (k, v) in d
-                    vars[k] = v
-                end
-            end
-        
             # Forward stage
             crn_dual_node_fwd(rn_dual_node_relu_fwd, vars, tspan=tspan)
 
@@ -749,24 +729,25 @@ function neuralcrn(;DIMS=3)
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
-            # # Rings 
-            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
-            # val = create_annular_rings_dataset(300, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
-            
-            output_dir = "xor"
-            train = create_xor_dataset(100)
-            val = []
-            for i in range(0, 100, 10)
-                for j in range(0, 100, 10)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b ⊻ x2b)
-                    push!(val, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
+            # Rings 
+            train = create_annular_rings_dataset(100, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
+            val = create_annular_rings_dataset(50, lub=0.0, lb=0.3, mb=0.7, ub=1.0)
+            output_dir = "rings"
+
+            # Xor/And/Or 
+            # train = create_xor_dataset(100)
+            # val = []
+            # for i in range(0, 100, 10)
+            #     for j in range(0, 100, 10)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b ⊻ x2b)
+            #         push!(val, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
@@ -782,12 +763,12 @@ function neuralcrn(;DIMS=3)
             t1 = 0.6
             AUGVAL = 0.8
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
             
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=0.01, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
             @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
         end
     end

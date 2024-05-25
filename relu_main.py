@@ -51,10 +51,10 @@ if __name__ == '__main__':
     D = 3
     
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
-    p = ode.Matrix2D(symbol='p', dims=[D, D])
+    p = ode.Matrix2D(symbol='p', dims=[D, 1])
     x = ode.Matrix2D(symbol='x', dims=[D, 1])
     a = ode.Matrix2D(symbol='a', dims=[D, 1])
-    grads = ode.Matrix2D(symbol='g', dims=[D, D])._reshape(dims=[1, D**2])
+    grads = ode.Matrix2D(symbol='g', dims=[D, 1])
     h = ode.Matrix2D(symbol='h', dims=[1, 1])
     b = ode.Matrix2D(symbol='b', dims=[D, 1])
     bgrads = ode.Matrix2D(symbol='v', dims=[D, 1])
@@ -70,18 +70,18 @@ if __name__ == '__main__':
     lcs = utils.print_crn(fwd_h_crn)
 
     ## dz_i/dt = sum p_ij x_j z_i
-    pzhdmd = p._hadamard(z)
-    fwd_pzx_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd, x], parity=1)
-    fwd_pzx_crn = fwd_pzx_ode.dual_rail_crn()
-    print("# dz_i/dt = p_ij x_j z_i")
-    lcs = utils.print_crn(fwd_pzx_crn)
+    # pzhdmd = p._hadamard(z)
+    # fwd_pzx_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd, x], parity=1)
+    # fwd_pzx_crn = fwd_pzx_ode.dual_rail_crn()
+    # print("# dz_i/dt = p_ij x_j z_i")
+    # lcs = utils.print_crn(fwd_pzx_crn)
 
-    ## dz/dt = bz (It's okay because Bi is not used anywhere else)
-    bzhdmd = b._hadamard(z)
-    fwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd])
-    print("# dz_i/dt = b_iz_i")
-    fwd_bz_crn = fwd_bz_ode.dual_rail_crn()
-    lcs = utils.print_crn(fwd_bz_crn)
+    ## dz_i/dt = sum p_i z_i
+    pzhdmd = p._hadamard(z)
+    fwd_pz_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd])
+    print("# dz_i/dt = p_iz_i")
+    fwd_pz_crn = fwd_pz_ode.dual_rail_crn()
+    lcs = utils.print_crn(fwd_pz_crn)
     
     ## dz/dt = -z^2
     zzhdmd = z._hadamard(z)
@@ -89,6 +89,13 @@ if __name__ == '__main__':
     fwd_zz_crn = fwd_zz_ode.dual_rail_crn()
     print("# dz_i/dt = -z_i^2")
     lcs = utils.print_crn(fwd_zz_crn)
+    
+    ## dz/dt = bz (It's okay because Bi is not used anywhere else)
+    bzhdmd = b._hadamard(z)
+    fwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd])
+    print("# dz_i/dt = b_iz_i")
+    fwd_bz_crn = fwd_bz_ode.dual_rail_crn()
+    lcs = utils.print_crn(fwd_bz_crn)
 
     ################## Backprop
 
@@ -99,54 +106,31 @@ if __name__ == '__main__':
     print("# dz/dt = -h")
     lcs = utils.print_crn(bwd_h_crn)
 
-    bwd_pzx_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd, x], parity=-1)
-    bwd_pzx_crn = bwd_pzx_ode.dual_rail_crn()
-    print("# dz/dt = -p_ij x_j z_i")
-    lcs = utils.print_crn(bwd_pzx_crn)
-
-    bwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd], parity=-1)
-    bwd_bz_crn = bwd_bz_ode.dual_rail_crn()
-    print("# dz/dt = -b_i z_i")
-    lcs = utils.print_crn(bwd_bz_crn)
+    bwd_pz_ode = ode.ODESystem(lhs=z, rhs=[pzhdmd], parity=-1)
+    bwd_pz_crn = bwd_pz_ode.dual_rail_crn()
+    print("# dz/dt = -p_iz_i")
+    lcs = utils.print_crn(bwd_pz_crn)
 
     bwd_zz_ode = ode.ODESystem(lhs=z, rhs=[zzhdmd], parity=1) # parity is 1
     bwd_zz_crn = bwd_zz_ode.dual_rail_crn()
     print("# dz/dt = z^2")
     lcs = utils.print_crn(bwd_zz_crn)
 
+    bwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd], parity=-1)
+    bwd_bz_crn = bwd_bz_ode.dual_rail_crn()
+    print("# dz/dt = -b_i z_i")
+    lcs = utils.print_crn(bwd_bz_crn)
 
     # A backward
     aphdmd = a._hadamard(p)
-    bwd_apx_ode = ode.ODESystem(lhs=a, rhs=[aphdmd, x], parity=1)
-    bwd_apx_crn = bwd_apx_ode.dual_rail_crn()
-    print("\n# da_i/dt = a_i p_ij x_j") # f--> -f
-    lcs = utils.print_crn(bwd_apx_crn)
+    bwd_ap_ode = ode.ODESystem(lhs=a, rhs=[aphdmd], parity=1)
+    bwd_ap_crn = bwd_ap_ode.dual_rail_crn()
+    print("\n# da_i/dt = a_i p_i")
+    lcs = utils.print_crn(bwd_ap_crn)
     
     # Gradients
-    amat = a.matrix()
-    amat = amat.repeat(D) # [a1 a1.. a3 a3 a3]
-    arepeat = ode.Matrix2D(symbol='A', dims=[1, D**2], data=amat.flatten().tolist())
-    
-    zmat = z.matrix().repeat(D)
-    zrepeat = ode.Matrix2D(symbol='Z', dims=[1, D**2],
-                           data=zmat.flatten().tolist())
-        
-    xmat = x.matrix().repeat(D).reshape([D, D]).transpose()
-    xrepeat = ode.Matrix2D(symbol='X', dims=[1, D**2],
-                           data=xmat.flatten().tolist())
-    
-    azrepeathdmd = arepeat._hadamard(zrepeat)
-    azxrepeathdmd = azrepeathdmd._hadamard(xrepeat)
-    
-    bwd_grads_ode = ode.ODESystem(lhs=grads, rhs=[azxrepeathdmd], parity=1)
-    bwd_grads_crn = bwd_grads_ode.dual_rail_crn()
-    print("# dg_ij/dt = a_i z_i x_j") # f --> -f ,  parity = 1
-    lcs = utils.print_crn(bwd_grads_crn) 
-
-    # Beta gradients
     azhdmd = a._hadamard(z)
-    bwd_bgrads_ode = ode.ODESystem(lhs=bgrads, rhs=[azhdmd], parity=1)
-    bwd_bgrads_crn = bwd_bgrads_ode.dual_rail_crn()
-    print("# dbg_i/dt = a_i z_i") # f--> -f, parity = 1
-    lcs = utils.print_crn(bwd_bgrads_crn)
-
+    bwd_grads_ode = ode.ODESystem(lhs=grads, rhs=[azhdmd], parity=1)
+    bwd_grads_crn = bwd_grads_ode.dual_rail_crn()
+    print("# dg_i/dt = a_i z_i") # f--> -f, parity = 1
+    lcs = utils.print_crn(bwd_grads_crn)

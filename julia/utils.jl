@@ -17,7 +17,7 @@ using Catalyst;
 function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
     oprob = ODEProblem(network, u0, tspan, rate_constants)
-    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-8, maxiters=1e7)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-8, maxiters=1e6)
     return sol
 end
 
@@ -119,7 +119,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 
     push!(params, Float32(dims))
 
-    theta = rand(Normal(0.0, 2.0), dims^2)
+    theta = rand(Normal(0.0, 1.0), dims)
     theta = theta/sqrt(dims)
 
     append!(params, theta)
@@ -152,15 +152,15 @@ end
 function sequester_params(p) 
     dims = Int32(p[1])
     p = p[2:end]
-    theta = zeros(dims, dims)
-    for i in 1:dims^2
-        theta[(i-1)÷dims + 1, (i-1)%dims + 1] = p[i]
+    theta = zeros(dims, 1)
+    for i in 1:dims
+        theta[i] = p[i]
     end
-    beta = p[dims^2+1:dims^2 + dims]
-    w = p[dims^2 + dims+1:dims^2 + 2*dims]
-    h = p[dims^2 + 2*dims + 1]
-    t0 = p[dims^2 + 2*dims + 2]
-    t1 = p[dims^2 + 2*dims + 3]
+    beta = p[dims+1:dims + dims]
+    w = p[2*dims + 1:2*dims + dims]
+    h = p[3*dims + 1]
+    t0 = p[3*dims + 2]
+    t1 = p[3*dims + 3]
     
     return dims, theta, beta, w, h, t0, t1
 end
