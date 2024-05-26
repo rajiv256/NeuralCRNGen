@@ -118,15 +118,13 @@ end
 
 function create_node_params(dims; t0=0.0, t1=1.0, h=0.3, precision=10)
     params = []
-
     push!(params, Float64(dims))
-    theta = rand(Normal(0.5, 1), dims)
+    push!(params, Float64(h))
+    theta = rand(Normal(0, 1), dims)
     theta = theta / sqrt(dims)
     append!(params, theta)
 
-    # w = rand(Normal(0.5, 0.1), dims)
-    # w = w / sqrt(dims)
-    w = ones(dims)
+    w = ones(dims)*0.8
     append!(params, w)
 
     push!(params, t0)
@@ -147,7 +145,8 @@ end
 
 function sequester_params(p) 
     dims = Int32(p[1])
-    p = p[2:end]
+    h = p[2]
+    p = p[3:end]
     theta = zeros(dims)
     for i in 1:dims
         theta[i] = p[i]
@@ -156,5 +155,5 @@ function sequester_params(p)
     t0 = p[2*dims + 1]
     t1 = p[2*dims + 2]
     
-    return dims, theta, w, t0, t1
+    return h, dims, theta, w, t0, t1
 end

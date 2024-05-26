@@ -21,7 +21,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("linear_reduced2D.jl")
+include("linear_reduced3D.jl")
 
 
 function _convert_species2var(sp)
@@ -438,14 +438,13 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=1000.0, augval=1.0)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=1000.0, augval=0.8)
 
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
     # Get all the involved CRNs and add their species to the vars
-    crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, 
-            rn_final_layer_update, rn_dissipate_reactions, rn_create_error_species]
+    crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, rn_create_error_species]
     for crn in crns
         crn_species = species(crn)
         for sp in crn_species
@@ -454,7 +453,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
     end
 
     node_params = copy(params)
-    _, theta, w, t0, t1 = sequester_params(node_params)
+    _, h, theta, w, t0, t1 = sequester_params(node_params)
 
     # It seems like the major axis is off for this. So need to apply transpose. 
     # This is correct. We verified! Trust old rajiv, later rajiv.
@@ -509,6 +508,12 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
                     vars[k] = v
                 end
             end
+            for xindex in eachindex(x)
+                d = _index1Dvar("X", xindex, x[xindex], dims=dims)
+                for (k, v) in d
+                    vars[k] = v
+                end
+            end
             
 
             if y <= 0.0
@@ -554,7 +559,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             tr_epoch_loss += 0.5*(err[1]-err[2])^2
             
             # Calculate the output layer gradients
-            crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
+            # crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
              
             # Calculate the adjoint
             crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
@@ -578,6 +583,28 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             for (k, v) in vars
                 push!(crn_tracking[k], v)
             end
+
+            for k in keys(vars)
+                if startswith(k, "G")
+                    if vars[k] > CLIPGRAD
+                        for k in keys(vars)
+                            if startswith(k, "P") || startswith(k, "W")
+                                if endswith(k, "p")
+                                    m = replace(k, "p" => "m")
+                                    tmp = vars[k] - vars[m]
+                                    vars[k] = max(0, tmp)
+                                    vars[m] = max(0, -tmp)
+                                end
+                            else
+                                # Other than the above mentioned parameters 
+                                vars[k] = 0.0
+                            end
+                        end
+                        continue
+                    end
+                end
+            end
+
 
             # Update the final layer weights
             # crn_final_layer_update(vars, LR, (0.0, 40.0))
@@ -625,6 +652,12 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
 
             for zi in eachindex(x)
                 d = _index1Dvar("Z", zi, x[zi], dims=dims)
+                for (k, v) in d
+                    vars[k] = v
+                end
+            end
+            for xindex in eachindex(x)
+                d = _index1Dvar("X", xindex, x[xindex], dims=dims)
                 for (k, v) in d
                     vars[k] = v
                 end
@@ -699,7 +732,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
         
         # Plot tracking information
         for k in keys(vars)
-            if startswith(k, "P") || startswith(k, "W") || startswith(k, "G") || startswith(k, "M")
+            if startswith(k, "P") || startswith(k, "W") || startswith(k, "G")
                 if endswith(k, "p")
                     m = replace(k, "p" => "m")
                     diffarr = crn_tracking[k] - crn_tracking[m]
@@ -716,16 +749,21 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
     return vars    
 end
 
-function neuralcrn(;DIMS=2)
+function neuralcrn(;DIMS=3)
 
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do    
         POS = 1.0
         NEG = 0.0
         THRESHOLD = 0.5
-        train = create_linearly_separable_dataset(100, linear, threshold=1.0)
-        val = create_linearly_separable_dataset(100, linear, threshold=1.0)
+        # train = create_linearly_separable_dataset(100, linear, threshold=1.0)
+        # val = create_linearly_separable_dataset(100, linear, threshold=1.0)
+        # Rings 
+        # train = create_annular_rings_dataset(100, lub=0.0, lb=0.5, mb=0.55, ub=1.0)
+        # val = create_annular_rings_dataset(80, lub=0.0, lb=0.5, mb=0.55, ub=1.0)
 
+        train = create_xor_dataset(100)
+        val = create_xor_dataset(300)
         t0 = 0.0
         t1 = 1.0
         tspan = (t0, t1)
@@ -733,13 +771,13 @@ function neuralcrn(;DIMS=2)
         params_orig_copy = copy(params_orig)
         # @show params_orig_copy
         println("===============================", params_orig)
-        vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
+        vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=1, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
         end
     end
 
 end
 
-neuralcrn(DIMS=2)
+neuralcrn(DIMS=3)
 #=
 Things to do further
 1. k_ann = 100.0 in the reactionsReLU for the annihilation reactions. Maybe change it to 10.0

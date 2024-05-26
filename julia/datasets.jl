@@ -133,7 +133,7 @@ function create_annular_rings_dataset(n; lub=0.04, lb=0.3, mb=0.8, ub=1.0)
     
     dataset = []
     center = 0
-    normal = Uniform(-1, 1)
+    normal = Uniform(0, 1)
     while length(dataset) <= n÷2
         x1 = convert(Float32, rand(normal, 1)[1])
         x2 = convert(Float32, rand(normal, 1)[1])
