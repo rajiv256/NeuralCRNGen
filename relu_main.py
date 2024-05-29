@@ -122,6 +122,12 @@ if __name__ == '__main__':
     print("\n# da_i/dt = a_i p_ij x_j") # f--> -f
     lcs = utils.print_crn(bwd_apx_crn)
     
+    azhdmd = a._hadamard(z)
+    bwd_az_ode = ode.ODESystem(lhs=a, rhs=[azhdmd], parity=-1)
+    bwd_az_crn = bwd_az_ode.dual_rail_crn()
+    print("\n# da_i/dt = -2 a_i z_i")
+    lcs = utils.print_crn(bwd_az_crn)
+
     # Gradients
     amat = a.matrix()
     amat = amat.repeat(D) # [a1 a1.. a3 a3 a3]
