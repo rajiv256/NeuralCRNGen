@@ -315,6 +315,20 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, A3m + P33m + X3m --> A3m + A3m + P33m + X3m
     1.0, A3p + P33m + X3p --> A3m + A3p + P33m + X3p
     1.0, A3m + P33p + X3p --> A3m + A3m + P33p + X3p
+
+    # da_i/dt = -2 a_i z_i
+    2.0, A1p + Z1m --> A1p + A1p + Z1m
+    2.0, A1m + Z1p --> A1p + A1m + Z1p
+    2.0, A1p + Z1p --> A1m + A1p + Z1p
+    2.0, A1m + Z1m --> A1m + A1m + Z1m
+    2.0, A2p + Z2m --> A2p + A2p + Z2m
+    2.0, A2m + Z2p --> A2p + A2m + Z2p
+    2.0, A2p + Z2p --> A2m + A2p + Z2p
+    2.0, A2m + Z2m --> A2m + A2m + Z2m
+    2.0, A3p + Z3m --> A3p + A3p + Z3m
+    2.0, A3m + Z3p --> A3p + A3m + Z3p
+    2.0, A3p + Z3p --> A3m + A3p + Z3p
+    2.0, A3m + Z3m --> A3m + A3m + Z3m
     
     # dg_ij/dt = a_i z_i x_j
     1.0, A1p + Z1p + X1p --> G11p + A1p + Z1p + X1p
