@@ -36,7 +36,7 @@ function myscatter3d(xs, ys, zs, colors, markers; xlabel="", ylabel="", markersi
     plot()
     # for (x, y, z, c label) in zip(xs, ys, labels)
     scatter3d!(xs, ys, zs, group=colors, markers=markers,
-        markersize=markersize, legend=:outertopright, grid=false,
+        markersize=markersize, legend=:topright, grid=false,
         framestyle=:semi, widen=false,
         xtickfontsize=fontsize, ytickfontsize=fontsize,
         fontfamily="Arial")
@@ -49,7 +49,7 @@ function myscatter(xs, ys, colors; xlabel="", ylabel="", markersize=4, title="",
     scatter!(xs, ys, group=colors,
         markersize=markersize,
         xlabel=xlabel, ylabel=ylabel,
-        legend=:outertopright, grid=false, framestyle=:semi, widen=false,
+        legend=:topright, grid=false, framestyle=:semi, widen=false,
         xtickfontsize=fontsize, ytickfontsize=fontsize,
         legendfontsize=fontsize, fontfamily="Arial")
     savefig("./julia/$output_dir/images/$name.svg")

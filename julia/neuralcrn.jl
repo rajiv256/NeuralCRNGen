@@ -193,7 +193,8 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
     gg = scatter!(xs, ys, group=outputs)
     gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
         xtickfontsize=12, ytickfontsize=12,
-        legendfontsize=12, fontfamily="Arial")
+        legendfontsize=12, fontfamily="Arial", grid=false,
+        framestyle=:semi, widen=false)
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.png")
     return acc/length(dataset)
