@@ -13,7 +13,7 @@ using ColorSchemes;
 include("utils.jl")
 
 function linear(x1, x2)
-    return x1 + x2
+    return x1 + 2*x2
 end
 
 function bilinear(x1, x2)

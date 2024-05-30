@@ -9,6 +9,7 @@ using Dictionaries;
 using LaTeXStrings;
 using Statistics;
 using ColorSchemes;
+using Distributions;
 
 
 # Simulate a custom ODE
@@ -113,7 +114,7 @@ end
 
 
 function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
-    theta = randn(dims^2)
+    theta = rand(Normal(0, 1),dims^2)
     for i in eachindex(theta)
         theta[i] = round(theta[i], digits=precision)
     end
