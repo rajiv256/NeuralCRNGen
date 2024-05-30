@@ -24,6 +24,7 @@ include("datasets.jl")
 include("utils.jl")
 include("reactions2D.jl")
 include("neuralode.jl")
+include("myplots.jl")
 
 
 function _convert_species2var(sp)
@@ -138,8 +139,15 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 ############################################################
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear")
     acc = 0
+    targets = []
+    outputs = []
+    xs = []
+    ys = []
+
+    wrongs = [] # (list of [x1 x2])
+
     epoch_loss = 0.0
     for i in 1:length(dataset)
         x, y = get_one(dataset, i)
@@ -152,7 +160,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
             end
         end
 
-        yvec = [y 1 - y] # threshold could be 0.5 now.
+        yvec = [y 0] # threshold could be 0.5 now.
         crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
         varscopy["Yp"] = yvec[1]
         varscopy["Ym"] = yvec[2]
@@ -167,10 +175,27 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2)
         if varscopy["Op"] > varscopy["Om"]
             output = 1.0
         end
+        push!(outputs, output)
+        push!(targets, y)
+        push!(xs, x[1])
+        push!(ys, x[2])
+
         if output == y
             acc += 1
         end
+        if output != y
+            push!(wrongs, x)
+        end
     end
+
+    myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs")
+    plot()
+    gg = scatter!(xs, ys, group=outputs)
+    gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+        xtickfontsize=12, ytickfontsize=12,
+        legendfontsize=12, fontfamily="Arial")
+    savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
+    savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.png")
     return acc/length(dataset)
 end
 
@@ -320,8 +345,7 @@ function crn_dual_node_fwd(vars; tspan=(0.0, 1.0))
 end
 
 
-
-function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0))
+function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0), output_dir="linear")
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -357,6 +381,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
     node_params = copy(params)
 
     tr_losses = []
+    val_losses = []
     for epoch in 1:EPOCHS
         tr_epoch_loss = 0.0
         for i in eachindex(train)
@@ -364,7 +389,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             x, y = get_one(train, i)
             x = augment(x, dims-length(x))
 
-            yvec = [y 0.0] # 14 May 2024 change.
+            yvec = [y 0] # 14 May 2024 change.
 
             node_params = one_step_node(x, y, node_params, LR, dims)
 
@@ -443,28 +468,114 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             end
             
         end
+
+
+        ##### VALIDATION ###################################
+        ####################################################
+      
+        val_epoch_loss = 0.0
+        for i in eachindex(val)
+            x, y = get_one(val, i)
+            x = augment(x, dims-length(x))
+
+            yvec = [y 0]
+
+            println("===============CRN==========================")
+            @show x
+
+            for i in eachindex(x)
+                d = _index1Dvar("Z", i, x[i], dims=dims)
+                for (k,v) in d
+                    vars[k] = v
+                end
+            end
+            vars["Yp"] = yvec[1]
+            vars["Ym"] = yvec[2]
+
+            # Forward stage
+            crn_dual_node_fwd(vars, tspan=tspan)
+
+            # Calculate yhat            
+            yhat = crn_dot(vars, "Z", "W", max_val=40.0)
+            @show yhat, yhat[1]-yhat[2]
+            vars["Op"] = yhat[1]
+            vars["Om"] = yhat[2]
+
+            # Create error species
+            err = crn_subtract(yhat, yvec)    
+            vars["Ep"] = err[1]
+            vars["Em"] = err[2]
+            _print_vars(vars, "E", title="CRN | Error at t=T")
+
+            # Epoch loss function
+            val_epoch_loss += 0.5*(err[1]-err[2])^2
+
+            for k in keys(vars)
+                if startswith(k, "P") || startswith(k, "W")
+                    if endswith(k, "p")
+                        m = replace(k, "p" => "m")
+                        tmp = vars[k] - vars[m]
+                        vars[k] = max(0, tmp)
+                        vars[m] = max(0, -tmp)
+                    end
+                else
+                    vars[k] = 0.0
+                end
+            end
+        end
+
         tr_epoch_loss /= length(train)
+        val_epoch_loss /= length(val)
         push!(tr_losses, tr_epoch_loss)
-        trplt = plot(tr_losses)
-        png(trplt, "training_losses.png")
+        push!(val_losses, val_epoch_loss)
+        
+        # trplt = plot(tr_losses)
+        # # png(trplt, "training_losses.png")
+        myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"], output_dir=output_dir, name="training_losses")
+        calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir)
     end
     return vars    
 end
 
-function neuralcrn(;DIMS=2)
+function neuralcrn(;DIMS=2, output_dir="linear")
     train = create_linearly_separable_dataset(100, linear, threshold=0.0)
     val = create_linearly_separable_dataset(100, linear, threshold=0.0)
+    test = []
+    for i in range(-200, 200, 40)
+        for j in range(-200, 200, 40)
+            x1 = i / 100
+            x2 = j / 100
+            y = 0.0
+            y = linear(x1, x2)
+            if y > 0.0
+                y = 1.0
+            else
+                y = 0.0
+            end
+            push!(test, [x1 x2 y])
+        end
+    end
+    if !isdir("julia/$output_dir")
+        mkdir("julia/$output_dir")
+        if !isdir("julia/$output_dir/images")
+            mkdir("julia/$output_dir/images")
+        end
+    end
+    myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train")
+
+
+
     params_orig = create_node_params(DIMS, t0=0.0, t1=1.0)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
             println("===============================")
             vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0))
             
-            @show calculate_accuracy(val, copy(vars), dims=2)
+            @show calculate_accuracy(test, copy(vars), dims=2)
         end
     end
 end
 
-neuralcrn()
+neuralcrn(output_dir="linear")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
