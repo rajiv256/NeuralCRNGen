@@ -17,14 +17,15 @@ KWARGS = (
     "widen" => false,
 )
 
-function myplot(xs, ys, labels; xlabel="", ylabel="", marker=:circle, markersize=1, title="", name="plotname", output_dir="", fontsize=12)
-    plot()
+function myplot(xs, ys, labels; xlabel="", ylabel="", marker=:circle, markersize=1, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
     for (x, y, label) in zip(xs, ys, labels)
         plot!(x, y,
             lw=2, marker=marker, markersize=markersize,
             label=label, xlabel=xlabel, ylabel=ylabel,
+            size=size,
             legend=:topright, grid=false, framestyle=:semi, widen=false,
             xtickfontsize=fontsize, ytickfontsize=fontsize,
+            xguidefontsize=fontsize, yguidefontsize=fontsize,
             legendfontsize=fontsize,
             fontfamily="Arial")
     end
@@ -32,30 +33,50 @@ function myplot(xs, ys, labels; xlabel="", ylabel="", marker=:circle, markersize
     savefig("./julia/$output_dir/images/$name.png")
 end
 
-function myscatter3d(xs, ys, zs, colors, markers; xlabel="", ylabel="", markersize=4, title="", name="plotname", output_dir="", fontsize=12)
-    plot()
+function myscatter3d(xs, ys, zs, colors, markers; xlabel="", ylabel="", markersize=4, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
     # for (x, y, z, c label) in zip(xs, ys, labels)
     scatter3d!(xs, ys, zs, group=colors, markers=markers,
         markersize=markersize, legend=:topright, grid=false,
         framestyle=:semi, widen=false,
+        size=size,
         xtickfontsize=fontsize, ytickfontsize=fontsize,
+        xguidefontsize=fontsize, yguidefontsize=fontsize,
         fontfamily="Arial")
     savefig("./julia/$output_dir/images/$name.svg")
     savefig("./julia/$output_dir/images/$name.png")
 end
 
-function myscatter(xs, ys, colors; xlabel="", ylabel="", markersize=4, title="", name="plotname", output_dir="", fontsize=12)
-    plot()
-    scatter!(xs, ys, group=colors,
+function myscatter(xs, ys, colors; xlabel="", ylabel="", markersize=4, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
+    gg = scatter!(xs, ys, group=colors,
         markersize=markersize,
         xlabel=xlabel, ylabel=ylabel,
+        size=size,
         legend=:topright, grid=false, framestyle=:semi, widen=false,
         xtickfontsize=fontsize, ytickfontsize=fontsize,
+        xguidefontsize=fontsize, yguidefontsize=fontsize,
         legendfontsize=fontsize, fontfamily="Arial")
     savefig("./julia/$output_dir/images/$name.svg")
     savefig("./julia/$output_dir/images/$name.png")
+    return gg
 end
 
+function myscatternogroup(xs, ys; xlabel="", ylabel="", markershape=:xcross, markercolor="black", markersize=4, label="errors", 
+    title="", name="", output_dir="", fontsize=18, size=(600, 400))
+    gg = scatter!(xs, ys,
+        markersize=markersize,
+        markershape=markershape,
+        markercolor=markercolor,
+        label=label,
+        size=size,
+        xlabel=xlabel, ylabel=ylabel,
+        legend=:topright, grid=false, framestyle=:semi, widen=false,
+        xtickfontsize=fontsize, ytickfontsize=fontsize,
+        xguidefontsize=fontsize, yguidefontsize=fontsize,
+        legendfontsize=fontsize, fontfamily="Arial")
+    savefig("./julia/$output_dir/images/$name.svg")
+    savefig("./julia/$output_dir/images/$name.png")
+    return gg
+end
 
 # x = [1, 2, 3]
 # y = [2.5, 6.6667, 3.5]
