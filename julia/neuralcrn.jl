@@ -187,14 +187,16 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
             push!(wrongs, x)
         end
     end
-
-    myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs")
     plot()
-    gg = scatter!(xs, ys, group=outputs)
-    gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
-        xtickfontsize=12, ytickfontsize=12,
-        legendfontsize=12, fontfamily="Arial", grid=false,
-        framestyle=:semi, widen=false)
+    myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    plot()
+    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs")
+    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+        output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+    #     xtickfontsize=12, ytickfontsize=12,
+    #     legendfontsize=12, fontfamily="Arial", grid=false,
+    #     framestyle=:semi, widen=false)
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.png")
     return acc/length(dataset)
@@ -532,7 +534,10 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         
         # trplt = plot(tr_losses)
         # # png(trplt, "training_losses.png")
-        myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"], output_dir=output_dir, name="training_losses")
+        plot()
+        myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"], 
+            output_dir=output_dir, name="training_losses", xlabel="epoch", ylabel="loss")
+        plot()
         calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir)
     end
     return vars    
@@ -562,7 +567,8 @@ function neuralcrn(;DIMS=2, output_dir="linear")
             mkdir("julia/$output_dir/images")
         end
     end
-    myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train")
+    myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
+    xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
 
 
@@ -570,7 +576,7 @@ function neuralcrn(;DIMS=2, output_dir="linear")
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0))
+            vars = crn_main(params_orig, train, val, EPOCHS=10, tspan=(0.0, 1.0))
             
             @show calculate_accuracy(test, copy(vars), dims=2)
         end
