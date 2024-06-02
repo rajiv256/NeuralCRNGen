@@ -264,8 +264,11 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
     # png(plt_state2, "julia/$output_dir/images/crn_after_aug.png")
     # pltyhats = scatter(getindex.(yhats, 1), getindex.(yhats, 2), group=getindex.(yhats, 4))
     # png(pltyhats, "julia/$output_dir/images/crn_yhats.png")
+    plot()
     myscatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), getindex.(reg_x, 4), circles, output_dir=output_dir, name="crn_before_aug")
+    plot()
     myscatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), getindex.(aug_x, 4), markers, output_dir=output_dir, name="crn_after_aug")
+    plot()
     myscatter(getindex.(yhats, 1), getindex.(yhats, 2), getindex.(yhats, 4), output_dir=output_dir, name="crn_yhats")
 end
 
@@ -273,6 +276,8 @@ end
 function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0, output_dir="")
     acc = 0
     preds2d = []
+    wrongs = []
+
     for i in 1:length(dataset)
         x, y = get_one(dataset, i)
         
@@ -318,13 +323,32 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
         if output == y
             acc += 1
         end
+
+        if output != y
+            push!(wrongs, x)
+        end
     end
-    # plot()
-    # Colors (index = 4) represent the original class the data point belongs to
-    # Shapes (index = 3) represent the predicted class of the data point 
-    # sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3)) # output is the label
-    # png(sca, "julia/$output_dir/images/crn_accuracy_plot.png")
-    myscatter(getindex.(preds2d, 1), getindex.(preds2d, 2), getindex.(preds2d, 3), output_dir=output_dir, name="crn_accuracy_plot")
+
+    plot()
+    myscatter(getindex.(preds2d, 1), getindex.(preds2d, 2), getindex.(preds2d, 3), output_dir=output_dir, name="outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    plot()
+    gg = myscatter(getindex.(preds2d, 1), getindex.(preds2d, 2), 
+                 getindex.(preds2d, 3), output_dir=output_dir, name="outputs")
+    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+        output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+    #     xtickfontsize=12, ytickfontsize=12,
+    #     legendfontsize=12, fontfamily="Arial", grid=false,
+    #     framestyle=:semi, widen=false)
+    savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
+    savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.png")
+    
+    # # plot()
+    # # Colors (index = 4) represent the original class the data point belongs to
+    # # Shapes (index = 3) represent the predicted class of the data point 
+    # # sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3)) # output is the label
+    # # png(sca, "julia/$output_dir/images/crn_accuracy_plot.png")
+    # myscatter(getindex.(preds2d, 1), getindex.(preds2d, 2), getindex.(preds2d, 3), output_dir=output_dir, name="crn_accuracy_plot")
     println("Accuracy: $(acc/length(dataset))")
     return acc/length(dataset)
 end
@@ -475,7 +499,9 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="")
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, 
+    tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="")
+
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
@@ -736,8 +762,9 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
         @show epoch, val_acc
         # crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
         # png(crn_losses_plt, "julia/$output_dir/images/crn_train_lossplts.png")
-        myplot([Array(range(1, length(tr_losses))), Array(range(1, length(val_losses)))], [tr_losses, val_losses], ["train" "val"],
-                output_dir=output_dir, name="crn_train_lossplts")
+        plot()
+        myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"],
+            output_dir=output_dir, name="crn_train_lossplts", xlabel="epoch", ylabel="loss")
 
         plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
         @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
@@ -751,20 +778,20 @@ function neuralcrn(;DIMS=3)
 
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
-
             ## Linear dataset 
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
             # # # Rings 
-            # output_dir = "rings_correct_adj"
+            # output_dir = "rings"
             # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            # val = create_annular_rings_dataset(300, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
             
             # ## Xor dataset
             # output_dir  = "xor"
             # train = create_xor_dataset(100)
-            # val = []
+            # val = create_xor_dataset(100)
+            # test = []
             # for i in range(0, 100, 20)
             #     for j in range(0, 100, 20)
             #         x1 = i / 100
@@ -772,42 +799,43 @@ function neuralcrn(;DIMS=3)
             #         x1b = Bool(floor(x1 + 0.5))
             #         x2b = Bool(floor(x2 + 0.5))
             #         y = Float32(x1b ⊻ x2b)
-            #         push!(val, [x1 x2 y])
+            #         push!(test, [x1 x2 y])
             #     end
             # end
             # Random.shuffle!(train)
 
-            ## AND dataset set t1 = 0.6
-            output_dir = "and"
-            train = create_and_dataset(100)
-            val = []
-            for i in range(0, 100, 20)
-                for j in range(0, 100, 20)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b & x2b)
-                    push!(val, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
-
-            # ## Xor dataset
-            # output_dir = "or"
-            # train = create_or_dataset(100)
-            # val = []
-            # for i in range(0, 100, 10)
-            #     for j in range(0, 100, 10)
+            # ## AND dataset set t1 = 0.6
+            # output_dir = "and"
+            # train = create_and_dataset(100)
+            # val = create_and_dataset(100)
+            # test = []
+            # for i in range(0, 100, 20)
+            #     for j in range(0, 100, 20)
             #         x1 = i / 100
             #         x2 = j / 100
             #         x1b = Bool(floor(x1 + 0.5))
             #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b | x2b)
-            #         push!(val, [x1 x2 y])
+            #         y = Float32(x1b & x2b)
+            #         push!(test, [x1 x2 y])
             #     end
             # end
             # Random.shuffle!(train)
+
+            ## Xor dataset
+            output_dir = "or"
+            train = create_or_dataset(100)
+            val = []
+            for i in range(0, 100, 10)
+                for j in range(0, 100, 10)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b | x2b)
+                    push!(val, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
@@ -815,11 +843,13 @@ function neuralcrn(;DIMS=3)
                     mkdir("julia/$output_dir/images")
                 end
             end
-            myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3))
+
+            myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
+                xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}"    )
 
 
             t0 = 0.0
-            t1 = 0.6
+            t1 = 0.8
             AUGVAL = 0.5
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
@@ -827,8 +857,8 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=40, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
-            @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL)
+            vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end
