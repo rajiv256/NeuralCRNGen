@@ -196,6 +196,7 @@ function training_step(x, y, p)
     
     # Gradients wrt w
     wgrads = (yhat-y)*z
+    wgrads = wgrads * 0  # rajiv: freezing final layer, 2 jun 2024
     println("ODE | error: ", yhat-y)
     println("ODE | wgrads, z: ", wgrads, z)
     for i in eachindex(wgrads)
