@@ -804,52 +804,52 @@ function neuralcrn(;DIMS=3)
             # end
             # Random.shuffle!(train)
 
-            # ## AND dataset set t1 = 0.6
-            # output_dir = "and"
-            # train = create_and_dataset(100)
-            # val = create_and_dataset(100)
-            # test = []
-            # for i in range(0, 100, 20)
-            #     for j in range(0, 100, 20)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b & x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
-
-            ## Xor dataset
-            output_dir = "or"
-            train = create_or_dataset(100)
-            val = []
+            ## AND dataset set t1 = 0.6
+            output_dir = "and"
+            train = create_and_dataset(100)
+            val = create_and_dataset(100)
+            test = []
             for i in range(0, 100, 20)
                 for j in range(0, 100, 20)
                     x1 = i / 100
                     x2 = j / 100
                     x1b = Bool(floor(x1 + 0.5))
                     x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b | x2b)
-                    push!(val, [x1 x2 y])
+                    y = Float32(x1b & x2b)
+                    push!(test, [x1 x2 y])
                 end
             end
             Random.shuffle!(train)
 
-            if !isdir("julia/$output_dir")
-                mkdir("julia/$output_dir")
-                if !isdir("julia/$output_dir/images")
-                    mkdir("julia/$output_dir/images")
-                end
-            end
+            # ## Xor dataset
+            # output_dir = "or"
+            # train = create_or_dataset(100)
+            # val = []
+            # for i in range(0, 100, 20)
+            #     for j in range(0, 100, 20)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b | x2b)
+            #         push!(val, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
+
+            # if !isdir("julia/$output_dir")
+            #     mkdir("julia/$output_dir")
+            #     if !isdir("julia/$output_dir/images")
+            #         mkdir("julia/$output_dir/images")
+            #     end
+            # end
 
             myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
                 xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}"    )
 
 
             t0 = 0.0
-            t1 = 0.8
+            t1 = 0.6
             AUGVAL = 0.5
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
