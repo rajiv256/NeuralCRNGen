@@ -383,18 +383,59 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
     
     node_params = copy(params)
 
+    ## Tracking the parameters of both node_params and ncrn_params
+    tracking = Dict();
+    for i in 1:dims^2
+        get!(tracking, "p$((i-1)÷2 + 1)$((i-1)%2 + 1)", [])
+    end
+    for sp in keys(vars)
+        if startswith(sp, "P")
+            if endswith(sp, "p")
+                key = replace(sp, "p"=> "")
+                spm = replace(sp, "p"=> "m")
+                get!(tracking, key, [])
+            end
+        end
+    end
+
     tr_losses = []
     val_losses = []
     for epoch in 1:EPOCHS
         tr_epoch_loss = 0.0
+        # Update tracking info
+        for i in 1:dims^2
+            push!(tracking["p$((i-1)÷2 + 1)$((i-1)%2 + 1)"], node_params[i])
+        end
+        
+        # Rounding off 
+        for sp in keys(vars)
+            vars[sp] = round(vars[sp], digits=2)
+        end
+
+        for sp in keys(vars)
+            if startswith(sp, "P")
+                if endswith(sp, "p")
+                    key = replace(sp, "p" => "")
+                    spm = replace(sp, "p" => "m")
+                    push!(tracking[key], vars[sp] - vars[spm])
+                end
+            end
+        end
+
         for i in eachindex(train)
             println("=================EPOCH: $epoch | ITERATION: $i ==============")
             x, y = get_one(train, i)
             x = augment(x, dims-length(x))
-
+            
+            # Rounding off 
+            for sp in keys(vars)
+                vars[sp] = round(vars[sp], digits=2)
+            end
+            
             yvec = [y 0] # 14 May 2024 change.
 
             node_params = one_step_node(x, y, node_params, LR, dims)
+
 
             println("===============CRN==========================")
             @show x
@@ -539,6 +580,20 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             output_dir=output_dir, name="training_losses", xlabel="epoch", ylabel="loss")
         plot()
         calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir)
+
+        # Plot tracking information
+        for xi in 1:2
+            for yi in 1:2
+                plot()
+                print("tracking", keys(tracking))
+                gg = plot!(Array(range(1, epoch)), tracking["p$(xi)$(yi)"], label="ode_p$(xi)$(yi)", marker=:xcross, markersize=6,
+                tickfontsize=18, labelfontsize=18, legendfontsize=18, guidefontsize=18, fontfamily="Arial")
+                gg = plot!(Array(range(1, epoch)), tracking["P$(xi)$(yi)"], label="crn_P$(xi)$(yi)", marker=:circle, markersize=4,
+                    tickfontsize=18, labelfontsize=18, legendfontsize=18, guidefontsize=18, fontfamily="Arial")
+                savefig(gg, "julia/$output_dir/images/tracking/p$(xi)$(yi).png")
+                savefig(gg, "julia/$output_dir/images/tracking/p$(xi)$(yi).svg")
+            end
+        end
     end
     return vars    
 end
@@ -566,6 +621,9 @@ function neuralcrn(;DIMS=2, output_dir="linear")
         if !isdir("julia/$output_dir/images")
             mkdir("julia/$output_dir/images")
         end
+    end
+    if !isdir("julia/$output_dir/images/tracking")
+        mkdir("julia/$output_dir/images/tracking")
     end
     myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
     xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
