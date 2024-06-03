@@ -24,6 +24,7 @@ include("datasets.jl")
 include("utils.jl")
 include("relu5D.jl")
 include("neuralode.jl")
+include("myplots.jl")
 
 
 function _convert_species2var(sp)
@@ -776,8 +777,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
                 val_epoch_loss += 0.5*(vars["E$(i)p"] - vars["E$(i)m"])^2
             end
             
-
-
             # Cancel the dual rail variables to prevent parameters from blowing up
             for k in keys(vars)
                 if startswith(k, "P") || startswith(k, "W") || startswith(k, "B") || startswith(k, "H")
@@ -803,11 +802,16 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, tspan=(
 
         push!(crn_tracking["val_acc"], val_acc)
         
-        val_accs_plot = plot(crn_tracking["val_acc"], label="val_acc")
-        png(val_accs_plot, "$(out_dir)/images/crn_val_accsplt.png")
+        # val_accs_plot = plot(crn_tracking["val_acc"], label="val_acc")
+        # png(val_accs_plot, "$(out_dir)/images/crn_val_accsplt.png")
         
-        crn_losses_plt = plot([crn_tracking["train_loss"], crn_tracking["val_loss"]], label=["train" "val"])
-        png(crn_losses_plt, "$(out_dir)/images/crn_train_lossplts.png")
+        # crn_losses_plt = plot([crn_tracking["train_loss"], crn_tracking["val_loss"]], label=["train" "val"])
+        # png(crn_losses_plt, "$(out_dir)/images/crn_train_lossplts.png")
+        plot()
+        myplot([Array(range(1, epoch)), Array(range(1, epoch))], [crn_tracking["train_loss"], crn_tracking["val_loss"]], ["train", "val"],
+                output_dir="iris", name="train_loss")
+        plot()
+        myplot([Array(range(1, epoch))], [crn_tracking["val_acc"]], ["val_accuracy"], output_dir="iris", name="val_accuracy")
 
         open("$(out_dir)/crn_tracking.pickle", "w") do fileio
             serialize(fileio, crn_tracking)
