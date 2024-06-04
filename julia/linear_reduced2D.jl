@@ -1,61 +1,33 @@
-rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
-    # dz_i/dt = p_iz_i
-    1.0, P1p + Z1p --> Z1p + P1p + Z1p
-    1.0, P1m + Z1m --> Z1p + P1m + Z1m
-    1.0, P1p + Z1m --> Z1m + P1p + Z1m
-    1.0, P1m + Z1p --> Z1m + P1m + Z1p
-    1.0, P2p + Z2p --> Z2p + P2p + Z2p
-    1.0, P2m + Z2m --> Z2p + P2m + Z2m
-    1.0, P2p + Z2m --> Z2m + P2p + Z2m
-    1.0, P2m + Z2p --> Z2m + P2m + Z2p
-    # dz_i/dt = -z_i^2
-    # # Not sure if this is hacky
-    # 1.0, Z1p + Z1p --> Z1p
-    # 1.0, Z1m + Z1m --> Z1m
-    # 100.0, Z1p + Z1m --> 0
-
-    # 1.0, Z2p + Z2p --> Z2p
-    # 1.0, Z2m + Z2m --> Z2m
-    # 100.0, Z2p + Z2m --> 0
+rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
+    # dz_i/dt = p_ix_i
+    1.0, P1p + X1p --> Z1p + P1p + X1p
+    1.0, P1m + X1m --> Z1p + P1m + X1m
+    1.0, P1p + X1m --> Z1m + P1p + X1m
+    1.0, P1m + X1p --> Z1m + P1m + X1p
+    1.0, P2p + X2p --> Z2p + P2p + X2p
+    1.0, P2m + X2m --> Z2p + P2m + X2m
+    1.0, P2p + X2m --> Z2m + P2p + X2m
+    1.0, P2m + X2p --> Z2m + P2m + X2p
 end
-rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
-    # dz/dt = -p_i z_i
-    1.0, P1p + Z1m --> Z1p + P1p + Z1m
-    1.0, P1m + Z1p --> Z1p + P1m + Z1p
-    1.0, P1p + Z1p --> Z1m + P1p + Z1p
-    1.0, P1m + Z1m --> Z1m + P1m + Z1m
-    1.0, P2p + Z2m --> Z2p + P2p + Z2m
-    1.0, P2m + Z2p --> Z2p + P2m + Z2p
-    1.0, P2p + Z2p --> Z2m + P2p + Z2p
-    1.0, P2m + Z2m --> Z2m + P2m + Z2m
-
-    # da_i/dt = a_i p_i
-    1.0, A1p + P1p --> A1p + A1p + P1p
-    1.0, A1m + P1m --> A1p + A1m + P1m
-    1.0, A1p + P1m --> A1m + A1p + P1m
-    1.0, A1m + P1p --> A1m + A1m + P1p
-    1.0, A2p + P2p --> A2p + A2p + P2p
-    1.0, A2m + P2m --> A2p + A2m + P2m
-    1.0, A2p + P2m --> A2m + A2p + P2m
-    1.0, A2m + P2p --> A2m + A2m + P2p
-
-    # dg_i/dt = a_i z_i
-    1.0, A1p + Z1p --> G1p + A1p + Z1p
-    1.0, A1m + Z1m --> G1p + A1m + Z1m
-    1.0, A1p + Z1m --> G1m + A1p + Z1m
-    1.0, A1m + Z1p --> G1m + A1m + Z1p
-    1.0, A2p + Z2p --> G2p + A2p + Z2p
-    1.0, A2m + Z2m --> G2p + A2m + Z2m
-    1.0, A2p + Z2m --> G2m + A2p + Z2m
-    1.0, A2m + Z2p --> G2m + A2m + Z2p
-
-    # 100.0, Z1p + Z1m --> 0
-    # 1.0, Z1p + Z1p --> Z1p + Z1p + Z1p
-    # 1.0, Z1m + Z1m --> Z1m + Z1m + Z1m
-
-    # 100.0, Z2p + Z2m --> 0
-    # 1.0, Z2p + Z2p --> Z2p + Z2p + Z2p
-    # 1.0, Z2m + Z2m --> Z2m + Z2m + Z2m
+rn_dual_node_bwd = @reaction_network rn_dual_node_bwd begin
+    # dz/dt = -p_i x_i
+    1.0, P1p + X1m --> Z1p + P1p + X1m
+    1.0, P1m + X1p --> Z1p + P1m + X1p
+    1.0, P1p + X1p --> Z1m + P1p + X1p
+    1.0, P1m + X1m --> Z1m + P1m + X1m
+    1.0, P2p + X2m --> Z2p + P2p + X2m
+    1.0, P2m + X2p --> Z2p + P2m + X2p
+    1.0, P2p + X2p --> Z2m + P2p + X2p
+    1.0, P2m + X2m --> Z2m + P2m + X2m
+    # dg_i/dt = a_i x_i
+    1.0, A1p + X1p --> G1p + A1p + X1p
+    1.0, A1m + X1m --> G1p + A1m + X1m
+    1.0, A1p + X1m --> G1m + A1p + X1m
+    1.0, A1m + X1p --> G1m + A1m + X1p
+    1.0, A2p + X2p --> G2p + A2p + X2p
+    1.0, A2m + X2m --> G2p + A2m + X2m
+    1.0, A2p + X2m --> G2m + A2p + X2m
+    1.0, A2m + X2p --> G2m + A2m + X2p
 end
 
 rn_dual_mult = @reaction_network rn_dual_mult begin
@@ -70,14 +42,10 @@ rn_dual_mult = @reaction_network rn_dual_mult begin
 end
 
 rn_param_update = @reaction_network rn_param_update begin
-    k1, G1p --> P1m
-    k1, G1m --> P1p
-    k2, G1p --> 0
-    k2, G1m --> 0
-    k1, G2p --> P2m
-    k1, G2m --> P2p
-    k2, G2p --> 0
-    k2, G2m --> 0
+    100.0, G1p --> P1m
+    100.0, G1m --> P1p
+    100.0, G2p --> P2m
+    100.0, G2m --> P2p
 end
 
 rn_final_layer_update = @reaction_network rn_final_layer_update begin

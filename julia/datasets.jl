@@ -93,11 +93,11 @@ function create_dataset!(n, yfunc)
     return dataset
 end
 
-function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
+function create_linearly_separable_dataset(n, yfunc; threshold=0.0)
     dataset = []
     while length(dataset) <= n÷2
-        x1 = abs(convert(Float64, rand(Normal(0, 1))))
-        x2 = abs(convert(Float64, rand(Normal(0, 1))))
+        x1 = convert(Float64, rand(Normal(0, 1)))
+        x2 = convert(Float64, rand(Normal(0, 1)))
         y = x1 + x2
         if y <= threshold
             y = 0.0
@@ -109,8 +109,8 @@ function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
     end
     
     while length(dataset) <= n
-        x1 = abs(convert(Float64, rand(Normal(0, 1))))
-        x2 = abs(convert(Float64, rand(Normal(0, 1))))
+        x1 = convert(Float64, rand(Normal(0, 1)))
+        x2 = convert(Float64, rand(Normal(0, 1)))
         y = x1 + x2
         if y > threshold
             y = 1.0
@@ -120,12 +120,13 @@ function create_linearly_separable_dataset(n, yfunc; threshold=0.5)
             push!(dataset, data_item)
         end
     end
+    Random.shuffle!(dataset)
     return dataset
 end
 
-train = create_linearly_separable_dataset(100, linear, threshold=1.0)
-gg = scatter(getindex.(train, 1), getindex.(train, 2), group=getindex.(train, 3))
-png(gg, "julia/images/linear_dataset.png")
+# train = create_linearly_separable_dataset(100, linear, threshold=0.0)
+# gg = scatter(getindex.(train, 1), getindex.(train, 2), group=getindex.(train, 3))
+# png(gg, "julia/images/linear_dataset.png")
 
 
 # This is a classification dataset with nonlinearly separable data
