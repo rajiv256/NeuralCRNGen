@@ -214,7 +214,7 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
         push!(elem, y)
         push!(reg_x, elem)
         
-        crn_dual_node_fwd(rn_dual_node_relu_fwd, varscopy, tspan=(0.0, 1.0))
+        crn_dual_node_fwd(rn_dual_node_fwd, varscopy, tspan=(0.0, 1.0))
 
         yhat = crn_dot(rn_dual_dot, varscopy, "Z", "W", max_val=40.0)
         # # @show yhat, yhat[1] - yhat[2]
@@ -249,7 +249,7 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
 end
 
 
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.5, markers=[:circle, :rect], neg=0.0, pos=1.0)
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], neg=0.0, pos=1.0)
     acc = 0
     preds2d = []
     for i in 1:length(dataset)
@@ -268,7 +268,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
         end
 
         
-        crn_dual_node_fwd(rn_dual_node_relu_fwd, varscopy, tspan=tspan)
+        crn_dual_node_fwd(rn_dual_node_fwd, varscopy, tspan=tspan)
         varscopy["Yp"] = max(0.0, y)
         varscopy["Ym"] = max(0.0, -y)
 
@@ -324,7 +324,8 @@ function crn_param_update(rn, vars, eta, tspan)
     
     k1 = eta / (1 + eta)
     k2 = 1 / (1 + eta)
-    p = [k1 k2]
+    # p = [k1 k2]
+    p = [] # rajiv on june 3, 2024
 
     sol = simulate_reaction_network(rn, u, p, tspan=tspan)
     for i in eachindex(ss)
@@ -438,13 +439,13 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.5, CLIPGRAD=1000.0, augval=1.0)
+function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.0, 1.0), pos=1.0, neg=0.0, threshold=0.0, CLIPGRAD=1000.0, augval=1.0)
 
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
 
     # Get all the involved CRNs and add their species to the vars
-    crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, 
+    crns = [rn_dual_node_fwd, rn_dual_node_bwd, rn_param_update, 
             rn_final_layer_update, rn_dissipate_reactions, rn_create_error_species]
     for crn in crns
         crn_species = species(crn)
@@ -493,7 +494,6 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
 
     for epoch in 1:EPOCHS
         tr_epoch_loss = 0.0
-
         for i in eachindex(train)
             
             println("\n\n========= EPOCH: $epoch | i: $i ===========")
@@ -506,6 +506,12 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             for xindex in eachindex(x)
                 d = _index1Dvar("Z", xindex, x[xindex], dims=dims)
                 for (k,v) in d
+                    vars[k] = v
+                end
+            end
+            for xindex in eachindex(x)
+                d = _index1Dvar("X", xindex, x[xindex], dims=dims)
+                for (k, v) in d
                     vars[k] = v
                 end
             end
@@ -525,7 +531,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             _print_vars(vars, "P", title="CRN | p at t=0")
 
             # Forward stage
-            crn_dual_node_fwd(rn_dual_node_relu_fwd, vars, tspan=tspan)
+            crn_dual_node_fwd(rn_dual_node_fwd, vars, tspan=tspan)
             _print_vars(vars, "Z", title="CRN | Z at t=T")
             _print_vars(vars, "W", title="CRN | W at t=T")
 
@@ -552,9 +558,11 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
 
             # Epoch loss function
             tr_epoch_loss += 0.5*(err[1]-err[2])^2
+
+            push!(tr_losses, 0.5 * (err[1] - err[2])^2)
             
             # Calculate the output layer gradients
-            crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
+            # crn_error_binary_scalar_mult(vars, "Z", "M", max_val=40.0)
              
             # Calculate the adjoint
             crn_error_binary_scalar_mult(vars, "W", "A", max_val=40.0)
@@ -562,28 +570,20 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
             println("-------BACKPROP-------")
             
             # Backpropagate and calculate parameter gradients 
-            crn_dual_backprop(rn_dual_node_relu_bwd, vars, tspan)
+            crn_dual_backprop(rn_dual_node_bwd, vars, tspan)
 
-            # Clip the gradient values
-            for k in keys(vars)
-                if startswith(k, "G") || startswith(k, "M")
-                    vars[k] = min(vars[k], CLIPGRAD)
-                end
-            end
+
             _print_vars(vars, "Z", title="CRN | Z after backprop at t=0 | ")
             _print_vars(vars, "A", title="CRN | A at t=0")
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
-
-            # Tracking parameters
-            for (k, v) in vars
-                push!(crn_tracking[k], v)
-            end
 
             # Update the final layer weights
             # crn_final_layer_update(vars, LR, (0.0, 40.0))
 
             # Update the parameters
-            crn_param_update(rn_param_update, vars, LR, (0.0, 40.0))
+            _print_vars(vars, "P", title="CRN | P before param update")
+            crn_param_update(rn_param_update, vars, LR, (0.0, 100.0))
+            _print_vars(vars, "P", title="CRN | P after param update")
             # if i == 2
             #     return 
             # end
@@ -604,113 +604,90 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=1.0, tspan=(0.
         end
         
         tr_epoch_loss /= length(train)
-        # @show tr_epoch_loss
+        # push!(tr_losses, tr_epoch_loss)
+        @show tr_epoch_loss
+        crn_losses_plt = plot([tr_losses], label=["train"])
+        png(crn_losses_plt, "julia/images/crn_train_lossplts.png")
+        println("===============================", vars)
 
-        if epoch % 2 != 0
-            continue
-        end
-
-        ###################################################
-        ################## VALIDATION #####################
+        # ###################################################
+        # ################## VALIDATION #####################
         
-        val_epoch_loss = 0.0
-        val_acc = 0.0
-        for i in eachindex(val)
-            println("=========VAL EPOCH: $epoch | ITERATION: $i ===========")
-            x, y = get_one(val, i)
-            x = augment(x, dims - length(x), augval=augval)
+        # val_epoch_loss = 0.0
+        # val_acc = 0.0
+        # for i in eachindex(val)
+        #     println("=========VAL EPOCH: $epoch | ITERATION: $i ===========")
+        #     x, y = get_one(val, i)
+        #     x = augment(x, dims - length(x), augval=augval)
 
-            println("===============CRN==========================")
-            # # @show x, y
+        #     println("===============CRN==========================")
+        #     # # @show x, y
 
-            for zi in eachindex(x)
-                d = _index1Dvar("Z", zi, x[zi], dims=dims)
-                for (k, v) in d
-                    vars[k] = v
-                end
-            end
+        #     for zi in eachindex(x)
+        #         d = _index1Dvar("Z", zi, x[zi], dims=dims)
+        #         for (k, v) in d
+        #             vars[k] = v
+        #         end
+        #     end
+        #     for xindex in eachindex(x)
+        #         d = _index1Dvar("X", xindex, x[xindex], dims=dims)
+        #         for (k, v) in d
+        #             vars[k] = v
+        #         end
+        #     end
 
         
-            # Forward stage
-            crn_dual_node_fwd(rn_dual_node_relu_fwd, vars, tspan=tspan)
+        #     # Forward stage
+        #     crn_dual_node_fwd(rn_dual_node_fwd, vars, tspan=tspan)
 
-            # Calculate yhat            
-            yhat = crn_dot(rn_dual_dot, vars, "Z", "W", max_val=40.0)
-            # # @show yhat, yhat[1] - yhat[2]
-            val_out = neg
-            if yhat[1] - yhat[2] >= threshold
-                val_out = pos
-            end
-            if val_out == y
-                val_acc += 1
-            end
+        #     # Calculate yhat            
+        #     yhat = crn_dot(rn_dual_dot, vars, "Z", "W", max_val=40.0)
+        #     # # @show yhat, yhat[1] - yhat[2]
+        #     val_out = neg
+        #     if yhat[1] - yhat[2] >= threshold
+        #         val_out = pos
+        #     end
+        #     if val_out == y
+        #         val_acc += 1
+        #     end
 
-            yhatval = yhat[1] - yhat[2]
-            if yhatval <= 0.0
-                vars["Op"] = 0.0
-                vars["Om"] = -yhatval
-            else
-                vars["Op"] = yhatval
-                vars["Om"] = 0.0
-            end
+        #     yhatval = yhat[1] - yhat[2]
+        #     if yhatval <= 0.0
+        #         vars["Op"] = 0.0
+        #         vars["Om"] = -yhatval
+        #     else
+        #         vars["Op"] = yhatval
+        #         vars["Om"] = 0.0
+        #     end
             
-            # _print_vars(vars, "O", title="CRN | O at t=T")
-            
+        #     if y <= 0.0
+        #         vars["Yp"] = 0.0
+        #         vars["Ym"] = -y 
+        #     else 
+        #         vars["Yp"] = y
+        #         vars["Ym"] = 0.0
+        #     end
 
-            if y <= 0.0
-                vars["Yp"] = 0.0
-                vars["Ym"] = -y 
-            else 
-                vars["Yp"] = y
-                vars["Ym"] = 0.0
-            end
-
-            println("---- y : ", y)
-            # _print_vars(vars, "O", title="CRN | O at t=T")
-            crn_create_error_species(vars)
-            err = [vars["Ep"] vars["Em"]]
+        #     println("---- y : ", y)
+        #     # _print_vars(vars, "O", title="CRN | O at t=T")
+        #     crn_create_error_species(vars)
+        #     err = [vars["Ep"] vars["Em"]]
                 
 
-            # Epoch loss function
-            val_epoch_loss += 0.5 * (err[1] - err[2])^2
+        #     # Epoch loss function
+        #     val_epoch_loss += 0.5 * (err[1] - err[2])^2
 
-            # Cancel the dual rail variables to prevent parameters from blowing up
-            for k in keys(vars)
-                if startswith(k, "P") || startswith(k, "W")
-                    if endswith(k, "p")
-                        m = replace(k, "p" => "m")
-                        tmp = vars[k] - vars[m]
-                        vars[k] = max(0, tmp)
-                        vars[m] = max(0, -tmp)
-                    end
-                else
-                    vars[k] = 0.0
-                end
-            end
-        end
+        # end
 
-        val_epoch_loss /= length(val)
-        push!(val_losses, val_epoch_loss)
-        push!(tr_losses, tr_epoch_loss)
-        val_acc /= length(val)
-        # @show epoch, val_acc
-        crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
-        png(crn_losses_plt, "julia/images/crn_train_lossplts.png")
+        # val_epoch_loss /= length(val)
+        # push!(val_losses, val_epoch_loss)
         
-        # Plot tracking information
-        for k in keys(vars)
-            if startswith(k, "P") || startswith(k, "W") || startswith(k, "G") || startswith(k, "M")
-                if endswith(k, "p")
-                    m = replace(k, "p" => "m")
-                    diffarr = crn_tracking[k] - crn_tracking[m]
-                    name = replace(k, "p" => "")
-                    gg = plot(diffarr, label=name)
-                    png(gg, "julia/images/tracking/$name.png")
-                end
-            end
-        end
-            
-        calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, pos=pos, neg=neg, threshold=threshold)       
+        # val_acc /= length(val)
+        # # @show epoch, val_acc
+        # crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
+        # png(crn_losses_plt, "julia/images/crn_train_lossplts.png")
+        
+        # calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, pos=pos, neg=neg, threshold=threshold)       
          
     end
     return vars    
@@ -722,9 +699,9 @@ function neuralcrn(;DIMS=2)
         redirect_stdout(fileio) do    
         POS = 1.0
         NEG = 0.0
-        THRESHOLD = 0.5
-        train = create_linearly_separable_dataset(100, linear, threshold=1.0)
-        val = create_linearly_separable_dataset(100, linear, threshold=1.0)
+        THRESHOLD = 0.0
+        train = create_linearly_separable_dataset(100, linear, threshold=0.0)
+        val = create_linearly_separable_dataset(100, linear, threshold=0.0)
 
         t0 = 0.0
         t1 = 1.0
@@ -733,7 +710,7 @@ function neuralcrn(;DIMS=2)
         params_orig_copy = copy(params_orig)
         # @show params_orig_copy
         println("===============================", params_orig)
-        vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, LR=0.01, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
+        vars = crn_main(params_orig, train, val, EPOCHS=20, dims=DIMS, LR=0.1, tspan=tspan, pos=POS, neg=NEG, threshold=THRESHOLD)
         end
     end
 
