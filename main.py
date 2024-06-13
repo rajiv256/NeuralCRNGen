@@ -50,6 +50,7 @@ if __name__ == '__main__':
     p.matrix()
     a = ode.Matrix2D(symbol='a', dims=[D, 1])
     g = ode.Matrix2D(symbol='g', dims=[D, D])
+    h = ode.Matrix2D(symbol='h', dims=[D, 1])
     gmat = g.matrix()  # This assigns g.data to a proper value
     # TODO: The value of dfdz is okay for now but changes when $f$ changes
     #  from \theta z to RelU
@@ -65,7 +66,11 @@ if __name__ == '__main__':
     fwd_z_ode = ode.ODESystem(lhs=z, rhs=[p, z], parity=1)
     fwd_z_crn = fwd_z_ode.dual_rail_crn()
     lcs = utils.print_crn(fwd_z_crn, title='NA')
-    
+
+    fwd_z_h_ode = ode.ODESystem(lhs=z, rhs=[h], parity=1)
+    fwd_z_h_crn = fwd_z_h_ode.dual_rail_crn()
+    lcs = utils.print_crn(fwd_z_h_crn, title="NA")
+
     print("end")
     print("\n\n")
     
@@ -75,6 +80,11 @@ if __name__ == '__main__':
     bwd_z_crn = bwd_z_ode.dual_rail_crn()
     lcs = list(set(utils.print_crn(bwd_z_crn, title="CRN for Z Backprop")))
     
+    bwd_z_h_ode = ode.ODESystem(lhs=z, rhs=[h], parity=-1)
+    bwd_z_h_crn = bwd_z_h_ode.dual_rail_crn()
+    lcs = utils.print_crn(bwd_z_h_crn, title="NA")
+
+
     # Adjoint Backprop
     aT = ode.transpose_matrix(a)  # Use suffix T only for transpose
     # TODO: Requires parity check

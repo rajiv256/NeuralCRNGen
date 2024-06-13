@@ -16,6 +16,10 @@ function linear(x1, x2)
     return x1 + 2*x2
 end
 
+function linear_reduced(x1, x2; h=0.8)
+    return 0.5*x1 + 1.3*x2 + h
+end
+
 function bilinear(x1, x2)
     return x1 * x2
 end
@@ -111,6 +115,30 @@ function create_linearly_separable_dataset(n, yfunc; threshold=1.0)
         data_item = reshape(data_item, (length(data_item), 1))
         push!(dataset, data_item)
     end
+    print("nneg: ", nneg, " npos: ", length(dataset) - nneg)
+    return dataset
+end
+
+
+function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=4.0, neg=0.0)
+    dataset = []
+    nneg = 0
+    for i in 1:n
+        x1 = convert(Float64, rand(Uniform(0, 2)))
+        x2 = convert(Float64, rand(Uniform(0, 2)))
+        y = convert(Float64, yfunc(x1, x2)) 
+        if y > threshold
+            y = pos
+        else
+            y = neg
+            nneg += 1
+        end
+        data_item = Vector{Float64}()
+        append!(data_item, [x1, x2, y])
+        data_item = reshape(data_item, (length(data_item), 1))
+        push!(dataset, data_item)
+    end
+    Random.shuffle!(dataset)
     print("nneg: ", nneg, " npos: ", length(dataset) - nneg)
     return dataset
 end

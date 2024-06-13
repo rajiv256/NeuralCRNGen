@@ -132,6 +132,23 @@ function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
     return params
 end
 
+function create_node_params_reduced(dims; t0=0.0, t1=1.0, precision=10, h=0.2)
+    theta = rand(Uniform(0, 1), dims)
+
+    params = []
+    append!(params, theta)
+    push!(params, t0)
+    push!(params, t1)
+    # w = randn(dims)
+    w = ones(dims)*0.2
+    
+    append!(params, w)
+    push!(params, h)
+
+    return params
+end
+
+
 # Adds `k` zeroes to the end of the column matrix `u`
 function augment(x, k=1) # Verified!
     ret = copy(x)
@@ -150,5 +167,17 @@ function sequester_params(p, dims)
     t0 = p[dims^2 + 1]
     t1 = p[dims^2 + 2]
     w = p[dims^2+3:end]
+    return theta, t0, t1, w
+end
+
+function sequester_params_reduced(p, dims)
+    theta = zeros(dims, dims)
+    for i in 1:dims
+        theta[i] = p[i]
+    end
+    t0 = p[dims+1]
+    t1 = p[dims+2]
+    w = p[dims+3:dims+2 + dims]
+    h = p[dims+2+dims+1]
     return theta, t0, t1, w
 end
