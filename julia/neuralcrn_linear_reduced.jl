@@ -140,7 +140,7 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 ############################################################
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear_reduced", threshold=THRESHOLD, pos=POS, neg=NEG)
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear_reduced", threshold=2.0, pos=4.0, neg=0.0)
     acc = 0
     targets = []
     outputs = []
@@ -149,9 +149,10 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
 
     wrongs = [] # (list of [x1 x2])
 
-    epoch_loss = 0.0
+    
     for i in 1:length(dataset)
         x, y = get_one(dataset, i)
+        println("In calc acc", x, y)
         x = augment(x, dims - length(x))
 
         for zi in eachindex(x)
@@ -178,29 +179,33 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
         varscopy["Op"] = yhat[1]
         varscopy["Om"] = yhat[2]
 
-        output = 0.0
-        if varscopy["Op"] - varscopy["Om"] > threshold 
-            output = 1.0
-        end
-        push!(outputs, output)
         push!(targets, y)
         push!(xs, x[1])
         push!(ys, x[2])
 
-        if y == pos && output == 1.0
-            acc += 1
+        if yhat[1] - yhat[2] > threshold
+            push!(outputs, pos)
+            @show yhat[1], yhat[2], y, pos, neg
+            if y != neg
+                acc += 1
+            else
+                push!(wrongs, x)
+            end
         end
-        if y == neg && output == 0.0
-            acc += 1
+        if yhat[1] - yhat[2] <= threshold
+            push!(outputs, neg)
+            if y == neg
+                acc += 1
+            else
+                push!(wrongs, x)
+            end
         end
-        if (y == pos && output == 0.0) || (y == neg && output == 1.0)
-            push!(wrongs, x)
-        end
+
     end
     plot()
     myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     plot()
-    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs")
+    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="bruh")
     gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
         output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
@@ -452,18 +457,28 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "E", title="CRN | Error at t=T")
 
             # Epoch loss function
-            tr_epoch_loss += 0.5 * (err[1] - err[2])^2
+            # tr_epoch_loss += 0.5 * (err[1] - err[2])^2
+            tr_epoch_loss += abs(err[1] - err[2])
 
 
             z = _form_vector(vars, "Z")
             w = _form_vector(vars, "W")
 
             
-            # Calculate the adjoint at t=T1
-            adj = vcat([crn_mult(err, w[i, :]) for i in 1:dims])
+            # # Calculate the adjoint at t=T1
+            # adj = vcat([crn_mult(err, w[i, :]) for i in 1:dims])
             adjsym = _create_symbol_matrix("A", (dims, 1))
-            _assign_vars(vars, adjsym, adj)
+            # _assign_vars(vars, adjsym, adj)
+            
+            adjsign = (err[1]-err[2])/abs(err[1]-err[2])
+            aw1 = adjsign*(vars["W1p"] - vars["W1m"])
+            aw2 = adjsign*(vars["W2p"] - vars["W2m"])
+            vars["A1p"] = max(0, aw1)
+            vars["A1m"] = max(0, -aw1)
+            vars["A2p"] = max(0, aw2)
+            vars["A2m"] = max(0, -aw2)
             _print_vars(vars, "A", title="CRN | Adjoint at t=T")
+
 
             # Backpropagate and calculate parameter gradients 
             _print_vars(vars, "G", title="CRN | Gradients at t=T")
@@ -562,7 +577,8 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "E", title="CRN | Error at t=T")
 
             # Epoch loss function
-            val_epoch_loss += 0.5 * (err[1] - err[2])^2
+            # val_epoch_loss += 0.5 * (err[1] - err[2])^2
+            val_epoch_loss += abs(err[1] - err[2])
 
             for k in keys(vars)
                 if startswith(k, "P") || startswith(k, "W") || startswith(k, "H")
@@ -596,7 +612,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         myplot([Array(range(1, epoch))], [val_accs], ["val_acc"],
             output_dir=output_dir, name="val_accuracies", xlabel="epoch", ylabel="accuracy")
         plot()
-        calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg)
+        @show calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg)
     end
     return vars
 end
@@ -608,6 +624,7 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     NEG = 0.0
     train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
     val = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
+    print(train)
     test = []
     
     for i in range(0, 200, 20)
@@ -615,8 +632,8 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
             x1 = i / 100
             x2 = j / 100
             y = NEG
-            y = linear_reduced(x1, x2)
-            if y > THRESHOLD
+            yval = linear_reduced(x1, x2)
+            if yval > THRESHOLD
                 y = POS
             end
             push!(test, [x1 x2 y])
@@ -628,16 +645,15 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
             mkdir("julia/$output_dir/images")
         end
     end
+    print(getindex.(train, 3))
     myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
         xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
-
-
 
     params_orig = create_node_params_reduced(DIMS, t0=0.0, t1=1.0, h=0.8)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=20, tspan=(0.0, 1.0), output_dir=output_dir, LR=0.01, threshold=THRESHOLD, pos=POS, neg=NEG)
+            vars = crn_main(params_orig, train, val, EPOCHS=40, tspan=(0.0, 1.0), output_dir=output_dir, LR=0.01, threshold=THRESHOLD, pos=POS, neg=NEG)
 
             @show calculate_accuracy(test, copy(vars), dims=2, output_dir=output_dir, threshold=THRESHOLD, pos=POS, neg=NEG)
         end
