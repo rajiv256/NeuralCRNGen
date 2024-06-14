@@ -457,27 +457,27 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "E", title="CRN | Error at t=T")
 
             # Epoch loss function
-            # tr_epoch_loss += 0.5 * (err[1] - err[2])^2
-            tr_epoch_loss += abs(err[1] - err[2])
+            tr_epoch_loss += 0.5 * (err[1] - err[2])^2
+            # tr_epoch_loss += abs(err[1] - err[2])
 
 
             z = _form_vector(vars, "Z")
             w = _form_vector(vars, "W")
 
             
-            # # Calculate the adjoint at t=T1
-            # adj = vcat([crn_mult(err, w[i, :]) for i in 1:dims])
+            # Calculate the adjoint at t=T1
+            adj = vcat([crn_mult(err, w[i, :]) for i in 1:dims])
             adjsym = _create_symbol_matrix("A", (dims, 1))
-            # _assign_vars(vars, adjsym, adj)
+            _assign_vars(vars, adjsym, adj)
             
-            adjsign = (err[1]-err[2])/abs(err[1]-err[2])
-            aw1 = adjsign*(vars["W1p"] - vars["W1m"])
-            aw2 = adjsign*(vars["W2p"] - vars["W2m"])
-            vars["A1p"] = max(0, aw1)
-            vars["A1m"] = max(0, -aw1)
-            vars["A2p"] = max(0, aw2)
-            vars["A2m"] = max(0, -aw2)
-            _print_vars(vars, "A", title="CRN | Adjoint at t=T")
+            # adjsign = (err[1]-err[2])/abs(err[1]-err[2])
+            # aw1 = adjsign*(vars["W1p"] - vars["W1m"])
+            # aw2 = adjsign*(vars["W2p"] - vars["W2m"])
+            # vars["A1p"] = max(0, aw1)
+            # vars["A1m"] = max(0, -aw1)
+            # vars["A2p"] = max(0, aw2)
+            # vars["A2m"] = max(0, -aw2)
+            # _print_vars(vars, "A", title="CRN | Adjoint at t=T")
 
 
             # Backpropagate and calculate parameter gradients 
@@ -577,8 +577,8 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "E", title="CRN | Error at t=T")
 
             # Epoch loss function
-            # val_epoch_loss += 0.5 * (err[1] - err[2])^2
-            val_epoch_loss += abs(err[1] - err[2])
+            val_epoch_loss += 0.5 * (err[1] - err[2])^2
+            # val_epoch_loss += abs(err[1] - err[2])
 
             for k in keys(vars)
                 if startswith(k, "P") || startswith(k, "W") || startswith(k, "H")
@@ -660,6 +660,6 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     end
 end
 
-neuralcrn(output_dir="linear_reduced")
+neuralcrn(output_dir="linear_reduced_sqloss")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
