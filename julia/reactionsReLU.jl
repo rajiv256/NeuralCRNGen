@@ -119,19 +119,6 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, Z3m + Z3m --> Z3m
     100.0, Z3p + Z3m --> 0
 
-    
-    # # dz_i/dt = -z_i^2
-    # 2.0, Z1p + Z1m --> Z1p + Z1p + Z1m 
-    # 1.0, Z1p + Z1p --> Z1m + Z1p + Z1p 
-    # 1.0, Z1m + Z1m --> Z1m + Z1m + Z1m
-    
-    # 2.0, Z2p + Z2m --> Z2p + Z2p + Z2m
-    # 1.0, Z2p + Z2p --> Z2m + Z2p + Z2p
-    # 1.0, Z2m + Z2m --> Z2m + Z2m + Z2m 
-    
-    # 2.0, Z3p + Z3m --> Z3p + Z3p + Z3m
-    # 1.0, Z3p + Z3p --> Z3m + Z3p + Z3p
-    # 1.0, Z3m + Z3m --> Z3m + Z3m + Z3m
 end
 
 
