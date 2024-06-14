@@ -25,6 +25,8 @@ include("reactionsReLU.jl")
 include("neuralode.jl")
 include("myplots.jl")
 
+Random.seed!(42) 
+
 
 function _convert_species2var(sp)
     ret = string(sp)
@@ -499,7 +501,7 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
 end
 
 
-function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001, 
+function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001, 
     tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="")
 
     # Initialize a dictionary to track concentrations of all the species
@@ -657,7 +659,7 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001,
             _print_vars(vars, "W", title="CRN | Final layer after update |")
             
             # Update the parameters
-            crn_param_update(rn_param_update, vars, LR, (0.0, 40.0))
+            crn_param_update(rn_param_update, vars, LR, (0.0, 100.0))
             _print_vars(vars, "P", title="CRN | params after update |")
             _print_vars(vars, "B", title="CRN | beta after update |")
             
@@ -685,6 +687,10 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001,
         tr_epoch_loss /= length(train)
         
         @show epoch, tr_epoch_loss
+
+        if epoch % 10 != 1
+            continue
+        end
         ##################################################
         ################# VALIDATION #####################
         val_epoch_loss = 0.0
@@ -763,11 +769,36 @@ function crn_main(params, train, val; dims=nothing, EPOCHS=10, LR=0.001,
         # crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
         # png(crn_losses_plt, "julia/$output_dir/images/crn_train_lossplts.png")
         plot()
-        myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"],
+        myplot([Array(range(1, length(tr_losses))), Array(range(1, length(val_losses)))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="crn_train_lossplts", xlabel="epoch", ylabel="loss")
 
         plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
-        @show calculate_accuracy(val, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+
+        # Plot the tracking parameters.
+        plot()
+        if !isdir("julia/$output_dir/tracking")
+            mkdir("julia/$output_dir/tracking")
+        end
+        if !isdir("julia/$output_dir/tracking/images")
+            mkdir("julia/$output_dir/tracking/images")
+        end
+
+        for k in keys(crn_tracking)
+            if startswith(k, "P") || startswith(k, "G")
+                if endswith(k, "p")
+                    pp = k
+                    mm = replace(pp, "p"=>"m")
+                    values = crn_tracking[pp] .- crn_tracking[mm]
+                    kname = replace(k, "p"=>"")
+                    plot()
+                    myplot([Array(range(1, length(values)))], [values], [kname],
+                        output_dir="$output_dir/tracking", name="$kname", xlabel="epoch", ylabel="$kname")
+                end
+                # savefig("julia/$output_dir/tracking/images/$kname.png")
+            end
+
+        end
 
         
     end
@@ -782,18 +813,26 @@ function neuralcrn(;DIMS=3)
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
-            # # # Rings 
-            # output_dir = "rings"
-            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            
-            # ## Xor dataset
+            # # Rings 
+            t0 = 0.0
+            t1 = 0.8
+            AUGVAL = 0.2
+            output_dir = "rings"
+            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            test = val
+
+            # # Xor dataset
             # output_dir  = "xor"
+            # t0 = 0.0
+            # t1 = 0.8
+            # AUGVAL = 0.2
             # train = create_xor_dataset(100)
-            # val = create_xor_dataset(100)
+            # val = create_xor_dataset(10)
             # test = []
-            # for i in range(0, 100, 20)
-            #     for j in range(0, 100, 20)
+            
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
             #         x1 = i / 100
             #         x2 = j / 100
             #         x1b = Bool(floor(x1 + 0.5))
@@ -804,60 +843,67 @@ function neuralcrn(;DIMS=3)
             # end
             # Random.shuffle!(train)
 
-            ## AND dataset set t1 = 0.6
-            output_dir = "and"
-            train = create_and_dataset(100)
-            val = create_and_dataset(100)
-            test = []
-            for i in range(0, 100, 20)
-                for j in range(0, 100, 20)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b & x2b)
-                    push!(test, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
+            # ## AND dataset set t1 = 0.6
+            # output_dir = "and"
+            # t0 = 0.0
+            # t1 = 0.5
+            # AUGVAL = 0.2
+            # train = create_and_dataset(100)
+            # val = create_and_dataset(10)    
+            # test = []
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b & x2b)
+            #         push!(test, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
-            # ## Xor dataset
+            # # OR dataset
             # output_dir = "or"
             # train = create_or_dataset(100)
-            # val = []
-            # for i in range(0, 100, 20)
-            #     for j in range(0, 100, 20)
+            # val = create_or_dataset(10)
+            # test = []
+            # t0 = 0.0
+            # t1 = 0.8
+            # AUGVAL = 0.2
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
             #         x1 = i / 100
             #         x2 = j / 100
             #         x1b = Bool(floor(x1 + 0.5))
             #         x2b = Bool(floor(x2 + 0.5))
             #         y = Float32(x1b | x2b)
-            #         push!(val, [x1 x2 y])
+            #         push!(test, [x1 x2 y])
             #     end
             # end
             # Random.shuffle!(train)
 
-            # if !isdir("julia/$output_dir")
-            #     mkdir("julia/$output_dir")
-            #     if !isdir("julia/$output_dir/images")
-            #         mkdir("julia/$output_dir/images")
-            #     end
-            # end
+            if !isdir("julia/$output_dir")
+                mkdir("julia/$output_dir")
+                if !isdir("julia/$output_dir/images")
+                    mkdir("julia/$output_dir/images")
+                end
+            end
 
             myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
                 xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}"    )
 
 
-            t0 = 0.0
-            t1 = 0.6
-            AUGVAL = 0.5
+           
+            
+
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.3)
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.1)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=100, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
             @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
         end
     end

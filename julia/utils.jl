@@ -13,6 +13,9 @@ using ColorSchemes;
 using Distributions;
 using Catalyst;
 
+
+Random.seed!(42)
+
 # Simulate a custom ODE
 function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
@@ -126,9 +129,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
     beta = ones(dims)*0.1 
     append!(params, beta)
 
-    # w = rand(Normal(0.0, 2.0), dims)
-    # w = w/sqrt(dims)
-    w = ones(dims)*0.8
+    w = ones(dims)
     append!(params, w)
 
     push!(params, h)

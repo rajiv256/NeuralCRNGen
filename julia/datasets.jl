@@ -12,6 +12,9 @@ using ColorSchemes;
 
 include("utils.jl")
 
+
+Random.seed!(42) # Have to sync in all neuralcrn.jl, utils.jl and datasets.jl
+
 function linear(x1, x2)
     return x1 + x2
 end
