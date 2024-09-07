@@ -49,7 +49,6 @@ def print_gradient_update_crn(
 if __name__ == '__main__':
 
     D = 2
-    
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
     p = ode.Matrix2D(symbol='p', dims=[D, D])
     x = ode.Matrix2D(symbol='x', dims=[D, 1])
