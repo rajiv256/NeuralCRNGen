@@ -28,6 +28,22 @@ class Expression:
             ret += term.scalars
         return ret
 
+    def __mul__(self, e2):
+        all_terms = []
+        if self.terms == [] or e2.terms == []:
+            return Expression(terms=[])
+
+        for t1 in self.terms:
+            for t2 in e2.terms:
+                all_terms.append(mult_terms(t1, t2))
+        return Expression(
+            terms=all_terms
+        )
+
+    def __add__(self, e2):
+        return Expression(self.terms + e2.terms)
+
+
 
 class DualRail:
     def __init__(self, pos=Expression(), neg=Expression()):
@@ -59,6 +75,18 @@ class Term(Expression):
             e = mult_dual_rail(e, dr_scalars[i])
         return e
 
+    def __mul__(self, term):
+        if self.scalars == [] or term.scalars == []:
+            return Term(scalars=[])
+        else:
+            return Term(
+                scalars=self.scalars + term.scalars
+            )
+    
+    def __add__(self, term):
+        return Expression(
+            terms=self.terms + term.terms
+        )
 
 class Scalar(Term):
     def __init__(self, name=None, value=None):
@@ -77,6 +105,24 @@ class Scalar(Term):
 
     def to_species_str(self):
         return self.name.upper() + self.name[1:]
+
+    def __mul__(self, scalar):
+        if scalar.value == 1:
+            return Term(scalars=[self])
+        if scalar.value == 0:
+            return Term(scalars=[])
+
+        return Term(
+            scalars=[self, scalar]
+        )
+
+    def __add__(self, scalar):
+        if scalar.value == 0:
+            return self 
+        return Scalar(
+            name=f'{self.name}plus{scalar.name}',
+            # Value doesn't need to be added.
+        )
 
 
 def mult_terms(t1: Term, t2: Term):
@@ -127,11 +173,16 @@ if __name__ == '__main__':
     s2 = Scalar(name='b2')
     s3 = Scalar(name='c3')
     s4 = Scalar(name='d4')
-    e1 = Expression(terms=[s1, s2])
-    e2 = Expression(terms=[s3, s4])
-    t = Term(scalars=[s1, s2])
-    print(t.dual_rail())
+    t1 = Term(scalars=[s1, s2])
+    t2 = Term(scalars=[s3, s4])
+    e1 = Expression(terms=[t1, t2])
+    e2 = Expression(terms=[t2])
+    # print(t.dual_rail())
 
-    e1 = Expression(terms=[s1, s2])
-    e2 = Expression()
-    print(add_expressions(mult_expressions(e2, s3), mult_expressions(s1, s2)))
+    # print(add_expressions(mult_expressions(e2, s3), mult_expressions(s1, s2)))
+    e = e1*e2
+    print(e)
+    print(s1 + s2)
+
+    print(t1 + t2)
+    print(e1 + e2)

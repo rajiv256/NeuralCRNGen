@@ -22,6 +22,7 @@ class Matrix2D:
         self.data = data
 
     def matrix(self):
+        """Converts the Matrix2D object into an 2D nparray"""
         if self.data is not None:
             mat = np.array(self.data)
             if mat.ndim != 2:
@@ -46,9 +47,57 @@ class Matrix2D:
         return mat
 
     def __str__(self):
+        ret = ''
         mat = self.matrix()
-        return str(mat)
+        rows, cols = self.dims 
+        for r in range(rows):
+            for c in range(cols):
+                ret += str(mat[r][c]) + ' ' # Scalar object
+            ret += '\n'
+        return ret
 
+    def __add__(self, mat):
+        assert self.dims == mat.dims
+        return Matrix2D(
+            symbol=f'{self.symbol}PLUS{mat.symbol}',
+            dims=self.dims,
+            data=self.matrix() + mat.matrix()
+        )
+
+    def __mul__(self, mat):
+        assert self.dims[1] == mat.dims[0]
+        data = np.matmul(self.matrix(), mat.matrix())
+        return Matrix2D(
+            symbol=f'{self.symbol}{mat.symbol}',
+            dims=[self.dims[0], mat.dims[1]],
+            data=data
+        )
+
+    def _broadcast(self, mat):
+        if self.dims == mat.dims:
+            return mat
+        newdata = np.broadcast_to(self.matrix(), mat.dims)
+        assert (mat.dims[0]%self.dims[0]==0) and (mat.dims[1]%self.dims[1]==0)
+        return Matrix2D(
+            symbol=self.symbol + 'B',
+            dims=mat.dims,
+            data=newdata,
+        )
+
+    def _hadamard(self, mat):
+        newdata = np.multiply(self.matrix(), mat.matrix())
+        return Matrix2D(
+            symbol=f'{self.symbol}HDMD{mat.symbol}',
+            dims=list(newdata.shape),
+            data=newdata
+        )
+
+    def _reshape(self, dims=[]):
+        matflat = self.matrix().flatten()
+        return Matrix2D(symbol=self.symbol, dims=dims, data=matflat)
+
+
+    
 
 def transpose_matrix(mat):
     matT = Matrix2D(
@@ -72,6 +121,8 @@ def create_dfdtheta(D, prefix='x'):
 
     xs = np.array(xs)
     return xs
+
+
 
 
 class MultinomialODE:
@@ -145,15 +196,22 @@ class ODESystem:
         self.rhs = rhs
         self.parity = parity
 
-    def dual_rail_crn(self):
-        lhs_mat = self.lhs.matrix()
-        rhs_mat_list = [r.matrix() for r in self.rhs]
-        rhs_mat = rhs_mat_list[0]
+    def __str__(self):
+        ret = ''
+        ret += f'lhs: {self.lhs.symbol}: \n{str(self.lhs)}\n'
+        for r in self.rhs:
+            ret += f'rhs: {r.symbol}: \n{str(r)}\n'
+        return ret
 
-        for i in range(1, len(rhs_mat_list)):
-            rhs_mat = utils.np_matmult_scalar_matrices_2d(
-                rhs_mat, rhs_mat_list[i]
-            )
+    def dual_rail_crn(self):
+        rhsprod = self.rhs[0]
+        for i in range(1, len(self.rhs)):
+            rhsprod = rhsprod*self.rhs[i]
+        
+        lhs_mat = self.lhs.matrix()
+        rhs_mat = rhsprod.matrix()
+        rhs_mat=np.broadcast_to(rhs_mat, lhs_mat.shape)
+
         multinomials = []
         for i in range(lhs_mat.shape[0]):
             for j in range(lhs_mat.shape[1]):
@@ -172,12 +230,4 @@ class ODESystem:
 
 
 if __name__ == '__main__':
-    ode = ODESystem(
-        lhs=Matrix2D(symbol='z', dims=[2, 1]),
-        rhs=[Matrix2D(symbol='p', dims=[2, 2]),
-             Matrix2D(symbol='z', dims=[2, 1])],
-        parity=-1
-    )
-    crn = ode.dual_rail_crn()
-    for c in crn:
-        print(c)
+    print(x)

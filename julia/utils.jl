@@ -1,3 +1,4 @@
+import Pkg; 
 using DifferentialEquations;
 using Random;
 using Plots;
@@ -9,13 +10,17 @@ using Dictionaries;
 using LaTeXStrings;
 using Statistics;
 using ColorSchemes;
+using Distributions;
+using Catalyst;
 
+
+Random.seed!(42)
 
 # Simulate a custom ODE
-function simulate_reaction_network(network, u0, p;tspan=(), rate=1.0, reltol=1e-8, abstol=1e-8, kwargs...)
+function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
     # Network parameter variables
-    oprob = ODEProblem(network, u0, tspan, p)
-    sol = solve(oprob, Tsit5(), reltol=1e-8, abstol=1e-8, kwargs...)
+    oprob = ODEProblem(network, u0, tspan, rate_constants)
+    sol = solve(oprob, TRBDF2(autodiff=false), reltol=1e-4, abstol=1e-8, maxiters=1e7)
     return sol
 end
 
@@ -112,41 +117,51 @@ function get_species_array(rn)
 end
 
 
-function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
-    theta = randn(dims^2)
-    for i in eachindex(theta)
-        theta[i] = round(theta[i], digits=precision)
-    end
-    
+function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
     params = []
+
+    push!(params, Float32(dims))
+
+    theta = rand(Normal(0.0, 2.0), dims^2)
+    theta = theta/sqrt(dims)
+
     append!(params, theta)
+    beta = ones(dims)*0.1 
+    append!(params, beta)
+
+    w = ones(dims)
+    append!(params, w)
+
+    push!(params, h)
+
     push!(params, t0)
     push!(params, t1)
-    w = randn(dims)
-    for i in eachindex(w)
-        w[i] = round(w[i], digits=precision)
-    end
-    append!(params, w)
+    
     return params
 end
 
 # Adds `k` zeroes to the end of the column matrix `u`
-function augment(x, k=1) # Verified!
+function augment(x, k; augval=1.0) # Verified!
     ret = copy(x)
     for i in 1:k
-        ret = vcat(ret, 0.0)
+        ret = vcat(ret, augval)
     end
     return ret
 end
 
 
-function sequester_params(p, dims)
+function sequester_params(p) 
+    dims = Int32(p[1])
+    p = p[2:end]
     theta = zeros(dims, dims)
     for i in 1:dims^2
         theta[(i-1)÷dims + 1, (i-1)%dims + 1] = p[i]
     end
-    t0 = p[dims^2 + 1]
-    t1 = p[dims^2 + 2]
-    w = p[dims^2+3:end]
-    return theta, t0, t1, w
+    beta = p[dims^2+1:dims^2 + dims]
+    w = p[dims^2 + dims+1:dims^2 + 2*dims]
+    h = p[dims^2 + 2*dims + 1]
+    t0 = p[dims^2 + 2*dims + 2]
+    t1 = p[dims^2 + 2*dims + 3]
+    
+    return dims, theta, beta, w, h, t0, t1
 end

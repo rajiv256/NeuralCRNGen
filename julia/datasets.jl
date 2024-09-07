@@ -12,6 +12,9 @@ using ColorSchemes;
 
 include("utils.jl")
 
+
+Random.seed!(42) # Have to sync in all neuralcrn.jl, utils.jl and datasets.jl
+
 function linear(x1, x2)
     return x1 + x2
 end
@@ -117,24 +120,25 @@ end
 
 
 # This is a classification dataset with nonlinearly separable data
-function create_annular_rings_dataset(n; lb=0.5, mb=1.0, ub=1.5)
+function create_annular_rings_dataset(n; lub=0.04, lb=0.3, mb=0.8, ub=1.0)
     
     dataset = []
-    
-    while length(dataset) <= n÷3
-        x1 = convert(Float32, randn(1)[1])
-        x2 = convert(Float32, randn(1)[1])
-        if norm([x1 x2]) <= lb
-            y = -1
+    center = 0
+    normal = Uniform(-1, 1)
+    while length(dataset) <= n÷2
+        x1 = convert(Float32, rand(normal, 1)[1])
+        x2 = convert(Float32, rand(normal, 1)[1])
+        if norm([x1-center x2-center]) <= lb && norm([x1-center x2-center]) >= lub
+            y = 0.0
             push!(dataset, [x1 x2 y])
         end
     end
 
     while length(dataset) <= n
-        x1 = convert(Float32, randn(1)[1])
-        x2 = convert(Float32, randn(1)[1])
-        if norm([x1 x2]) >= mb && norm([x1 x2]) <= ub
-            y = 1
+        x1 = convert(Float32, rand(normal, 1)[1])
+        x2 = convert(Float32, rand(normal, 1)[1])
+        if norm([x1-center x2-center]) >= mb && norm([x1-center x2-center]) <= ub
+            y = 1.0
             push!(dataset, [x1 x2 y])
         end
     end
@@ -142,26 +146,133 @@ function create_annular_rings_dataset(n; lb=0.5, mb=1.0, ub=1.5)
     return dataset
 end
 
-# # This part has to be changed into a function call 
-N = 150
-# Nval = 20
-rings_train_dataset = create_annular_rings_dataset(N)
-# rings_val_dataset = create_annular_rings_dataset!(Nval, 1.0)
+function create_xor_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+    # xor_dataset = create_xor_dataset(100)
 
-# tanh_train_dataset = create_dataset!(N, mytanh)
-# tanh_val_dataset = create_dataset!(Nval, mytanh)
-# print(tanh_train_dataset[1])
+    # g = scatter!(getindex.(xor_dataset, 1), getindex.(xor_dataset, 2), group=getindex.(xor_dataset, 3))
+    # png(g, "julia/images/xor_dataset.png")
+    dataset = []
+    uniform = Uniform(0, 1)
 
-# linear_class_train_dataset = create_linearly_separable_dataset!(N, linear, threshold=0.0)
-# linear_class_val_dataset = create_linearly_separable_dataset!(Nval, linear, threshold=0.0)
+    while length(dataset) <= n÷2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+        
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
 
+        y = Float32(x1binary ⊻ x2binary)
+        if y == 0.0
+            push!(dataset, [x1 x2 neg])    
+        end
+    end
 
-# Create a random matrix
-function create_random_2D(r, c)
-    rng = MersenneTwister()
-    mat = randn(rng, r, c)
-    return mat
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+        
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary ⊻ x2binary)
+        if y == 1.0
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
 end
 
-plt = scatter(getindex.(rings_train_dataset, 1), getindex.(rings_train_dataset, 2), group=getindex.(rings_train_dataset, 3))
-png(plt, "annular_rings.png")
+function create_and_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+    
+    dataset = []
+    uniform = Uniform(0, 1)
+
+    while length(dataset) <= n÷2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+        
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary & x2binary)
+        if y == 0.0
+            push!(dataset, [x1 x2 neg])
+        end
+    end
+
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary & x2binary)
+        if y == 1.0
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
+
+function create_or_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
+
+    dataset = []
+    uniform = Uniform(0, 1)
+
+    while length(dataset) <= n ÷ 2
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary | x2binary)
+        if y == 0.0
+            push!(dataset, [x1 x2 neg])
+        end
+    end
+
+    while length(dataset) <= n
+
+        x1 = convert(Float32, rand(uniform, 1)[1])
+        x2 = convert(Float32, rand(uniform, 1)[1])
+
+        x1binary = Bool(floor(x1 + 0.5))
+        x2binary = Bool(floor(x2 + 0.5))
+
+        y = Float32(x1binary | x2binary)
+        if y == 1.0
+            push!(dataset, [x1 x2 pos])
+        end
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
+# # # This part has to be changed into a function call 
+# N = 150
+# # Nval = 20
+# rings_train_dataset = create_annular_rings_dataset(N)
+# # rings_val_dataset = create_annular_rings_dataset!(Nval, 1.0)
+
+# # tanh_train_dataset = create_dataset!(N, mytanh)
+# # tanh_val_dataset = create_dataset!(Nval, mytanh)
+# # print(tanh_train_dataset[1])
+
+# # linear_class_train_dataset = create_linearly_separable_dataset!(N, linear, threshold=0.0)
+# # linear_class_val_dataset = create_linearly_separable_dataset!(Nval, linear, threshold=0.0)
+
+
+# # Create a random matrix
+# function create_random_2D(r, c)
+#     rng = MersenneTwister()
+#     mat = randn(rng, r, c)
+#     return mat
+# end
+
+# plt = scatter(getindex.(rings_train_dataset, 1), getindex.(rings_train_dataset, 2), group=getindex.(rings_train_dataset, 3))
+# png(plt, "annular_rings.png")

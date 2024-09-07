@@ -13,14 +13,13 @@ layer and final regression layer.
 import os
 import sys
 import random
-import seaborn as sns
 import argparse
 import logging
 import pickle as pkl
 import math
 
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
@@ -66,7 +65,7 @@ class NNet(nn.Module):
     def __init__(self):
         super(NNet, self).__init__()
         self.linear1 = nn.Linear(3, 3)
-        self.linearm = nn.Linear(3, 3)
+        # self.linearm = nn.Linear(3, 3)
         self.linear2 = nn.Linear(3, 1)
 
         self.track = {
@@ -85,12 +84,14 @@ class NNet(nn.Module):
                 # torch.nn.init.xavier_uniform_(m.weight)
                 # m.bias.data.fill_(0.1)
         init(self.linear1)
-        init(self.linearm)
+        # init(self.linearm)
         init(self.linear2)
 
     def forward(self, x):
-        x = x + self.linear1(x)
-        x = x + self.linearm(x)
+        x = F.relu(self.linear1(x))
+        print("z", x)
+        # x = x + self.linearm(x)
+        # x = self.linear2(x)
         x = self.linear2(x)
         return x
 
@@ -115,6 +116,11 @@ class NNet(nn.Module):
         self.train()
         self._init_weights()
 
+        print(self.linear1.weight.data)
+        print(self.linear1.bias.data)
+        print(self.linear2.weight.data)
+        print(self.linear2.bias.data)
+        
         # Dataset and dataloader
         dataset_folder = os.path.join(os.getcwd(), 'data', opt.dataset_name)
         train_pkl = os.path.join(dataset_folder, 'train.pkl')
@@ -145,14 +151,15 @@ class NNet(nn.Module):
             val_batches = 0
 
             for x, y in train_loader:
-
+                # print(x, y, x.shape, y.shape)
                 if torch.cuda.is_available():
                     x.cuda()
                     y.cuda()
 
+                print("x:",  x)
                 optimizer.zero_grad()
                 output = self(x)
-
+                exit(0)
                 loss = torch.sqrt(criterion(output.flatten(), y.flatten()))
                 loss.backward()
                 optimizer.step()
@@ -173,7 +180,6 @@ class NNet(nn.Module):
                 if torch.cuda.is_available():
                     x.cuda()
                     y.cuda()
-
                 output = self(x)
                 loss = torch.sqrt(criterion(output.flatten(), y.flatten()))
                 
@@ -208,19 +214,15 @@ class NNet(nn.Module):
 
             pbar.set_description(
                 f"epoch:{epoch} | tr: {ep_tr_loss} | val: {ep_val_loss}")
-            yhatsplt = sns.scatterplot(x=[item[0] for item in yhats], y=[item[1] for item in yhats], c=[item[2] for item in yhats])
-            plt.savefig("resnetyhats.png")
+            # yhatsplt = sns.scatterplot(x=[item[0] for item in yhats], y=[item[1] for item in yhats], c=[item[2] for item in yhats])
+            # plt.savefig("resnetyhats.png")
 
 if __name__ == "__main__":
 
     opt = get_args()
     nnet = NNet()
+
     nnet.train_model(opt)
 
     # Plot epoch train and val loss.
     track = nnet.track
-    plt.clf()
-    sns.lineplot(x=track['epoch'], y=track['ep_tr_loss'])
-    sns.lineplot(x=track['epoch'], y=track['ep_val_loss'])
-    
-    plt.savefig('plot.png')
