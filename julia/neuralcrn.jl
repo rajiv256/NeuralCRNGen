@@ -539,7 +539,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
     crn_theta = vec(transpose(theta)) 
     # Assign the values of the parameters
     for tindex in eachindex(crn_theta)
-        d = _index1Dvar("P", tindex, crn_theta[tindex], dims=dims)
+        d = _index2Dvar("P", tindex, crn_theta[tindex], dims=dims)
         for (k, v) in d
             vars[k] = v
         end
