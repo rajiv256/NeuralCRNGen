@@ -815,7 +815,7 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             t0 = 0.0
-            t1 = 0.8
+            t1 = 0.1
             AUGVAL = 0.2
             output_dir = "rings"
             train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
@@ -903,7 +903,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=0.2, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
             @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
         end
     end

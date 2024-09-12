@@ -74,12 +74,12 @@ if __name__ == '__main__':
     print("# dz_i/dt = p_ij x_j")
     lcs = utils.print_crn(fwd_px_crn)
 
-    # ## dz/dt = bz (It's okay because Bi is not used anywhere else)
-    # bzhdmd = b._hadamard(z)
-    # fwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd])
-    # print("# dz_i/dt = b_iz_i")
-    # fwd_bz_crn = fwd_bz_ode.dual_rail_crn()
-    # lcs = utils.print_crn(fwd_bz_crn)
+    # dz/dt = bz (It's okay because Bi is not used anywhere else)
+    bzhdmd = b._hadamard(z)
+    fwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd])
+    print("# dz_i/dt = b_iz_i")
+    fwd_bz_crn = fwd_bz_ode.dual_rail_crn()
+    lcs = utils.print_crn(fwd_bz_crn)
     
     # ## dz/dt = -z^2
     # zzhdmd = z._hadamard(z)
@@ -102,10 +102,10 @@ if __name__ == '__main__':
     print("# dz/dt = -p_ij x_j")
     lcs = utils.print_crn(bwd_px_crn)
 
-    # bwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd], parity=-1)
-    # bwd_bz_crn = bwd_bz_ode.dual_rail_crn()
-    # print("# dz/dt = -b_i z_i")
-    # lcs = utils.print_crn(bwd_bz_crn)
+    bwd_bz_ode = ode.ODESystem(lhs=z, rhs=[bzhdmd], parity=-1)
+    bwd_bz_crn = bwd_bz_ode.dual_rail_crn()
+    print("# dz/dt = -b_i z_i")
+    lcs = utils.print_crn(bwd_bz_crn)
 
     # bwd_zz_ode = ode.ODESystem(lhs=z, rhs=[zzhdmd], parity=1) # parity is 1
     # bwd_zz_crn = bwd_zz_ode.dual_rail_crn()

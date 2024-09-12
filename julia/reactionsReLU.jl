@@ -44,6 +44,20 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P33p + X3m --> Z3m + P33p + X3m
     1.0, P33m + X3p --> Z3m + P33m + X3p
 
+    # dz_i/dt = b_iz_i
+    1.0, B1p + Z1p --> Z1p + B1p + Z1p
+    1.0, B1m + Z1m --> Z1p + B1m + Z1m
+    1.0, B1p + Z1m --> Z1m + B1p + Z1m
+    1.0, B1m + Z1p --> Z1m + B1m + Z1p
+    1.0, B2p + Z2p --> Z2p + B2p + Z2p
+    1.0, B2m + Z2m --> Z2p + B2m + Z2m
+    1.0, B2p + Z2m --> Z2m + B2p + Z2m
+    1.0, B2m + Z2p --> Z2m + B2m + Z2p
+    1.0, B3p + Z3p --> Z3p + B3p + Z3p
+    1.0, B3m + Z3m --> Z3p + B3m + Z3m
+    1.0, B3p + Z3m --> Z3m + B3p + Z3m
+    1.0, B3m + Z3p --> Z3m + B3m + Z3p
+
     # dz_i/dt = -z_i^2
     # Not sure if this is hacky
     1.0, 2Z1p --> Z1p 
@@ -106,6 +120,20 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, P33m + X3p --> Z3p + P33m + X3p
     1.0, P33p + X3p --> Z3m + P33p + X3p
     1.0, P33m + X3m --> Z3m + P33m + X3m
+
+    # dz/dt = -b_i z_i
+    1.0, B1p + Z1m --> Z1p + B1p + Z1m
+    1.0, B1m + Z1p --> Z1p + B1m + Z1p
+    1.0, B1p + Z1p --> Z1m + B1p + Z1p
+    1.0, B1m + Z1m --> Z1m + B1m + Z1m
+    1.0, B2p + Z2m --> Z2p + B2p + Z2m
+    1.0, B2m + Z2p --> Z2p + B2m + Z2p
+    1.0, B2p + Z2p --> Z2m + B2p + Z2p
+    1.0, B2m + Z2m --> Z2m + B2m + Z2m
+    1.0, B3p + Z3m --> Z3p + B3p + Z3m
+    1.0, B3m + Z3p --> Z3p + B3m + Z3p
+    1.0, B3p + Z3p --> Z3m + B3p + Z3p
+    1.0, B3m + Z3m --> Z3m + B3m + Z3m
 
     # dz_i/dt = z_i^2
     # Not sure if this is hacky
