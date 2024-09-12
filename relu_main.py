@@ -69,7 +69,6 @@ if __name__ == '__main__':
     lcs = utils.print_crn(fwd_h_crn)
 
     ## dz_i/dt = sum p_ij x_j z_i
-    pzhdmd = p._hadamard(z)
     fwd_px_ode = ode.ODESystem(lhs=z, rhs=[p, x], parity=1)
     fwd_px_crn = fwd_px_ode.dual_rail_crn()
     print("# dz_i/dt = p_ij x_j")
@@ -123,9 +122,9 @@ if __name__ == '__main__':
     
     azhdmd = a._hadamard(z)
     azzhdmd = azhdmd._hadamard(z)
-    bwd_az_ode = ode.ODESystem(lhs=a, rhs=[azzhdmd], parity=-1)
+    bwd_az_ode = ode.ODESystem(lhs=a, rhs=[azhdmd], parity=-1)
     bwd_az_crn = bwd_az_ode.dual_rail_crn()
-    print("\n# da_i/dt = - a_i z_i z_i")
+    print("\n# da_i/dt = - a_i z_i")
     lcs = utils.print_crn(bwd_az_crn)
 
     # Gradients
