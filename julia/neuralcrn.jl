@@ -814,34 +814,34 @@ function neuralcrn(;DIMS=3)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
             # # Rings 
-            t0 = 0.0
-            t1 = 1.0
-            AUGVAL = 0.2
-            output_dir = "rings"
-            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            test = val
-
-            # # Xor dataset
-            # output_dir  = "xor"
             # t0 = 0.0
-            # t1 = 0.8
+            # t1 = 1.0
             # AUGVAL = 0.2
-            # train = create_xor_dataset(100)
-            # val = create_xor_dataset(10)
-            # test = []
+            # output_dir = "rings"
+            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            # test = val
+
+            # Xor dataset
+            output_dir  = "xor"
+            t0 = 0.0
+            t1 = 0.8
+            AUGVAL = 0.2
+            train = create_xor_dataset(100)
+            val = create_xor_dataset(30)
+            test = []
             
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b ⊻ x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            for i in range(0, 100, 40)
+                for j in range(0, 100, 40)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b ⊻ x2b)
+                    push!(test, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             # ## AND dataset set t1 = 0.6
             # output_dir = "and"
