@@ -539,7 +539,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
     crn_theta = vec(transpose(theta)) 
     # Assign the values of the parameters
     for tindex in eachindex(crn_theta)
-        d = _index2Dvar("P", tindex, crn_theta[tindex], dims=dims)
+        d = _index1Dvar("P", tindex, crn_theta[tindex], dims=dims)
         for (k, v) in d
             vars[k] = v
         end
@@ -688,9 +688,9 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         
         @show epoch, tr_epoch_loss
 
-        if epoch % 10 != 1
-            continue
-        end
+        # if epoch % 10 != 1
+        #     continue
+        # end
         ##################################################
         ################# VALIDATION #####################
         val_epoch_loss = 0.0
@@ -815,7 +815,7 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             t0 = 0.0
-            t1 = 0.8
+            t1 = 1.0
             AUGVAL = 0.2
             output_dir = "rings"
             train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
@@ -903,7 +903,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=0.1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=1, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
             @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
         end
     end
