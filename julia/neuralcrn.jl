@@ -259,13 +259,6 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
 
         
     end
-
-    # plt_state1 = scatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), group=getindex.(reg_x, 4))
-    # plt_state2 = scatter3d(getindex.(aug_x, 1), getindex.(aug_x, 2), getindex.(aug_x, 3), group=getindex.(aug_x, 4), markershape=markers) # Color: based on output, shape based on target label. 
-    # png(plt_state1, "julia/$output_dir/images/crn_before_aug.png")
-    # png(plt_state2, "julia/$output_dir/images/crn_after_aug.png")
-    # pltyhats = scatter(getindex.(yhats, 1), getindex.(yhats, 2), group=getindex.(yhats, 4))
-    # png(pltyhats, "julia/$output_dir/images/crn_yhats.png")
     plot()
     myscatter3d(getindex.(reg_x, 1), getindex.(reg_x, 2), getindex.(reg_x, 3), getindex.(reg_x, 4), circles, output_dir=output_dir, name="crn_before_aug")
     plot()
@@ -825,7 +818,7 @@ function neuralcrn(;DIMS=3)
             # Xor dataset
             output_dir  = "xor"
             t0 = 0.0
-            t1 = 0.8
+            t1 = 1.0
             AUGVAL = 0.2
             train = create_xor_dataset(100)
             val = create_xor_dataset(30)
