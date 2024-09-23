@@ -48,7 +48,7 @@ def print_gradient_update_crn(
 
 if __name__ == '__main__':
 
-    D = 2
+    D = 3
     z = ode.Matrix2D(symbol='z', dims=[D, 1])
     p = ode.Matrix2D(symbol='p', dims=[D, D])
     x = ode.Matrix2D(symbol='x', dims=[D, 1])
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     
     azhdmd = a._hadamard(z)
     azzhdmd = azhdmd._hadamard(z)
-    bwd_az_ode = ode.ODESystem(lhs=a, rhs=[azzhdmd], parity=-1)
+    bwd_az_ode = ode.ODESystem(lhs=a, rhs=[azhdmd], parity=-1)
     bwd_az_crn = bwd_az_ode.dual_rail_crn()
-    print("\n# da_i/dt = - a_i z_i z_i")
+    print("\n# da_i/dt = - a_i z_i")
     lcs = utils.print_crn(bwd_az_crn)
 
     # Gradients

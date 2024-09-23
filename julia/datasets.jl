@@ -224,7 +224,8 @@ function create_or_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
     dataset = []
     uniform = Uniform(0, 1)
 
-    while length(dataset) <= n ÷ 2
+    # If n/2 having difficulty in learning because loss sort of plateaus.
+    while length(dataset) <= n ÷ 4
         x1 = convert(Float32, rand(uniform, 1)[1])
         x2 = convert(Float32, rand(uniform, 1)[1])
 

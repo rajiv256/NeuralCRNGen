@@ -22,6 +22,7 @@ using Distributions;
 include("datasets.jl")
 include("utils.jl")
 include("reactionsReLU.jl")
+# include("reactionsReLUAlt.jl")
 include("neuralode.jl")
 include("myplots.jl")
 
@@ -658,7 +659,9 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             
             # Tracking parameters
             for (k, v) in vars
-                push!(crn_tracking[k], v)
+                if haskey(crn_tracking, k)
+                    push!(crn_tracking[k], v)
+                end
             end
 
             # dissipate_and_annihilate(vars, (0.0, 10.0))
@@ -815,31 +818,31 @@ function neuralcrn(;DIMS=3)
             # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
             # test = val
 
-            # Xor dataset
-            output_dir  = "xor"
-            t0 = 0.0
-            t1 = 1.0
-            AUGVAL = 0.2
-            train = create_xor_dataset(100)
-            val = create_xor_dataset(30)
-            test = []
+            # # Xor dataset
+            # output_dir  = "xor"
+            # t0 = 0.0
+            # t1 = 0.9
+            # AUGVAL = 0.2
+            # train = create_xor_dataset(100)
+            # val = create_xor_dataset(30)
+            # test = []
             
-            for i in range(0, 100, 40)
-                for j in range(0, 100, 40)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b ⊻ x2b)
-                    push!(test, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b ⊻ x2b)
+            #         push!(test, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             # ## AND dataset set t1 = 0.6
             # output_dir = "and"
             # t0 = 0.0
-            # t1 = 0.5
+            # t1 = 0.9
             # AUGVAL = 0.2
             # train = create_and_dataset(100)
             # val = create_and_dataset(10)    
@@ -856,25 +859,25 @@ function neuralcrn(;DIMS=3)
             # end
             # Random.shuffle!(train)
 
-            # # OR dataset
-            # output_dir = "or"
-            # train = create_or_dataset(100)
-            # val = create_or_dataset(10)
-            # test = []
-            # t0 = 0.0
-            # t1 = 0.8
-            # AUGVAL = 0.2
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b | x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            # OR dataset
+            output_dir = "or"
+            train = create_or_dataset(200)
+            val = create_or_dataset(10)
+            test = []
+            t0 = 0.0
+            t1 = 0.9
+            AUGVAL = 0.2
+            for i in range(0, 100, 40)
+                for j in range(0, 100, 40)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b | x2b)
+                    push!(test, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
@@ -884,14 +887,14 @@ function neuralcrn(;DIMS=3)
             end
 
             myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
-                xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}"    )
+                xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
 
            
             
 
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.1)
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=AUGVAL)
             
             @show params_orig
 
