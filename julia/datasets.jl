@@ -133,14 +133,6 @@ function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=
             npos += 1
             push!(dataset, [x1; x2; y])
         end
-<<<<<<< HEAD
-=======
-        
-        # data_item = Vector{Float64}()
-        # append!(data_item, [x1, x2, y])
-        # push!(dataset, data_item)
-        
->>>>>>> 1dc162a5e74e6629517772e177c7f70cab407e7e
     end
     while length(dataset) <= n
         x1 = convert(Float64, rand(Uniform(0, 2)))
@@ -151,13 +143,6 @@ function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=
             push!(dataset, [x1; x2; y])
             nneg += 1
         end
-<<<<<<< HEAD
-=======
-        # data_item = Vector{Float64}()
-        # append!(data_item, [x1, x2, y])
-        # data_item = reshape(data_item, (length(data_item), 1))
-        # push!(dataset, data_item)
->>>>>>> 1dc162a5e74e6629517772e177c7f70cab407e7e
         
     end
     Random.shuffle!(dataset)
