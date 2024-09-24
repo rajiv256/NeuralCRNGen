@@ -207,7 +207,8 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
     plot()
     gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="test", markersize=2)
     gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=2, label="errors",
-        output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+
+    output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
     #     xtickfontsize=12, ytickfontsize=12,
     #     legendfontsize=12, fontfamily="Arial", grid=false,
@@ -629,6 +630,7 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     
     for i in range(0, 200, 100)
         for j in range(0, 200, 100)
+
             x1 = i / 100
             x2 = j / 100
             y = NEG
