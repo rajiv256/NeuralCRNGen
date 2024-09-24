@@ -205,8 +205,8 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
     plot()
     myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     plot()
-    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="bruh")
-    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="test", markersize=2)
+    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=2, label="errors",
         output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
     #     xtickfontsize=12, ytickfontsize=12,
@@ -623,12 +623,12 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     POS = 4.0
     NEG = 0.0
     train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
-    val = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
+    val = create_linearly_separable_dataset_reduced(50, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
     print(train)
     test = []
     
-    for i in range(0, 200, 20)
-        for j in range(0, 200, 20)
+    for i in range(0, 200, 100)
+        for j in range(0, 200, 100)
             x1 = i / 100
             x2 = j / 100
             y = NEG
