@@ -17,11 +17,7 @@ function linear(x1, x2)
 end
 
 function linear_reduced(x1, x2; h=0.8)
-<<<<<<< HEAD
     return x1 + 2*x2
-=======
-    return 0.5*x1 + 1.3*x2
->>>>>>> 1dc162a5e74e6629517772e177c7f70cab407e7e
 end
 
 function bilinear(x1, x2)
