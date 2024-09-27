@@ -470,16 +470,6 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             adj = vcat([crn_mult(err, w[i, :]) for i in 1:dims])
             adjsym = _create_symbol_matrix("A", (dims, 1))
             _assign_vars(vars, adjsym, adj)
-            
-            # adjsign = (err[1]-err[2])/abs(err[1]-err[2])
-            # aw1 = adjsign*(vars["W1p"] - vars["W1m"])
-            # aw2 = adjsign*(vars["W2p"] - vars["W2m"])
-            # vars["A1p"] = max(0, aw1)
-            # vars["A1m"] = max(0, -aw1)
-            # vars["A2p"] = max(0, aw2)
-            # vars["A2m"] = max(0, -aw2)
-            # _print_vars(vars, "A", title="CRN | Adjoint at t=T")
-
 
             # Backpropagate and calculate parameter gradients 
             _print_vars(vars, "G", title="CRN | Gradients at t=T")
@@ -523,7 +513,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         ##### VALIDATION ###################################
         ####################################################
 
-        val_epoch_loss = 0.0
+        val_epoch_loss = 0.0    
         val_acc = 0.0 
         for i in eachindex(val)
             x, y = get_one(val, i)
