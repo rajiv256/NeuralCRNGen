@@ -17,7 +17,7 @@ KWARGS = (
     "widen" => false,
 )
 
-function myplot(xs, ys, labels; xlabel="", ylabel="", marker=:circle, markersize=1, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
+function myplot(xs, ys, labels; xlabel="", ylabel="", marker=:circle, markersize=4, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
     for (x, y, label) in zip(xs, ys, labels)
         plot!(x, y,
             lw=2, marker=marker, markersize=markersize,
