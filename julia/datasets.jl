@@ -13,7 +13,7 @@ using ColorSchemes;
 include("utils.jl")
 
 function linear(x1, x2)
-    return x1 + 2*x2
+    return 4*x1 + 5*x2
 end
 
 function linear_reduced(x1, x2; h=0.8)

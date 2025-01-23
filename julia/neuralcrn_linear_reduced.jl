@@ -614,9 +614,11 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     NEG = 0.0
     MINI = 0.0
     MAXI = THRESHOLD
-    LR = 0.01
-    EPOCHS = 40
-    TSPAN = (0.0, 1.0)
+    LR = 1.0
+    EPOCHS = 10
+    TSPAN = (0.0, 0.6)
+    T0 = 0.0
+    T1 = 1.0
     BIAS = 0.0
 
     train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG, mini=MINI, maxi=MAXI)
@@ -647,7 +649,7 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
         xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
-    params_orig = create_node_params_reduced(DIMS, t0=0.0, t1=1.0, h=BIAS)
+    params_orig = create_node_params_reduced(DIMS, t0=T0, t1=T1, h=BIAS)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do
             println("===============================")
@@ -658,6 +660,6 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     end
 end
 
-neuralcrn(output_dir="linear_reduced_sqloss_jan232025")
+neuralcrn(output_dir="linear_reduced_sqloss_jan23_etatowards1")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
