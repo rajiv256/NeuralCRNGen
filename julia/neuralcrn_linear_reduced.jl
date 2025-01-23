@@ -140,7 +140,7 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 ############################################################
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear_reduced", threshold=2.0, pos=4.0, neg=0.0)
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear_reduced", threshold=2.0, pos=4.0, neg=0.0, tag="")
     acc = 0
     targets = []
     outputs = []
@@ -152,7 +152,6 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
     
     for i in 1:length(dataset)
         x, y = get_one(dataset, i)
-        println("In calc acc", x, y)
         x = augment(x, dims - length(x))
 
         for zi in eachindex(x)
@@ -168,8 +167,8 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
             end
         end
 
-        yvec = [y 0] # threshold could be 0.5 now.
-        crn_dual_node_fwd(varscopy, tspan=(0.0, 1.0))
+        yvec = [y 0]
+        crn_dual_node_fwd(varscopy, tspan=tspan)
         varscopy["Yp"] = yvec[1]
         varscopy["Ym"] = yvec[2]
 
@@ -203,18 +202,16 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
 
     end
     plot()
-    myscatter(xs, ys, outputs, output_dir=output_dir, name="outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}", markershape=:square)
     plot()
-    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="test", markersize=4)
-    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors",
-
-    output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", markersize=4, markershape=:square)
+    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors", output_dir=output_dir, name="$(tag)_outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors",
     #     xtickfontsize=12, ytickfontsize=12,
     #     legendfontsize=12, fontfamily="Arial", grid=false,
     #     framestyle=:semi, widen=false)
-    savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
-    savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.png")
+    # savefig(gg, "julia/$output_dir/images/$(tag)_outputs_with_wrongs.svg")
+    # savefig(gg, "julia/$output_dir/images/$(tag)_outputs_with_wrongs.png")
     return acc / length(dataset)
 end
 
@@ -364,7 +361,7 @@ function crn_dual_node_fwd(vars; tspan=(0.0, 1.0))
 end
 
 
-function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0), output_dir="linear_reduced", threshold=0.5, pos=POS, neg=NEG)
+function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.0), output_dir="linear_reduced", threshold=2.0, pos=0.0, neg=4.0)
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict()
 
@@ -414,6 +411,82 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
     for epoch in 1:EPOCHS
         tr_epoch_loss = 0.0
         
+
+        ##### VALIDATION ###################################
+        ####################################################
+
+        val_epoch_loss = 0.0    
+        val_acc = 0.0 
+        for i in eachindex(val)
+            x, y = get_one(val, i)
+            x = augment(x, dims - length(x))
+
+            yvec = [y 0]
+
+            println("===============CRN==========================")
+            @show x
+
+            for i in eachindex(x)
+                d = _index1Dvar("Z", i, x[i], dims=dims)
+                for (k, v) in d
+                    vars[k] = v
+                end
+            end
+            for i in eachindex(x)
+                d = _index1Dvar("X", i, x[i], dims=dims)
+                for (k, v) in d
+                    vars[k] = v
+                end
+            end
+
+            vars["Yp"] = yvec[1]
+            vars["Ym"] = yvec[2]
+
+            # Forward stage
+            crn_dual_node_fwd(vars, tspan=tspan)
+
+            # Calculate yhat            
+            yhat = crn_dot(vars, "Z", "W", max_val=40.0)
+            @show yhat, yhat[1] - yhat[2]
+            vars["Op"] = yhat[1]
+            vars["Om"] = yhat[2]
+
+
+            if yhat[1]-yhat[2] > threshold
+                if y != neg
+                    val_acc += 1
+                end
+            end
+            if yhat[1]-yhat[2] <= threshold
+                if y == neg
+                    val_acc += 1
+                end
+            end
+
+            # Create error species
+            err = crn_subtract(yhat, yvec)
+            vars["Ep"] = err[1]
+            vars["Em"] = err[2]
+            _print_vars(vars, "E", title="CRN | Error at t=T")
+
+            # Epoch loss function
+            val_epoch_loss += 0.5 * (err[1] - err[2])^2
+            # val_epoch_loss += abs(err[1] - err[2])
+
+            for k in keys(vars)
+                if startswith(k, "P") || startswith(k, "W") || startswith(k, "H")
+                    if endswith(k, "p")
+                        m = replace(k, "p" => "m")
+                        tmp = vars[k] - vars[m]
+                        vars[k] = max(0, tmp)
+                        vars[m] = max(0, -tmp)
+                    end
+                else
+                    vars[k] = 0.0
+                end
+            end
+        end
+
 
         for i in eachindex(train)
             println("=================EPOCH: $epoch | ITERATION: $i ==============")
@@ -510,81 +583,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         end
 
 
-        ##### VALIDATION ###################################
-        ####################################################
-
-        val_epoch_loss = 0.0    
-        val_acc = 0.0 
-        for i in eachindex(val)
-            x, y = get_one(val, i)
-            x = augment(x, dims - length(x))
-
-            yvec = [y 0]
-
-            println("===============CRN==========================")
-            @show x
-
-            for i in eachindex(x)
-                d = _index1Dvar("Z", i, x[i], dims=dims)
-                for (k, v) in d
-                    vars[k] = v
-                end
-            end
-            for i in eachindex(x)
-                d = _index1Dvar("X", i, x[i], dims=dims)
-                for (k, v) in d
-                    vars[k] = v
-                end
-            end
-
-            vars["Yp"] = yvec[1]
-            vars["Ym"] = yvec[2]
-
-            # Forward stage
-            crn_dual_node_fwd(vars, tspan=tspan)
-
-            # Calculate yhat            
-            yhat = crn_dot(vars, "Z", "W", max_val=40.0)
-            @show yhat, yhat[1] - yhat[2]
-            vars["Op"] = yhat[1]
-            vars["Om"] = yhat[2]
-
-
-            if yhat[1]-yhat[2] > threshold
-                if y != neg
-                    val_acc += 1
-                end
-            end
-            if yhat[1]-yhat[2] <= threshold
-                if y == neg
-                    val_acc += 1
-                end
-            end
-
-            # Create error species
-            err = crn_subtract(yhat, yvec)
-            vars["Ep"] = err[1]
-            vars["Em"] = err[2]
-            _print_vars(vars, "E", title="CRN | Error at t=T")
-
-            # Epoch loss function
-            val_epoch_loss += 0.5 * (err[1] - err[2])^2
-            # val_epoch_loss += abs(err[1] - err[2])
-
-            for k in keys(vars)
-                if startswith(k, "P") || startswith(k, "W") || startswith(k, "H")
-                    if endswith(k, "p")
-                        m = replace(k, "p" => "m")
-                        tmp = vars[k] - vars[m]
-                        vars[k] = max(0, tmp)
-                        vars[m] = max(0, -tmp)
-                    end
-                else
-                    vars[k] = 0.0
-                end
-            end
-        end
-
+        
         tr_epoch_loss /= length(train)
         
         val_epoch_loss /= length(val)
@@ -603,7 +602,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         myplot([Array(range(1, epoch))], [val_accs], ["val_acc"],
             output_dir=output_dir, name="val_accuracies", xlabel="epoch", ylabel="accuracy")
         plot()
-        @show calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg)
+        @show calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg, tag="val")
     end
     return vars
 end
@@ -613,13 +612,20 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     THRESHOLD = 2.0
     POS = 4.0
     NEG = 0.0
-    train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
-    val = create_linearly_separable_dataset_reduced(50, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG)
+    MINI = 0.0
+    MAXI = THRESHOLD
+    LR = 0.01
+    EPOCHS = 40
+    TSPAN = (0.0, 1.0)
+    BIAS = 0.0
+
+    train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG, mini=MINI, maxi=MAXI)
+    val = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG, mini=MINI, maxi=MAXI)
     print(train)
     test = []
     
-    for i in range(0, 200, 40)
-        for j in range(0, 200, 40)
+    for i in range(0, Int32(THRESHOLD*100), 60)
+        for j in range(0, Int32(THRESHOLD*100), 60)
 
             x1 = i / 100
             x2 = j / 100
@@ -628,7 +634,7 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
             if yval > THRESHOLD
                 y = POS
             end
-            push!(test, [x1 x2 y])
+            push!(test, [x1; x2; y])
         end
     end
     if !isdir("julia/$output_dir")
@@ -641,17 +647,17 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
         xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
-    params_orig = create_node_params_reduced(DIMS, t0=0.0, t1=1.0, h=0.8)
+    params_orig = create_node_params_reduced(DIMS, t0=0.0, t1=1.0, h=BIAS)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=40, tspan=(0.0, 1.0), output_dir=output_dir, LR=0.01, threshold=THRESHOLD, pos=POS, neg=NEG)
-
-            @show calculate_accuracy(test, copy(vars), dims=2, output_dir=output_dir, threshold=THRESHOLD, pos=POS, neg=NEG)
+            vars = crn_main(params_orig, train, val, EPOCHS=EPOCHS, tspan=TSPAN, output_dir=output_dir, LR=LR, threshold=THRESHOLD, pos=POS, neg=NEG)
+            plot()
+            @show calculate_accuracy(test, copy(vars), dims=DIMS, output_dir=output_dir, threshold=THRESHOLD, pos=POS, neg=NEG, tag="test")
         end
     end
 end
 
-neuralcrn(output_dir="linear_reduced_sqloss")
+neuralcrn(output_dir="linear_reduced_sqloss_jan232025")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")

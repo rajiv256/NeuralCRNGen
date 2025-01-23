@@ -120,13 +120,13 @@ function create_linearly_separable_dataset(n, yfunc; threshold=1.0)
 end
 
 
-function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=4.0, neg=0.0)
+function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=4.0, neg=0.0, mini=0.0, maxi=2.0)
     dataset = []
     nneg = 0
     npos = 0 
     while length(dataset) <= n÷2
-        x1 = convert(Float64, rand(Uniform(0, 2)))
-        x2 = convert(Float64, rand(Uniform(0, 2)))
+        x1 = convert(Float64, rand(Uniform(mini, maxi)))
+        x2 = convert(Float64, rand(Uniform(mini, maxi)))
         y = convert(Float64, yfunc(x1, x2)) 
         if y > threshold
             y = pos
@@ -135,8 +135,8 @@ function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=
         end
     end
     while length(dataset) <= n
-        x1 = convert(Float64, rand(Uniform(0, 2)))
-        x2 = convert(Float64, rand(Uniform(0, 2)))
+        x1 = convert(Float64, rand(Uniform(mini, maxi)))
+        x2 = convert(Float64, rand(Uniform(mini, maxi)))
         y = convert(Float64, yfunc(x1, x2)) 
         if y <= threshold
             y = neg

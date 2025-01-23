@@ -46,9 +46,9 @@ function myscatter3d(xs, ys, zs, colors, markers; xlabel="", ylabel="", markersi
     savefig("./julia/$output_dir/images/$name.png")
 end
 
-function myscatter(xs, ys, colors; xlabel="", ylabel="", markersize=4, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
+function myscatter(xs, ys, colors; xlabel="", ylabel="", markersize=4, markershape=:circle, title="", name="plotname", output_dir="", fontsize=18, size=(600, 400))
     gg = scatter!(xs, ys, group=colors,
-        markersize=markersize,
+        markersize=markersize, markershape=markershape,
         xlabel=xlabel, ylabel=ylabel,
         size=size,
         legend=:topright, grid=false, framestyle=:semi,
