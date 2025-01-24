@@ -1,5 +1,7 @@
 # This file is used to run CRN operations
 using Pkg;
+Pkg.add("NNlib");
+Pkg.add("ProgressMeter");
 
 using DifferentialEquations;
 using Random;
@@ -15,7 +17,6 @@ using ColorSchemes;
 using Catalyst;
 using IterTools; 
 using NNlib;
-using IJulia;
 using ProgressMeter;
 using Distributions;
 
@@ -23,7 +24,7 @@ include("datasets.jl")
 include("utils.jl")
 include("reactionsReLU.jl")
 # include("reactionsReLUAlt.jl")
-include("neuralode.jl")
+# include("neuralode.jl")
 include("myplots.jl")
 
 Random.seed!(42) 
@@ -332,19 +333,10 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
                  getindex.(preds2d, 3), output_dir=output_dir, name="outputs")
     gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
         output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
-    # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
-    #     xtickfontsize=12, ytickfontsize=12,
-    #     legendfontsize=12, fontfamily="Arial", grid=false,
-    #     framestyle=:semi, widen=false)
+    
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.png")
     
-    # # plot()
-    # # Colors (index = 4) represent the original class the data point belongs to
-    # # Shapes (index = 3) represent the predicted class of the data point 
-    # # sca = scatter(getindex.(preds2d, 1), getindex.(preds2d, 2), group = getindex.(preds2d, 3)) # output is the label
-    # # png(sca, "julia/$output_dir/images/crn_accuracy_plot.png")
-    # myscatter(getindex.(preds2d, 1), getindex.(preds2d, 2), getindex.(preds2d, 3), output_dir=output_dir, name="crn_accuracy_plot")
     println("Accuracy: $(acc/length(dataset))")
     return acc/length(dataset)
 end
@@ -809,35 +801,35 @@ function neuralcrn(;DIMS=3)
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
-            # Rings 
-            t0 = 0.0
-            t1 = 1.0
-            AUGVAL = 0.2
-            output_dir = "rings"
-            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            test = val
-
-            # # Xor dataset
-            # output_dir  = "xor"
+            # # Rings 
             # t0 = 0.0
-            # t1 = 0.9
+            # t1 = 1.0
             # AUGVAL = 0.2
-            # train = create_xor_dataset(100)
-            # val = create_xor_dataset(30)
-            # test = []
+            # output_dir = "rings"
+            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            # test = val
+
+            # Xor dataset
+            output_dir  = "xor"
+            t0 = 0.0
+            t1 = 0.9
+            AUGVAL = 0.2
+            train = create_xor_dataset(100)
+            val = create_xor_dataset(30)
+            test = []
             
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b ⊻ x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            for i in range(0, 100, 40)
+                for j in range(0, 100, 40)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b ⊻ x2b)
+                    push!(test, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             # ## AND dataset set t1 = 0.6
             # output_dir = "and"
