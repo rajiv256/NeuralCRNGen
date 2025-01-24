@@ -382,8 +382,8 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
     end
 
     # Adding time species, although we don't manipulate them now
-    vars["T0"] = 0.0
-    vars["T1"] = 1.0
+    vars["T0"] = getindex(tspan, 1)
+    vars["T1"] = getindex(tspan, 2)
 
     # Assign the weight parameters
     offset = dims + 2  # 2 for t0 and t1
@@ -417,12 +417,13 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
 
         val_epoch_loss = 0.0    
         val_acc = 0.0 
+        val_outs = []
         for i in eachindex(val)
             x, y = get_one(val, i)
             x = augment(x, dims - length(x))
 
             yvec = [y 0]
-
+            
             println("===============CRN==========================")
             @show x
 
@@ -448,20 +449,11 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             # Calculate yhat            
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
             @show yhat, yhat[1] - yhat[2]
+            
+            push!(val_outs, [yhat[1]-yhat[2], y])
             vars["Op"] = yhat[1]
             vars["Om"] = yhat[2]
 
-
-            if yhat[1]-yhat[2] > threshold
-                if y != neg
-                    val_acc += 1
-                end
-            end
-            if yhat[1]-yhat[2] <= threshold
-                if y == neg
-                    val_acc += 1
-                end
-            end
 
             # Create error species
             err = crn_subtract(yhat, yvec)
@@ -565,8 +557,6 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "P", title="CRN | Parameters after update")
 
 
-            # dissipate_and_annihilate(vars, (0.0, 10.0))
-            # _print_vars(vars, "G", title="CRN | Gradients after annihilation")
             for k in keys(vars)
                 if startswith(k, "P") || startswith(k, "W") || startswith(k, "H")
                     if endswith(k, "p")
@@ -599,10 +589,13 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="training_losses", xlabel="epoch", ylabel="loss")
         plot()
-        myplot([Array(range(1, epoch))], [val_accs], ["val_acc"],
-            output_dir=output_dir, name="val_accuracies", xlabel="epoch", ylabel="accuracy")
-        plot()
-        @show calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg, tag="val")
+        # myscatternogroup(val_yhats, val_ys, output_dir=output_dir, name="val_comparision", label="comparision", xlabel="predicted", ylabel="target")
+        gg = scatter!(getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target")
+        savefig(gg, "julia/$(output_dir)/images/val_comparision.png")
+        # myplot([Array(range(1, epoch))], [val_accs], ["val_acc"],
+        #     output_dir=output_dir, name="val_accuracies", xlabel="epoch", ylabel="accuracy")
+        # plot()
+        # @show calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg, tag="val")
     end
     return vars
 end
@@ -614,40 +607,39 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     NEG = 0.0
     MINI = 0.0
     MAXI = THRESHOLD
-    LR = 1.0
+    LR = 0.01
     EPOCHS = 10
     TSPAN = (0.0, 0.6)
     T0 = 0.0
     T1 = 1.0
     BIAS = 0.0
 
-    train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG, mini=MINI, maxi=MAXI)
-    val = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG, mini=MINI, maxi=MAXI)
-    print(train)
+    train = create_linear_regression_dataset(100, linear_reduced, mini=MINI, maxi=MAXI)
+    val = create_linear_regression_dataset(100, linear_reduced, mini=MINI, maxi=MAXI)
     test = []
     
-    for i in range(0, Int32(THRESHOLD*100), 60)
-        for j in range(0, Int32(THRESHOLD*100), 60)
+    # for i in range(0, Int32(THRESHOLD*100), 60)
+    #     for j in range(0, Int32(THRESHOLD*100), 60)
 
-            x1 = i / 100
-            x2 = j / 100
-            y = NEG
-            yval = linear_reduced(x1, x2)
-            if yval > THRESHOLD
-                y = POS
-            end
-            push!(test, [x1; x2; y])
-        end
-    end
+    #         x1 = i / 100
+    #         x2 = j / 100
+    #         y = NEG
+    #         yval = linear_reduced(x1, x2)
+    #         if yval > THRESHOLD
+    #             y = POS
+    #         end
+    #         push!(test, [x1; x2; y])
+    #     end
+    # end
     if !isdir("julia/$output_dir")
         mkdir("julia/$output_dir")
         if !isdir("julia/$output_dir/images")
             mkdir("julia/$output_dir/images")
         end
     end
-    print(getindex.(train, 3))
-    myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
-        xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    # print(getindex.(train, 3))
+    # myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
+    #     xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
     params_orig = create_node_params_reduced(DIMS, t0=T0, t1=T1, h=BIAS)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
@@ -655,11 +647,11 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
             println("===============================")
             vars = crn_main(params_orig, train, val, EPOCHS=EPOCHS, tspan=TSPAN, output_dir=output_dir, LR=LR, threshold=THRESHOLD, pos=POS, neg=NEG)
             plot()
-            @show calculate_accuracy(test, copy(vars), dims=DIMS, output_dir=output_dir, threshold=THRESHOLD, pos=POS, neg=NEG, tag="test")
+            
         end
     end
 end
 
-neuralcrn(output_dir="linear_reduced_sqloss_jan23_etatowards1")
+neuralcrn(output_dir="linear_regression")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")

@@ -150,6 +150,19 @@ function create_linearly_separable_dataset_reduced(n, yfunc; threshold=2.0, pos=
     return dataset
 end
 
+function create_linear_regression_dataset(n, yfunc; mini=0.0, maxi=2.0)
+    dataset = []
+    
+    while length(dataset) <= n
+        x1 = convert(Float64, rand(Uniform(mini, maxi)))
+        x2 = convert(Float64, rand(Uniform(mini, maxi)))
+        y = convert(Float64, yfunc(x1, x2)) 
+        push!(dataset, [x1; x2; y])
+    end
+    Random.shuffle!(dataset)
+    return dataset
+end
+
 
 # This is a classification dataset with nonlinearly separable data
 function create_annular_rings_dataset(n, r)
