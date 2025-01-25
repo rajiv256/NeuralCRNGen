@@ -15,14 +15,12 @@ using ColorSchemes;
 using Catalyst;
 using IterTools; 
 using NNlib;
-using IJulia;
-using ProgressMeter;
 using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
 include("reactionsReLU.jl")
-include("neuralode.jl")
+# include("neuralode.jl")
 include("myplots.jl")
 
 Random.seed!(42) 
@@ -695,7 +693,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         ################# VALIDATION #####################
         val_epoch_loss = 0.0
         val_acc = 0.0
-
+        val_ys = []
         for i in eachindex(val)
             println("=========VAL EPOCH: $epoch | ITERATION: $i ===========")
             x, y = get_one(val, i)
@@ -728,13 +726,15 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             # Calculate yhat            
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
             @show yhat, yhat[1] - yhat[2]
-            val_out = 0.0
-            if yhat[1] - yhat[2] >= threshold
-                val_out = 1.0
-            end
-            if val_out == y
-                val_acc += 1
-            end
+            # val_out = 0.0
+            # if yhat[1] - yhat[2] >= threshold
+            #     val_out = 1.0
+            # end
+            # if val_out == y
+            #     val_acc += 1
+            # end
+
+            push!(val_ys, [yhat[1]-yhat[2], y])
 
             vars["Op"] = max(0, yhat[1] - yhat[2])
             vars["Om"] = max(0, yhat[2] - yhat[1])
@@ -764,16 +764,21 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         val_epoch_loss /= length(val)
         push!(val_losses, val_epoch_loss)
         push!(tr_losses, tr_epoch_loss)
-        val_acc /= length(val)
-        @show epoch, val_acc
+        # val_acc /= length(val)
+        # @show epoch, val_acc
         # crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
         # png(crn_losses_plt, "julia/$output_dir/images/crn_train_lossplts.png")
         plot()
         myplot([Array(range(1, length(tr_losses))), Array(range(1, length(val_losses)))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="crn_train_lossplts", xlabel="epoch", ylabel="loss")
 
-        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
-        @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        # plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        # @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        
+        plot()
+        # Plot regression comparison. 
+        plot!([0.0, 4.0], [0.0, 4.0])
+        myscatternogroup(getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="compare", output_dir=output_dir, name="val_compare", markershape=:circle)
 
         # Plot the tracking parameters.
         plot()
@@ -815,73 +820,13 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             t0 = 0.0
-            t1 = 0.1
+            t1 = 0.7
             AUGVAL = 0.2
-            output_dir = "rings"
-            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            LR = 1 
+            output_dir = "nl_regression_jan24_2025_v3"
+            train = create_nonlinear_regression_dataset(50, bilinear)
+            val = create_nonlinear_regression_dataset(30, bilinear)
             test = val
-
-            # # Xor dataset
-            # output_dir  = "xor"
-            # t0 = 0.0
-            # t1 = 0.8
-            # AUGVAL = 0.2
-            # train = create_xor_dataset(100)
-            # val = create_xor_dataset(10)
-            # test = []
-            
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b ⊻ x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
-
-            # ## AND dataset set t1 = 0.6
-            # output_dir = "and"
-            # t0 = 0.0
-            # t1 = 0.5
-            # AUGVAL = 0.2
-            # train = create_and_dataset(100)
-            # val = create_and_dataset(10)    
-            # test = []
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b & x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
-
-            # # OR dataset
-            # output_dir = "or"
-            # train = create_or_dataset(100)
-            # val = create_or_dataset(10)
-            # test = []
-            # t0 = 0.0
-            # t1 = 0.8
-            # AUGVAL = 0.2
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b | x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
@@ -890,12 +835,8 @@ function neuralcrn(;DIMS=3)
                 end
             end
 
-            myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
-                xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}"    )
-
-
-           
-            
+            # myscatter3d(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
+            #     xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.1)
@@ -903,8 +844,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=0.2, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
-            @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end

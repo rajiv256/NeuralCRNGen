@@ -20,7 +20,7 @@ function linear(x1, x2)
 end
 
 function bilinear(x1, x2)
-    return x1 * x2
+    return 0.6*x1 * x2 + 0.7*x2*x2
 end
 
 function mytanh(x1, x2)
@@ -253,6 +253,23 @@ function create_or_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
     Random.shuffle!(dataset)
     return dataset
 end
+
+# Create a nonlinear regression dataset
+function create_nonlinear_regression_dataset(n, yfunc; mini=0.2, maxi=2.0)
+    dataset = []
+    for i in 1:n
+        x1 = rand(Uniform(mini, maxi), 1)[1]
+        x2 = rand(Uniform(mini, maxi), 1)[1]
+        y = convert(Float64, yfunc(x1, x2)) # only positive for now
+        data_item = Vector{Float64}()
+        append!(data_item, [x1, x2, y])
+        data_item = reshape(data_item, (length(data_item), 1))
+        push!(dataset, data_item)
+    end
+    return dataset
+end
+
+
 # # # This part has to be changed into a function call 
 # N = 150
 # # Nval = 20
