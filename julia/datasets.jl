@@ -20,11 +20,11 @@ function linear(x1, x2)
 end
 
 function bilinear(x1, x2)
-    return 0.6*x1 * x2 + 0.7*x2*x2
+    return 3*(x1 * x2 + x2*x2 + x1 + x2)
 end
 
 function mytanh(x1, x2)
-    return tanh(2 * x1 + 3 * x2)
+    return tanh(2 * x1 + 3 * x2)# So as to make the w = 1
 end
 
 CLASSES = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
@@ -255,7 +255,7 @@ function create_or_dataset(n; pos=1.0, neg=0.0, threshold=0.5)
 end
 
 # Create a nonlinear regression dataset
-function create_nonlinear_regression_dataset(n, yfunc; mini=0.2, maxi=2.0)
+function create_nonlinear_regression_dataset(n, yfunc; mini=0.2, maxi=1.0)
     dataset = []
     for i in 1:n
         x1 = rand(Uniform(mini, maxi), 1)[1]
