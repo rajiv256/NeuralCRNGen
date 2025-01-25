@@ -820,7 +820,7 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             t0 = 0.0
-            t1 = 0.7
+            t1 = 0.5
             AUGVAL = 0.2
             LR = 1 
             output_dir = "nl_regression_jan24_2025_v3"
