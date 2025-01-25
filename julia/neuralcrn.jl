@@ -19,7 +19,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactionsReLUPositiveDotprod.jl")
+include("reactionsReLU.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
@@ -786,7 +786,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         
         plot()
         # Plot regression comparison. 
-        plot!([0.0, 7.0], [0.0, 7.0])
+        plot!([2.0, 8.0], [2.0, 8.0])
         myscatternogroup(getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="compare", output_dir=output_dir, name="val_compare", markershape=:circle)
 
         # Plot the tracking parameters.
@@ -830,11 +830,11 @@ function neuralcrn(;DIMS=3)
             # # Rings 
             t0 = 0.0
             t1 = 0.5
-            AUGVAL = 0.1
-            LR = 1.0
-            output_dir = "nl_regression_jan25_2025_dotprod_v2_t1-0.5"
-            train = create_nonlinear_regression_dataset(50, bilinear, mini=0.2, maxi=0.8)
-            val = create_nonlinear_regression_dataset(30, bilinear, mini=0.2, maxi=0.8)
+            AUGVAL = 1.0
+            LR = 0.1
+            output_dir = "nl_regression_jan25_2025_relu"
+            train = create_nonlinear_regression_dataset(100, bilinear, mini=0.8, maxi=2.0)
+            val = create_nonlinear_regression_dataset(30, bilinear, mini=0.8, maxi=2.0)
             test = val
 
             if !isdir("julia/$output_dir")

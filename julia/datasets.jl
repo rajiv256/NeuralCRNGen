@@ -20,11 +20,11 @@ function linear(x1, x2)
 end
 
 function bilinear(x1, x2)
-    return 3*(x1 * x2 + x2*x2 + x1 + x2)
+    return (x1 * x2 + x2*x2)
 end
 
 function mytanh(x1, x2)
-    return tanh(2 * x1 + 3 * x2)# So as to make the w = 1
+    return 3*tanh(2 * x1 + 3 * x2) # So as to make the w = 1
 end
 
 CLASSES = ["Iris-setosa", "Iris-versicolor", "Iris-virginica"]
