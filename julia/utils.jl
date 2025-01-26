@@ -14,7 +14,7 @@ using Distributions;
 using Catalyst;
 
 
-Random.seed!(42)
+Random.seed!(2)
 
 # Simulate a custom ODE
 function simulate_reaction_network(network, u0, rate_constants;tspan=(), rate=1.0, kwargs...)
@@ -122,7 +122,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 
     push!(params, Float32(dims))
 
-    theta = rand(Uniform(0.8, 1.0), dims^2)
+    theta = rand(Uniform(1.0, 1.001), dims^2)
     # theta = theta/sqrt(dims)
     theta = abs.(theta)
 

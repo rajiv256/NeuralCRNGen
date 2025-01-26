@@ -19,7 +19,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactionsReLU.jl")
+include("reactionsReLUDotprod.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
@@ -371,7 +371,8 @@ end
 function crn_param_update(rn, vars, eta, tspan)
 
     ss = species(rn)
-
+    println("Inside crn_param_update")
+    @show eta, tspan
     u = [vars[_convert_species2var(sp)] for sp in ss]
     
     k1 = eta / (1 + eta)
@@ -486,15 +487,18 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
     p = []
     
     sol = simulate_reaction_network(rn, u, p, tspan=tspan)
-    # for i in eachindex(u)
-    #     println(ss[i], " => ", sol[end][i])
-    # end
     
+    zindices = []
     for i in eachindex(ss)
         if startswith(string(ss[i]), "Z")
             vars[_convert_species2var(ss[i])] = sol[end][i]
+            push!(zindices, i)
         end
     end
+
+    g = plot(sol, vars=zindices)
+    savefig(g, "julia/zplot.png")
+    
     _print_vars(vars, "Z", title="CRN | z at t=T |")
 end
 
@@ -732,7 +736,8 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             _print_vars(vars, "W", title="CRN | Final layer after update |")
             
             # Update the parameters
-            crn_param_update(rn_param_update, vars, LR, (0.0, 100.0))
+            _print_vars(vars, "P", title="CRN | params before update |")
+            crn_param_update(rn_param_update, vars, LR, (0.0, 10.0))
             _print_vars(vars, "P", title="CRN | params after update |")
             _print_vars(vars, "B", title="CRN | beta after update |")
             
@@ -829,10 +834,10 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             t0 = 0.0
-            t1 = 0.5
+            t1 = 1.0
             AUGVAL = 1.0
-            LR = 0.1
-            output_dir = "nl_regression_jan25_2025_relu"
+            LR = 1
+            output_dir = f"nl_regression_jan25_2025_relu_Dotprod_t1-$(t1)_aval-$(AUGVAL)_lr-$(LR)"
             train = create_nonlinear_regression_dataset(100, bilinear, mini=0.8, maxi=2.0)
             val = create_nonlinear_regression_dataset(30, bilinear, mini=0.8, maxi=2.0)
             test = val
