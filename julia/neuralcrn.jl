@@ -29,6 +29,29 @@ include("myplots.jl")
 
 Random.seed!(42) 
 
+theme(:default);
+palette(:Dark2_5);
+
+# Set global font sizes
+default(
+    legendfontsize=18,            # legend font size
+    tickfontsize=16,              # tick font size
+    guidefontsize=18,             # axis label font size
+    titlefontsize=14,             # title font size
+    # Optional: you can also set font family
+    fontfamily="Arial",  # or "Helvetica", "Times New Roman", etc.,
+    # Option 3: Using hex colors
+    palette=["#4477AA", "#EE6677", "#228833", "#CCBB44", "#AA3377", 
+           "#66CCEE", "#BBBBBB", "#EE3377", "#000000", "#CC6677",], 
+    markersize=2,
+    framestyle=:semi,
+    # widen=false,
+    lw=2, 
+    size=(600, 450),  # Wider figure
+    bottom_margin=3Plots.mm, # Add global margin
+    legend=:best
+)
+
 
 function _convert_species2var(sp)
     ret = string(sp)
@@ -331,7 +354,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
     plot()
     gg = myscatter(getindex.(preds2d, 1), getindex.(preds2d, 2), 
                  getindex.(preds2d, 3), output_dir=output_dir, name="outputs")
-    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=5, label="errors",
+    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markersize=5, label="errors",
         output_dir=output_dir, name="outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     
     savefig(gg, "julia/$output_dir/images/outputs_with_wrongs.svg")
@@ -759,7 +782,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         plot()
         myplot([Array(range(1, length(tr_losses))), Array(range(1, length(val_losses)))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="crn_train_lossplts", xlabel="epoch", ylabel="loss")
-
+        plot()
         plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
         @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
 
@@ -803,36 +826,36 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             # t0 = 0.0
-            # t1 = 1.0
+            # t1 = 0.9
             # AUGVAL = 0.2
-            # output_dir = "rings"
+            # output_dir = "rings_final"
             # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
             # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
             # test = val
 
-            # Xor dataset
-            output_dir  = "xor"
-            t0 = 0.0
-            t1 = 0.9
-            AUGVAL = 0.2
-            train = create_xor_dataset(100)
-            val = create_xor_dataset(30)
-            test = []
+            # # Xor dataset
+            # output_dir  = "xor_final"
+            # t0 = 0.0
+            # t1 = 0.9
+            # AUGVAL = 0.2
+            # train = create_xor_dataset(100)
+            # val = create_xor_dataset(30)
+            # test = []
             
-            for i in range(0, 100, 40)
-                for j in range(0, 100, 40)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b ⊻ x2b)
-                    push!(test, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b ⊻ x2b)
+            #         push!(test, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             # ## AND dataset set t1 = 0.6
-            # output_dir = "and"
+            # output_dir = "and_final"
             # t0 = 0.0
             # t1 = 0.9
             # AUGVAL = 0.2
@@ -851,33 +874,33 @@ function neuralcrn(;DIMS=3)
             # end
             # Random.shuffle!(train)
 
-            # # OR dataset
-            # output_dir = "or"
-            # train = create_or_dataset(200)
-            # val = create_or_dataset(10)
-            # test = []
-            # t0 = 0.0
-            # t1 = 0.9
-            # AUGVAL = 0.2
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b | x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            # OR dataset
+            output_dir = "or_final"
+            train = create_or_dataset(200)
+            val = create_or_dataset(10)
+            test = []
+            t0 = 0.0
+            t1 = 0.9
+            AUGVAL = 0.2
+            for i in range(0, 100, 40)
+                for j in range(0, 100, 40)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b | x2b)
+                    push!(test, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
-            # if !isdir("julia/$output_dir")
-            #     mkdir("julia/$output_dir")
-            #     if !isdir("julia/$output_dir/images")
-            #         mkdir("julia/$output_dir/images")
-            #     end
-            # end
-
+            if !isdir("julia/$output_dir")
+                mkdir("julia/$output_dir")
+                if !isdir("julia/$output_dir/images")
+                    mkdir("julia/$output_dir/images")
+                end
+            end
+            plot()
             myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
                 xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
@@ -891,7 +914,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=1.0, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=80, dims=DIMS, LR=1.0, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
             @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
         end
     end
