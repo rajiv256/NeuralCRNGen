@@ -20,7 +20,7 @@ function linear(x1, x2)
 end
 
 function bilinear(x1, x2)
-    return (x1 * x2 + x2*x2)
+    return x1*x2 + x2*x2
 end
 
 function mytanh(x1, x2)
