@@ -1,13 +1,13 @@
 rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
     # dz_i/dt = p_ix_i
     1.0, P1p + X1p --> Z1p + P1p + X1p
-    1.0, P1m + X1m --> Z1p + P1m + X1m
-    1.0, P1p + X1m --> Z1m + P1p + X1m
-    1.0, P1m + X1p --> Z1m + P1m + X1p
+    # 1.0, P1m + X1m --> Z1p + P1m + X1m
+    # 1.0, P1p + X1m --> Z1m + P1p + X1m
+    # 1.0, P1m + X1p --> Z1m + P1m + X1p
     1.0, P2p + X2p --> Z2p + P2p + X2p
-    1.0, P2m + X2m --> Z2p + P2m + X2m
-    1.0, P2p + X2m --> Z2m + P2p + X2m
-    1.0, P2m + X2p --> Z2m + P2m + X2p
+    # 1.0, P2m + X2m --> Z2p + P2m + X2m
+    # 1.0, P2p + X2m --> Z2m + P2p + X2m
+    # 1.0, P2m + X2p --> Z2m + P2m + X2p
 
     1.0, H1p --> Z1p + H1p
     1.0, H1m --> Z1m + H1m
@@ -23,28 +23,28 @@ rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
 end
 rn_dual_node_bwd = @reaction_network rn_dual_node_bwd begin
     # dz/dt = -p_i x_i
-    1.0, P1p + X1m --> Z1p + P1p + X1m
-    1.0, P1m + X1p --> Z1p + P1m + X1p
-    1.0, P1p + X1p --> Z1m + P1p + X1p
-    1.0, P1m + X1m --> Z1m + P1m + X1m
-    1.0, P2p + X2m --> Z2p + P2p + X2m
-    1.0, P2m + X2p --> Z2p + P2m + X2p
-    1.0, P2p + X2p --> Z2m + P2p + X2p
-    1.0, P2m + X2m --> Z2m + P2m + X2m
+    # 1.0, P1p + X1m --> Z1p + P1p + X1m
+    # 1.0, P1m + X1p --> Z1p + P1m + X1p
+    # 1.0, P1p + X1p --> Z1m + P1p + X1p
+    # 1.0, P1m + X1m --> Z1m + P1m + X1m
+    # 1.0, P2p + X2m --> Z2p + P2p + X2m
+    # 1.0, P2m + X2p --> Z2p + P2m + X2p
+    # 1.0, P2p + X2p --> Z2m + P2p + X2p
+    # 1.0, P2m + X2m --> Z2m + P2m + X2m
 
-    1.0, H1m --> Z1p + H1m
-    1.0, H1p --> Z1m + H1p
-    1.0, H2m --> Z2p + H2m
-    1.0, H2p --> Z2m + H2p
+    # 1.0, H1m --> Z1p + H1m
+    # 1.0, H1p --> Z1m + H1p
+    # 1.0, H2m --> Z2p + H2m
+    # 1.0, H2p --> Z2m + H2p
     
     # dg_i/dt = a_i x_i
     1.0, A1p + X1p --> G1p + A1p + X1p
-    1.0, A1m + X1m --> G1p + A1m + X1m
-    1.0, A1p + X1m --> G1m + A1p + X1m
+    # 1.0, A1m + X1m --> G1p + A1m + X1m
+    # 1.0, A1p + X1m --> G1m + A1p + X1m
     1.0, A1m + X1p --> G1m + A1m + X1p
     1.0, A2p + X2p --> G2p + A2p + X2p
-    1.0, A2m + X2m --> G2p + A2m + X2m
-    1.0, A2p + X2m --> G2m + A2p + X2m
+    # 1.0, A2m + X2m --> G2p + A2m + X2m
+    # 1.0, A2p + X2m --> G2m + A2p + X2m
     1.0, A2m + X2p --> G2m + A2m + X2p
 end
 
@@ -60,10 +60,14 @@ rn_dual_mult = @reaction_network rn_dual_mult begin
 end
 
 rn_param_update = @reaction_network rn_param_update begin
-    100.0, G1p --> P1m
-    100.0, G1m --> P1p
-    100.0, G2p --> P2m
-    100.0, G2m --> P2p
+    k1, G1p --> P1m
+    k1, G1m --> P1p
+    k1, G2p --> P2m
+    k1, G2m --> P2p
+    k2, G1p --> 0
+    k2, G2p --> 0
+    k2, G1m --> 0
+    k2, G2m --> 0
 end
 
 rn_final_layer_update = @reaction_network rn_final_layer_update begin

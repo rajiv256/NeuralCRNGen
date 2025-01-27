@@ -27,6 +27,29 @@ include("linear_reduced2D.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
+theme(:default);
+palette(:Dark2_5);
+
+
+# Set global font sizes
+default(
+    legendfontsize=18,            # legend font size
+    tickfontsize=16,              # tick font size
+    guidefontsize=18,             # axis label font size
+    titlefontsize=14,             # title font size
+    # Optional: you can also set font family
+    fontfamily="Arial",  # or "Helvetica", "Times New Roman", etc.,
+    # Option 3: Using hex colors
+    palette=["#4477AA", "#EE6677", "#228833", "#CCBB44", "#AA3377", 
+           "#66CCEE", "#BBBBBB", "#EE3377", "#000000", "#CC6677",], 
+    markersize=2,
+    framestyle=:semi,
+    # widen=false,
+    lw=2, 
+    size=(800, 600),  # Wider figure
+    bottom_margin=3Plots.mm # Add global margin
+    # tight_layout=true
+)
 
 function _convert_species2var(sp)
     ret = string(sp)
@@ -140,80 +163,80 @@ function _assign_vars(vars, sym_matrix, val_matrix)
 end
 
 ############################################################
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear_reduced", threshold=2.0, pos=4.0, neg=0.0, tag="")
-    acc = 0
-    targets = []
-    outputs = []
-    xs = []
-    ys = []
+# function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_dir="linear_reduced", threshold=2.0, pos=4.0, neg=0.0, tag="")
+#     acc = 0
+#     targets = []
+#     outputs = []
+#     xs = []
+#     ys = []
 
-    wrongs = [] # (list of [x1 x2])
+#     wrongs = [] # (list of [x1 x2])
 
     
-    for i in 1:length(dataset)
-        x, y = get_one(dataset, i)
-        x = augment(x, dims - length(x))
+#     for i in 1:length(dataset)
+#         x, y = get_one(dataset, i)
+#         x = augment(x, dims - length(x))
 
-        for zi in eachindex(x)
-            d = _index1Dvar("Z", zi, x[zi], dims=dims)
-            for (k, v) in d
-                varscopy[k] = v
-            end
-        end
-        for zi in eachindex(x)
-            d = _index1Dvar("X", zi, x[zi], dims=dims)
-            for (k, v) in d
-                varscopy[k] = v
-            end
-        end
+#         for zi in eachindex(x)
+#             d = _index1Dvar("Z", zi, x[zi], dims=dims)
+#             for (k, v) in d
+#                 varscopy[k] = v
+#             end
+#         end
+#         for zi in eachindex(x)
+#             d = _index1Dvar("X", zi, x[zi], dims=dims)
+#             for (k, v) in d
+#                 varscopy[k] = v
+#             end
+#         end
 
-        yvec = [y 0]
-        crn_dual_node_fwd(varscopy, tspan=tspan)
-        varscopy["Yp"] = yvec[1]
-        varscopy["Ym"] = yvec[2]
+#         yvec = [y 0]
+#         crn_dual_node_fwd(varscopy, tspan=tspan)
+#         varscopy["Yp"] = yvec[1]
+#         varscopy["Ym"] = yvec[2]
 
-        # Calculate yhat            
-        yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
-        @show yhat, yhat[1] - yhat[2]
-        varscopy["Op"] = yhat[1]
-        varscopy["Om"] = yhat[2]
+#         # Calculate yhat            
+#         yhat = crn_dot(varscopy, "Z", "W", max_val=40.0)
+#         @show yhat, yhat[1] - yhat[2]
+#         varscopy["Op"] = yhat[1]
+#         varscopy["Om"] = yhat[2]
 
-        push!(targets, y)
-        push!(xs, x[1])
-        push!(ys, x[2])
+#         push!(targets, y)
+#         push!(xs, x[1])
+#         push!(ys, x[2])
 
-        if yhat[1] - yhat[2] > threshold
-            push!(outputs, pos)
-            @show yhat[1], yhat[2], y, pos, neg
-            if y != neg
-                acc += 1
-            else
-                push!(wrongs, x)
-            end
-        end
-        if yhat[1] - yhat[2] <= threshold
-            push!(outputs, neg)
-            if y == neg
-                acc += 1
-            else
-                push!(wrongs, x)
-            end
-        end
+#         if yhat[1] - yhat[2] > threshold
+#             push!(outputs, pos)
+#             @show yhat[1], yhat[2], y, pos, neg
+#             if y != neg
+#                 acc += 1
+#             else
+#                 push!(wrongs, x)
+#             end
+#         end
+#         if yhat[1] - yhat[2] <= threshold
+#             push!(outputs, neg)
+#             if y == neg
+#                 acc += 1
+#             else
+#                 push!(wrongs, x)
+#             end
+#         end
 
-    end
-    plot()
-    myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}", markershape=:square)
-    plot()
-    gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", markersize=4, markershape=:square)
-    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors", output_dir=output_dir, name="$(tag)_outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
-    # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors",
-    #     xtickfontsize=12, ytickfontsize=12,
-    #     legendfontsize=12, fontfamily="Arial", grid=false,
-    #     framestyle=:semi, widen=false)
-    # savefig(gg, "julia/$output_dir/images/$(tag)_outputs_with_wrongs.svg")
-    # savefig(gg, "julia/$output_dir/images/$(tag)_outputs_with_wrongs.png")
-    return acc / length(dataset)
-end
+#     end
+#     plot()
+#     myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}", markershape=:square)
+#     plot()
+#     gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", markersize=4, markershape=:square)
+#     gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors", output_dir=output_dir, name="$(tag)_outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+#     # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors",
+#     #     xtickfontsize=12, ytickfontsize=12,
+#     #     legendfontsize=12, fontfamily="Arial", grid=false,
+#     #     framestyle=:semi, widen=false)
+#     # savefig(gg, "julia/$output_dir/images/$(tag)_outputs_with_wrongs.svg")
+#     # savefig(gg, "julia/$output_dir/images/$(tag)_outputs_with_wrongs.png")
+#     return acc / length(dataset)
+# end
 
 
 function dissipate_and_annihilate(vars, tspan)
@@ -229,15 +252,15 @@ function dissipate_and_annihilate(vars, tspan)
 
 end
 
-
+# NOT WORKING. :(
 function crn_param_update(vars, eta, tspan)
 
     ss = species(rn_param_update)
 
     u = [vars[_convert_species2var(sp)] for sp in ss]
 
-    k1 = eta / (1 + eta)
-    k2 = 1 / (1 + eta)
+    k1 = 0.1/(1+0.1) # eta / (1 + eta)
+    k2 = 1/(1 + 0.1) # 1 / (1 + eta)
     p = [k1 k2]
 
     sol = simulate_reaction_network(rn_param_update, u, p, tspan=tspan)
@@ -408,6 +431,8 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
     tr_losses = []
     val_losses = []
     val_accs = []
+    losses = []
+    ggcompare = plot()
     for epoch in 1:EPOCHS
         tr_epoch_loss = 0.0
         
@@ -525,7 +550,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             # Epoch loss function
             tr_epoch_loss += 0.5 * (err[1] - err[2])^2
             # tr_epoch_loss += abs(err[1] - err[2])
-
+            push!(losses, 0.5*(err[1]-err[2])^2)
 
             z = _form_vector(vars, "Z")
             w = _form_vector(vars, "W")
@@ -547,12 +572,13 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
             _print_vars(vars, "W", title="CRN | Final layer at t=0|")
             # Update the parameters
             _print_vars(vars,  "P", title="CRN | Parameters before update")
-            # crn_param_update(vars, LR, (0.0, 30.0))
+            # crn_param_update(vars, LR, tspan)
+            @show vars["P1p"], vars["P1m"], vars["G1p"], vars["G1m"]
             vars["P1p"] = vars["P1p"] + LR * vars["G1m"]
             vars["P1m"] = vars["P1m"] + LR * vars["G1p"]
             vars["P2p"] = vars["P2p"] + LR * vars["G2m"]
             vars["P2m"] = vars["P2m"] + LR * vars["G2p"]
-
+            @show vars["P1p"], vars["P1m"], vars["G1p"], vars["G1m"]
 
             _print_vars(vars, "P", title="CRN | Parameters after update")
 
@@ -588,16 +614,62 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         plot()
         myplot([Array(range(1, epoch)), Array(range(1, epoch))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="training_losses", xlabel="epoch", ylabel="loss")
-        plot()
+        
         # myscatternogroup(val_yhats, val_ys, output_dir=output_dir, name="val_comparision", label="comparision", xlabel="predicted", ylabel="target")
-        gg = scatter!(getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target")
-        savefig(gg, "julia/$(output_dir)/images/val_comparision.png")
-        # myplot([Array(range(1, epoch))], [val_accs], ["val_acc"],
-        #     output_dir=output_dir, name="val_accuracies", xlabel="epoch", ylabel="accuracy")
-        # plot()
-        # @show calculate_accuracy(val, copy(vars), dims=2, output_dir=output_dir, threshold=threshold, pos=neg, neg=neg, tag="val")
+        gg = plot()
+        out_mini = min.(getindex.(val_outs, 1))
+        out_maxi = max.(getindex.(val_outs, 1))
+        
+        scatter!(gg, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="Comparison", markershape=:circle, markersize=4)
+        plot!(gg, Array([3.0, 14.0]), Array([3.0, 14.0]), linestyle=:dash, label="Perfect prediction")
+        savefig(gg, "julia/$(output_dir)/images/val_comparision_$(epoch).png")
+        savefig(gg, "julia/$(output_dir)/images/val_comparision_$(epoch).svg")
+        
+        # Compare first and last epochs
+        if epoch == 1
+            plot!(ggcompare, Array([3.0, 14.0]), Array([3.0, 14.0]), linestyle=:dash, label="Perfect prediction")
+            scatter!(ggcompare, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4)
+        elseif epoch == EPOCHS
+           scatter!(ggcompare, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4) 
+           savefig(ggcompare, "julia/$(output_dir)/images/val_compare.png")
+           savefig(ggcompare, "julia/$(output_dir)/images/val_compare.svg")
+        end
+        
+
+
+
+        gg = plot()
+        plot!(gg, losses, label="loss", xlabel="step", ylabel="loss", markersize=2, markershape=:circle)
+        savefig(gg, "julia/$(output_dir)/images/step_loss.png")
+        savefig(gg, "julia/$(output_dir)/images/step_loss.svg")
     end
     return vars
+end
+
+function plot_dataset(dataset; output_dir="", name="train")
+x1 = getindex.(dataset, 1)
+x2 = getindex.(dataset, 2)
+y = getindex.(dataset, 3)
+t = [[c1, c2, c3] for (c1, c2, c3) in zip(x1, x2, y)]
+push!(t, [0, 0, 2.45])
+push!(t, [4.0, 4.0, 14.45])
+sort!(t)
+
+# Create 3D plot
+gg = plot()
+plot!(gg, getindex.(t, 1), getindex.(t, 2), getindex.(t, 3), 
+     st=:surface,
+     alpha=0.3,
+     color=:blues,
+     colorbar=false,
+     label="True plane")
+
+# Add data points
+scatter!(gg, x1, x2, y,
+        label="Data Points",
+        marker=:circle, markersize=4)
+savefig(gg, "julia/$output_dir/images/$name.png")
+savefig(gg, "julia/$output_dir/images/$name.svg")
 end
 
 
@@ -606,18 +678,18 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     POS = 4.0
     NEG = 0.0
     MINI = 0.0
-    MAXI = THRESHOLD
+    MAXI = POS
     LR = 0.01
-    EPOCHS = 10
-    TSPAN = (0.0, 0.6)
+    EPOCHS = 5    
     T0 = 0.0
     T1 = 1.0
-    BIAS = 0.0
+    TSPAN = (T0, T1)
+    BIAS = 1.0
 
-    train = create_linear_regression_dataset(100, linear_reduced, mini=MINI, maxi=MAXI)
+    train = create_linear_regression_dataset(40, linear_reduced, mini=MINI, maxi=MAXI)
     val = create_linear_regression_dataset(100, linear_reduced, mini=MINI, maxi=MAXI)
     test = []
-    
+    print(train)
     # for i in range(0, Int32(THRESHOLD*100), 60)
     #     for j in range(0, Int32(THRESHOLD*100), 60)
 
@@ -637,6 +709,8 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
             mkdir("julia/$output_dir/images")
         end
     end
+
+    plot_dataset(train, output_dir=output_dir, name="train")
     # print(getindex.(train, 3))
     # myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
     #     xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
@@ -646,7 +720,6 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
         redirect_stdout(fileio) do
             println("===============================")
             vars = crn_main(params_orig, train, val, EPOCHS=EPOCHS, tspan=TSPAN, output_dir=output_dir, LR=LR, threshold=THRESHOLD, pos=POS, neg=NEG)
-            plot()
             
         end
     end
