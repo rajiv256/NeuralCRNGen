@@ -33,9 +33,8 @@ default(
     framestyle=:semi,
     # widen=false,
     lw=2, 
-    size=(800, 600),  # Wider figure
-    bottom_margin=3Plots.mm # Add global margin
-    # tight_layout=true
+    size=(600, 450),  # Wider figure
+    bottom_margin=3Plots.mm, # Add global margin
 )
 
 

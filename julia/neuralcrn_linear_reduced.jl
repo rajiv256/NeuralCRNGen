@@ -46,9 +46,8 @@ default(
     framestyle=:semi,
     # widen=false,
     lw=2, 
-    size=(800, 600),  # Wider figure
-    bottom_margin=3Plots.mm # Add global margin
-    # tight_layout=true
+    size=(600, 450),  # Wider figure
+    bottom_margin=3Plots.mm, # Add global margin
 )
 
 function _convert_species2var(sp)
@@ -627,10 +626,10 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         
         # Compare first and last epochs
         if epoch == 1
-            plot!(ggcompare, Array([3.0, 14.0]), Array([3.0, 14.0]), linestyle=:dash, label="Perfect prediction")
-            scatter!(ggcompare, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4)
+            plot!(ggcompare, Array([3.0, 14.0]), Array([3.0, 14.0]), linestyle=:dash, label="Perfect prediction", legend=:bottomright)
+            scatter!(ggcompare, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4, legend=:bottomright)
         elseif epoch == EPOCHS
-           scatter!(ggcompare, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4) 
+           scatter!(ggcompare, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4, legend=:bottomright) 
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare.png")
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare.svg")
         end
@@ -667,7 +666,7 @@ plot!(gg, getindex.(t, 1), getindex.(t, 2), getindex.(t, 3),
 # Add data points
 scatter!(gg, x1, x2, y,
         label="Data Points",
-        marker=:circle, markersize=4)
+        marker=:circle, markersize=4, legend=:topleft)
 savefig(gg, "julia/$output_dir/images/$name.png")
 savefig(gg, "julia/$output_dir/images/$name.svg")
 end
@@ -725,6 +724,6 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     end
 end
 
-neuralcrn(output_dir="linear_regression")
+neuralcrn(output_dir="linear_regression_final")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
