@@ -46,7 +46,6 @@ default(
     lw=2, 
     size=(600, 450),  # Wider figure
     bottom_margin=3Plots.mm, # Add global margin
-    legend=:best
 )
 
 
@@ -543,7 +542,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
 
     # Get all the involved CRNs and add their species to the vars
     crns = [rn_dual_node_relu_fwd, rn_dual_node_relu_bwd, rn_param_update, 
-            rn_final_layer_update, rn_dissipate_reactions ]
+            rn_final_layer_update, rn_dissipate_reactions]
     for crn in crns
         crn_species = species(crn)
         for sp in crn_species
@@ -825,10 +824,10 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
 
         # Compare first and last epochs
         if epoch == 1
-            plot!(ggcompare, Array([1.0, 14.0]), Array([1.0, 14.0]), linestyle=:dash, label="Perfect prediction")
-            scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4)
+            plot!(ggcompare, Array([1.0, 14.0]), Array([1.0, 14.0]), linestyle=:dash, label="Perfect prediction", legend=:bottomright)
+            scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4, legend=:bottomright)
         elseif epoch == EPOCHS
-           scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4) 
+           scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4, legend=:bottomright) 
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare_before_after.png")
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare_before_after.svg")
         end
@@ -920,8 +919,8 @@ function neuralcrn(;DIMS=3)
             t0 = 0.0
             t1 = 1.0
             AUGVAL = 1.0
-            LR = 1
-            output_dir = "nl_regression_jan25_2025_relu_Dotprod_v2"
+            LR = 1.0
+            output_dir = "nl_regression_relu_Dotprod_final"
             train = create_nonlinear_regression_dataset(100, bilinear, mini=0.8, maxi=2.5)
             val = create_nonlinear_regression_dataset(100, bilinear, mini=0.8, maxi=2.5)
             test = val
