@@ -19,7 +19,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactionsReLU.jl")
+include("reactions_simplerbackprop.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
@@ -760,7 +760,25 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             
             # Update the parameters
             _print_vars(vars, "P", title="CRN | params before update |")
-            crn_param_update(rn_param_update, vars, LR, (0.0, 10.0))
+            # crn_param_update(rn_param_update, vars, LR, tspan)
+            vars["P11p"] = vars["P11p"] + LR*vars["G11m"]
+            vars["P11m"] = vars["P11m"] + LR*vars["G11p"]
+            vars["P12p"] = vars["P12p"] + LR*vars["G12m"]
+            vars["P12m"] = vars["P12m"] + LR*vars["G12p"]
+            vars["P13p"] = vars["P13p"] + LR*vars["G13m"]
+            vars["P13m"] = vars["P13m"] + LR*vars["G13p"]
+            vars["P21p"] = vars["P21p"] + LR*vars["G21m"]
+            vars["P21m"] = vars["P21m"] + LR*vars["G21p"]
+            vars["P22p"] = vars["P22p"] + LR*vars["G22m"]
+            vars["P22m"] = vars["P22m"] + LR*vars["G22p"]
+            vars["P23p"] = vars["P23p"] + LR*vars["G23m"]
+            vars["P23m"] = vars["P23m"] + LR*vars["G23p"]
+            vars["P31p"] = vars["P31p"] + LR*vars["G31m"]
+            vars["P31m"] = vars["P31m"] + LR*vars["G31p"]
+            vars["P32p"] = vars["P32p"] + LR*vars["G32m"]
+            vars["P32m"] = vars["P32m"] + LR*vars["G32p"]
+            vars["P33p"] = vars["P33p"] + LR*vars["G33m"]
+            vars["P33m"] = vars["P33m"] + LR*vars["G33p"]
             _print_vars(vars, "P", title="CRN | params after update |")
             _print_vars(vars, "B", title="CRN | beta after update |")
             
@@ -822,15 +840,15 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         # plot!([2.0, 8.0], [2.0, 8.0])
         # myscatternogroup(getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="compare", output_dir=output_dir, name="val_compare", markershape=:circle)
         # Compare first and last epochs
-        ggcompare = plot() # Remove this later on
-        # if epoch == 1
+        
+        if epoch == 1
             plot!(ggcompare, Array([0.0, 18.0]), Array([0.0, 18.0]), linestyle=:dash, label="Perfect prediction", legend=:bottomright)
             scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4, legend=:bottomright)
-        # elseif epoch == EPOCHS
+        elseif epoch == EPOCHS
            scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4, legend=:bottomright) 
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare_before_after.png")
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare_before_after.svg")
-        # end
+        end
 
         # Plot the tracking parameters.
         plot()
@@ -920,7 +938,7 @@ function neuralcrn(;DIMS=3)
             t1 = 0.6
             AUGVAL = 1.0
             LR = 0.1
-            output_dir = "nl_regression_relu_min_1_max_3"
+            output_dir = "nl_regression_relu_min_1_max_3_simpler"
             train = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
             val = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
             test = val
@@ -934,12 +952,12 @@ function neuralcrn(;DIMS=3)
 
             plot_dataset(train, output_dir=output_dir, name="train")
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.0)
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.4)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=30, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=20, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end
