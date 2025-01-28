@@ -122,7 +122,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
 
     push!(params, Float32(dims))
 
-    theta = rand(Normal(0.0, 0.8), dims^2)
+    theta = rand(Uniform(1.0, 1.02), dims^2)
     # theta = theta/sqrt(dims)
     theta = abs.(theta)
 

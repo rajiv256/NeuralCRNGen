@@ -18,7 +18,7 @@ using NNlib;
 using Distributions;
 
 include("datasets.jl")
-include("utils.jl")
+include("utils_simplerbackprop.jl")
 include("reactions_simplerbackprop.jl")
 # include("neuralode.jl")
 include("myplots.jl")
@@ -939,7 +939,7 @@ function neuralcrn(;DIMS=3)
             AUGVAL = 1.0
             LR = 0.1
             output_dir = "nl_regression_relu_min_1_max_3_simpler"
-            train = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
+            train = create_nonlinear_regression_dataset(50, bilinear, mini=1.0, maxi=3.0)
             val = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
             test = val
 
@@ -952,7 +952,7 @@ function neuralcrn(;DIMS=3)
 
             plot_dataset(train, output_dir=output_dir, name="train")
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.4)
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.0)
             
             @show params_orig
 
