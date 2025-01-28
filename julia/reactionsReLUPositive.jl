@@ -45,19 +45,19 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     # 1.0, P33p + X3m --> Z3m + P33p + X3m
     # 1.0, P33m + X3p --> Z3m + P33m + X3p
 
-    # dz_i/dt = b_iz_i
-    1.0, B1p + Z1p --> Z1p + B1p + Z1p
-    # 1.0, B1m + Z1m --> Z1p + B1m + Z1m
-    # 1.0, B1p + Z1m --> Z1m + B1p + Z1m
-    # 1.0, B1m + Z1p --> Z1m + B1m + Z1p
-    1.0, B2p + Z2p --> Z2p + B2p + Z2p
-    # 1.0, B2m + Z2m --> Z2p + B2m + Z2m
-    # 1.0, B2p + Z2m --> Z2m + B2p + Z2m
-    # 1.0, B2m + Z2p --> Z2m + B2m + Z2p
-    1.0, B3p + Z3p --> Z3p + B3p + Z3p
-    # 1.0, B3m + Z3m --> Z3p + B3m + Z3m
-    # 1.0, B3p + Z3m --> Z3m + B3p + Z3m
-    # 1.0, B3m + Z3p --> Z3m + B3m + Z3p
+    # # dz_i/dt = b_iz_i
+    # 1.0, B1p + Z1p --> Z1p + B1p + Z1p
+    # # 1.0, B1m + Z1m --> Z1p + B1m + Z1m
+    # # 1.0, B1p + Z1m --> Z1m + B1p + Z1m
+    # # 1.0, B1m + Z1p --> Z1m + B1m + Z1p
+    # 1.0, B2p + Z2p --> Z2p + B2p + Z2p
+    # # 1.0, B2m + Z2m --> Z2p + B2m + Z2m
+    # # 1.0, B2p + Z2m --> Z2m + B2p + Z2m
+    # # 1.0, B2m + Z2p --> Z2m + B2m + Z2p
+    # 1.0, B3p + Z3p --> Z3p + B3p + Z3p
+    # # 1.0, B3m + Z3m --> Z3p + B3m + Z3m
+    # # 1.0, B3p + Z3m --> Z3m + B3p + Z3m
+    # # 1.0, B3m + Z3p --> Z3m + B3m + Z3p
 
     # dz_i/dt = -z_i^2
     # Not sure if this is hacky
@@ -77,6 +77,80 @@ end
 
 
 rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
+
+    # dz/dt = -h
+    # 1.0, H1m --> Z1p + H1m
+    1.0, H1p --> Z1m + H1p
+    # 1.0, H1m --> Z2p + H1m
+    1.0, H1p --> Z2m + H1p
+    # 1.0, H1m --> Z3p + H1m
+    1.0, H1p --> Z3m + H1p
+    # dz/dt = -p_ij x_j
+    # 1.0, P11p + X1m --> Z1p + P11p + X1m
+    # 1.0, P11m + X1p --> Z1p + P11m + X1p
+    1.0, P11p + X1p --> Z1m + P11p + X1p
+    # 1.0, P11m + X1m --> Z1m + P11m + X1m
+    # 1.0, P12p + X2m --> Z1p + P12p + X2m
+    # 1.0, P12m + X2p --> Z1p + P12m + X2p
+    1.0, P12p + X2p --> Z1m + P12p + X2p
+    # 1.0, P12m + X2m --> Z1m + P12m + X2m
+    # 1.0, P13p + X3m --> Z1p + P13p + X3m
+    # 1.0, P13m + X3p --> Z1p + P13m + X3p
+    1.0, P13p + X3p --> Z1m + P13p + X3p
+    # 1.0, P13m + X3m --> Z1m + P13m + X3m
+    # 1.0, P21p + X1m --> Z2p + P21p + X1m
+    # 1.0, P21m + X1p --> Z2p + P21m + X1p
+    1.0, P21p + X1p --> Z2m + P21p + X1p
+    # 1.0, P21m + X1m --> Z2m + P21m + X1m
+    # 1.0, P22p + X2m --> Z2p + P22p + X2m
+    # 1.0, P22m + X2p --> Z2p + P22m + X2p
+    1.0, P22p + X2p --> Z2m + P22p + X2p
+    # 1.0, P22m + X2m --> Z2m + P22m + X2m
+    # 1.0, P23p + X3m --> Z2p + P23p + X3m
+    # 1.0, P23m + X3p --> Z2p + P23m + X3p
+    1.0, P23p + X3p --> Z2m + P23p + X3p
+    # 1.0, P23m + X3m --> Z2m + P23m + X3m
+    # 1.0, P31p + X1m --> Z3p + P31p + X1m
+    # 1.0, P31m + X1p --> Z3p + P31m + X1p
+    1.0, P31p + X1p --> Z3m + P31p + X1p
+    # 1.0, P31m + X1m --> Z3m + P31m + X1m
+    # 1.0, P32p + X2m --> Z3p + P32p + X2m
+    # 1.0, P32m + X2p --> Z3p + P32m + X2p
+    1.0, P32p + X2p --> Z3m + P32p + X2p
+    # 1.0, P32m + X2m --> Z3m + P32m + X2m
+    # 1.0, P33p + X3m --> Z3p + P33p + X3m
+    # 1.0, P33m + X3p --> Z3p + P33m + X3p
+    1.0, P33p + X3p --> Z3m + P33p + X3p
+    # 1.0, P33m + X3m --> Z3m + P33m + X3m
+
+    # dz_i/dt = z_i^2
+    # Not sure if this is hacky
+    1.0, Z1p --> 2Z1p 
+    1.0, Z1m --> 2Z1m 
+    100.0, Z1p + Z1m --> 0
+
+    1.0, Z2p --> 2Z2p
+    1.0, Z2m --> 2Z2m
+    100.0, Z2p + Z2m --> 0
+
+    1.0, Z3p --> 2Z3p
+    1.0, Z3m --> 2Z3m
+    100.0, Z3p + Z3m --> 0
+
+    # # da_i/dt = a_i z_i
+    1.0, A1p + Z1m --> A1p + A1p + Z1m
+    1.0, A1m + Z1p --> A1p + A1m + Z1p
+    1.0, A1p + Z1p --> A1m + A1p + Z1p
+    1.0, A1m + Z1m --> A1m + A1m + Z1m
+    1.0, A2p + Z2m --> A2p + A2p + Z2m
+    1.0, A2m + Z2p --> A2p + A2m + Z2p
+    1.0, A2p + Z2p --> A2m + A2p + Z2p
+    1.0, A2m + Z2m --> A2m + A2m + Z2m
+    1.0, A3p + Z3m --> A3p + A3p + Z3m
+    1.0, A3m + Z3p --> A3p + A3m + Z3p
+    1.0, A3p + Z3p --> A3m + A3p + Z3p
+    1.0, A3m + Z3m --> A3m + A3m + Z3m
+
 
     # dg_ij/dt = a x
     1.0, A1p + X1p --> G11p + A1p + X1p
@@ -148,24 +222,24 @@ rn_param_update = @reaction_network rn_param_update begin
     1.0, G33p + P33p --> 0
     1.0, G33m --> P33p
 
-    10.0, G11p --> 0
-    10.0, G11m --> 0
-    10.0, G12p --> 0
-    10.0, G12m --> 0
-    10.0, G13p --> 0
-    10.0, G13m --> 0
-    10.0, G21p --> 0
-    10.0, G21m --> 0
-    10.0, G22p --> 0
-    10.0, G22m --> 0
-    10.0, G23p --> 0
-    10.0, G23m --> 0
-    10.0, G31p --> 0
-    10.0, G31m --> 0
-    10.0, G32p --> 0
-    10.0, G32m --> 0
-    10.0, G33p --> 0
-    10.0, G33m --> 0
+    3.0, G11p --> 0
+    3.0, G11m --> 0
+    3.0, G12p --> 0
+    3.0, G12m --> 0
+    3.0, G13p --> 0
+    3.0, G13m --> 0
+    3.0, G21p --> 0
+    3.0, G21m --> 0
+    3.0, G22p --> 0
+    3.0, G22m --> 0
+    3.0, G23p --> 0
+    3.0, G23m --> 0
+    3.0, G31p --> 0
+    3.0, G31m --> 0
+    3.0, G32p --> 0
+    3.0, G32m --> 0
+    3.0, G33p --> 0
+    3.0, G33m --> 0
        
 end
 
@@ -221,6 +295,24 @@ rn_dissipate_reactions = @reaction_network rn_dissipate_reactions begin
     1.0, Om --> 0
     1.0, Yp --> 0
     1.0, Ym --> 0
+    1.0, P11p --> 0
+    1.0, P11m --> 0
+    1.0, P12p --> 0
+    1.0, P12m --> 0
+    1.0, P13p --> 0
+    1.0, P13m --> 0
+    1.0, P21p --> 0
+    1.0, P21m --> 0
+    1.0, P22p --> 0
+    1.0, P22m --> 0
+    1.0, P23p --> 0
+    1.0, P23m --> 0
+    1.0, P31p --> 0
+    1.0, P31m --> 0
+    1.0, P32p --> 0
+    1.0, P32m --> 0
+    1.0, P33p --> 0
+    1.0, P33m --> 0
 end
 
 

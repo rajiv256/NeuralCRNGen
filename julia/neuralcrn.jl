@@ -19,7 +19,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactionsReLUDotprod.jl")
+include("reactionsReLU.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
@@ -917,10 +917,10 @@ function neuralcrn(;DIMS=3)
            
             # # Rings 
             t0 = 0.0
-            t1 = 1.0
+            t1 = 0.5
             AUGVAL = 1.0
             LR = 1.0
-            output_dir = "nl_regression_relu_Dotprod_final"
+            output_dir = "nl_regression_relu_withadjbackprop"
             train = create_nonlinear_regression_dataset(100, bilinear, mini=0.8, maxi=2.5)
             val = create_nonlinear_regression_dataset(100, bilinear, mini=0.8, maxi=2.5)
             test = val
@@ -939,7 +939,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=50, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=20, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end
