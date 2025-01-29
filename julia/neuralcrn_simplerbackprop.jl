@@ -937,7 +937,7 @@ function neuralcrn(;DIMS=3)
             t0 = 0.0
             t1 = 0.6
             AUGVAL = 1.0
-            LR = 0.1
+            LR = 0.2
             output_dir = "nl_regression_relu_min_1_max_3_simpler"
             train = create_nonlinear_regression_dataset(50, bilinear, mini=1.0, maxi=3.0)
             val = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
@@ -957,7 +957,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=20, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=30, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end

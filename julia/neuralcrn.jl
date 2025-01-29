@@ -19,7 +19,7 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactionsReLU.jl")
+include("reactions.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
@@ -933,7 +933,7 @@ function neuralcrn(;DIMS=3)
             t1 = 0.5
             AUGVAL = 1.0
             LR = 0.1
-            output_dir = "nl_regression_relu_min_1_max_3"
+            output_dir = "z2_full"
             train = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
             val = create_nonlinear_regression_dataset(100, bilinear, mini=1.0, maxi=3.0)
             test = val
