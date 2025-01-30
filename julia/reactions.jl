@@ -109,16 +109,16 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
 
     # dz_i/dt = z_i^2
     # Not sure if this is hacky
-    1.0, Z1p --> 2Z1p
-    1.0, Z1m --> 2Z1m
+    1.0, 2Z1p --> 3Z1p
+    1.0, 2Z1m --> 3Z1m
     100.0, Z1p + Z1m --> 0 
 
-    1.0, Z2p --> 2Z2p
-    1.0, Z2m --> 2Z2m
+    1.0, 2Z2p --> 3Z2p
+    1.0, 2Z2m --> 3Z2m
     100.0, Z2p + Z2m --> 0
 
-    1.0, Z3p --> 2Z3p
-    1.0, Z3m --> 2Z3m
+    1.0, 2Z3p --> 3Z3p
+    1.0, 2Z3m --> 3Z3m
     100.0, Z3p + Z3m --> 0
 
     # # da_i/dt = a_i z_i
