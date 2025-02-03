@@ -680,7 +680,9 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     EPOCHS = 4
     T0 = 0.0
     T1 = 0.5
+    T1 = 0.5
     TSPAN = (T0, T1)
+    BIAS = 0.1
     BIAS = 0.1
 
     train = create_linear_regression_dataset(40, linear_reduced, mini=MINI, maxi=MAXI)
