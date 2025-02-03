@@ -1,7 +1,5 @@
 # This file is used to run CRN operations
 using Pkg;
-Pkg.add("NNlib");
-Pkg.add("ProgressMeter");
 
 using DifferentialEquations;
 using Random;
@@ -500,12 +498,16 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
     # for i in eachindex(u)
     #     println(ss[i], " => ", sol[end][i])
     # end
-    
+    zindices = []
     for i in eachindex(ss)
         if startswith(string(ss[i]), "Z")
             vars[_convert_species2var(ss[i])] = sol[end][i]
+            push!(zindices, i)
         end
     end
+    plot()
+    gsol = plot(sol, idxs=zindices)
+    savefig(gsol, "julia/zplot.png")
     _print_vars(vars, "Z", title="CRN | z at t=T |")
 end
 
@@ -657,7 +659,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             
             
             # Backpropagate and calculate parameter gradients 
-            crn_dual_backprop(rn_dual_node_relu_bwd, vars, tspan)
+            crn_dual_backprop(rn_dual_node_relu_bwd, vars, (0.0, 2.0))
             _print_vars(vars, "Z", title="CRN | Z after backprop at t=0 | ")
             _print_vars(vars, "A", title="CRN | A at t=0")
             _print_vars(vars, "G", title="CRN | Gradients at t=0")
@@ -824,14 +826,14 @@ function neuralcrn(;DIMS=3)
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
-            # # Rings 
-            # t0 = 0.0
-            # t1 = 0.9
-            # AUGVAL = 0.2
-            # output_dir = "rings_final"
-            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            # test = val
+            # Rings 
+            t0 = 0.0
+            t1 = 0.9
+            AUGVAL = 0.2
+            output_dir = "rings_final"
+            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            val = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            test = val
 
             # # Xor dataset
             # output_dir  = "xor_final"
@@ -874,25 +876,25 @@ function neuralcrn(;DIMS=3)
             # end
             # Random.shuffle!(train)
 
-            # OR dataset
-            output_dir = "or_final"
-            train = create_or_dataset(200)
-            val = create_or_dataset(10)
-            test = []
-            t0 = 0.0
-            t1 = 0.9
-            AUGVAL = 0.2
-            for i in range(0, 100, 40)
-                for j in range(0, 100, 40)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b | x2b)
-                    push!(test, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
+            ## OR dataset
+            # output_dir = "or_final"
+            # train = create_or_dataset(200)
+            # val = create_or_dataset(10)
+            # test = []
+            # t0 = 0.0
+            # t1 = 0.9
+            # AUGVAL = 0.2
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b | x2b)
+            #         push!(test, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
@@ -903,10 +905,6 @@ function neuralcrn(;DIMS=3)
             plot()
             myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
                 xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
-
-
-           
-            
 
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.0)
