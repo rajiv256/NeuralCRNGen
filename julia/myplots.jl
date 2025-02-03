@@ -82,7 +82,7 @@ function plot_linear_regression_dataset(train, mini, maxi, func; output_dir="")
     plot()
     X1_grid = range(mini -1  , maxi + 1, length=40)
     X2_grid = range(mini-1, maxi + 1, length=40)
-    Y_grid = [linear_reduced(x1, x2) for x1 in X1_grid, x2 in X2_grid]
+    Y_grid = [ x1 + 2*x2 + 1.0 for x1 in X1_grid, x2 in X2_grid]
     g = plot!(X1_grid, X2_grid, Y_grid, 
      st=:surface,
      alpha=0.3,

@@ -251,7 +251,7 @@ function dissipate_and_annihilate(vars, tspan)
 
 end
 
-# NOT WORKING. :(
+
 function crn_param_update(vars, eta, tspan)
 
     ss = species(rn_param_update)
@@ -620,7 +620,7 @@ function crn_main(params, train, val; dims=2, EPOCHS=10, LR=0.01, tspan=(0.0, 1.
         out_maxi = max.(getindex.(val_outs, 1))
         
         scatter!(gg, getindex.(val_outs, 1), getindex.(val_outs, 2), xlabel="Predicted", ylabel="Target", label="Comparison", markershape=:circle, markersize=4)
-        plot!(gg, Array([3.0, 14.0]), Array([3.0, 14.0]), linestyle=:dash, label="Perfect prediction")
+        plot!(gg, Array([0.0, 15.0]), Array([0.0, 15.0]), linestyle=:dash, label="Perfect prediction")
         savefig(gg, "julia/$(output_dir)/images/val_comparision_$(epoch).png")
         savefig(gg, "julia/$(output_dir)/images/val_comparision_$(epoch).svg")
         
@@ -677,9 +677,8 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     MINI = 1.0
     MAXI = 5.0
     LR = 0.1
-    EPOCHS = 4
+    EPOCHS = 5
     T0 = 0.0
-    T1 = 0.5
     T1 = 0.5
     TSPAN = (T0, T1)
     BIAS = 0.1
