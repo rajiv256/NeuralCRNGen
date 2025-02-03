@@ -452,9 +452,12 @@ end
 function neuralode(; DIMS=3)
     open("julia/neuralode.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
-            train = create_annular_rings_dataset(100)
-            val = create_annular_rings_dataset(200)
-            # val = train   
+            # train = create_annular_rings_dataset(100)
+            # val = create_annular_rings_dataset(200)
+            # # val = train   
+            train = create_xor_dataset(100)
+            val = create_xor_dataset(30)
+            test = val
 
             params_orig = create_node_params(DIMS, t0=0.0, t1=0.6, h=0.3)
             println(params_orig)

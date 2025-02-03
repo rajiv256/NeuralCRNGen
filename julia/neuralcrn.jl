@@ -1,7 +1,6 @@
 # This file is used to run CRN operations
 using Pkg;
-Pkg.add("NNlib");
-Pkg.add("ProgressMeter");
+
 
 using DifferentialEquations;
 using Random;
@@ -22,8 +21,8 @@ using Distributions;
 
 include("datasets.jl")
 include("utils.jl")
-include("reactionsReLU.jl")
-# include("reactionsReLUAlt.jl")
+# include("reactionsReLU.jl")
+include("reactionsReLUAlt.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
@@ -219,7 +218,7 @@ function crn_create_error_species(vars)
 end
 
 
-function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0, augval=augval, output_dir="")
+function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, threshold=0.0, augval=augval, output_dir="", neg=0.0, pos=1.0)
     aug_x = []
     reg_x = []
     yhats = []
@@ -257,9 +256,9 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
         varscopy["Op"] = yhat[1]
         varscopy["Om"] = yhat[2]
         
-        output = 0.0
+        output = neg
         if varscopy["Op"]-varscopy["Om"] > threshold
-            output = 1.0
+            output = pos
         end
         push!(
             aug_x, [
@@ -293,7 +292,7 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
 end
 
 
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0, output_dir="")
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0, output_dir="", neg=0.0, pos=1.0)
     acc = 0
     preds2d = []
     wrongs = []
@@ -318,7 +317,6 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
                 varscopy[k] = v
             end
         end
-
         
         crn_dual_node_fwd(rn_dual_node_relu_fwd, varscopy, tspan=tspan)
         varscopy["Yp"] = y
@@ -330,9 +328,9 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
         varscopy["Op"] = yhat[1]
         varscopy["Om"] = yhat[2]
         
-        output = 0.0
+        output = neg
         if varscopy["Op"] - varscopy["Om"] >= threshold # TODO: CHECK BEFORE
-            output = 1.0
+            output = pos
         end
         
         # Casting a float into an integer
@@ -500,18 +498,21 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
     # for i in eachindex(u)
     #     println(ss[i], " => ", sol[end][i])
     # end
-    
+    zindices = []
     for i in eachindex(ss)
         if startswith(string(ss[i]), "Z")
             vars[_convert_species2var(ss[i])] = sol[end][i]
+            push!(zindices, i)
         end
     end
+    g = plot(sol, vars=zindices)
+    savefig(g, "julia/zplot.png")
     _print_vars(vars, "Z", title="CRN | z at t=T |")
 end
 
 
 function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001, 
-    tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="")
+    tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="", neg=0.0, pos=1.0)
 
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
@@ -633,6 +634,13 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             # Calculate yhat
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
             @show yhat, yhat[1]-yhat[2]
+
+            # # Enforcing only wrong prediction backprop. 
+            # if yhat[1]-yhat[2] >= threshold 
+            #     yhat = [pos 0.0]
+            # else 
+            #     yhat = [0.0 abs(neg)] # Here it will be [0 0] since neg = 0
+            # end 
             
             vars["Op"] = max(0, yhat[1] - yhat[2])
             vars["Om"] = max(0, yhat[2] - yhat[1])
@@ -664,11 +672,29 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             _print_vars(vars, "V", title="CRN | Beta gradients at t=0")
             
             # # Update the final layer weights
-            # crn_final_layer_update(vars, LR, (0.0, 40.0))
+            # crn_final_layer_update(vars, LR, (0.0, 1.0))
             _print_vars(vars, "W", title="CRN | Final layer after update |")
-            
-            # Update the parameters
-            crn_param_update(rn_param_update, vars, LR, (0.0, 100.0))
+           _print_vars(vars, "P", title="CRN | params before update |") 
+            # # Update the parameters
+            # vars["P11p"] = vars["P11p"] + LR*vars["G11m"]
+            # vars["P11m"] = vars["P11m"] + LR*vars["G11p"]
+            # vars["P12p"] = vars["P12p"] + LR*vars["G12m"]
+            # vars["P12m"] = vars["P12m"] + LR*vars["G12p"]
+            # vars["P13p"] = vars["P13p"] + LR*vars["G13m"]
+            # vars["P13m"] = vars["P13m"] + LR*vars["G13p"]
+            # vars["P21p"] = vars["P21p"] + LR*vars["G21m"]
+            # vars["P21m"] = vars["P21m"] + LR*vars["G21p"]
+            # vars["P22p"] = vars["P22p"] + LR*vars["G22m"]
+            # vars["P22m"] = vars["P22m"] + LR*vars["G22p"]
+            # vars["P23p"] = vars["P23p"] + LR*vars["G23m"]
+            # vars["P23m"] = vars["P23m"] + LR*vars["G23p"]
+            # vars["P31p"] = vars["P31p"] + LR*vars["G31m"]
+            # vars["P31m"] = vars["P31m"] + LR*vars["G31p"]
+            # vars["P32p"] = vars["P32p"] + LR*vars["G32m"]
+            # vars["P32m"] = vars["P32m"] + LR*vars["G32p"]
+            # vars["P33p"] = vars["P33p"] + LR*vars["G33m"]
+            # vars["P33m"] = vars["P33m"] + LR*vars["G33p"]
+            crn_param_update(rn_param_update, vars, LR, (0.0, 1.0))
             _print_vars(vars, "P", title="CRN | params after update |")
             _print_vars(vars, "B", title="CRN | beta after update |")
             
@@ -739,9 +765,9 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
             # Calculate yhat            
             yhat = crn_dot(vars, "Z", "W", max_val=40.0)
             @show yhat, yhat[1] - yhat[2]
-            val_out = 0.0
+            val_out = neg
             if yhat[1] - yhat[2] >= threshold
-                val_out = 1.0
+                val_out = pos
             end
             if val_out == y
                 val_acc += 1
@@ -777,14 +803,13 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         push!(tr_losses, tr_epoch_loss)
         val_acc /= length(val)
         @show epoch, val_acc
-        # crn_losses_plt = plot([tr_losses, val_losses], label=["train" "val"])
-        # png(crn_losses_plt, "julia/$output_dir/images/crn_train_lossplts.png")
+
         plot()
         myplot([Array(range(1, length(tr_losses))), Array(range(1, length(val_losses)))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="crn_train_lossplts", xlabel="epoch", ylabel="loss")
         plot()
-        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
-        @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir, neg=neg, pos=pos)
+        @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir, neg=neg, pos=pos)
 
         # Plot the tracking parameters.
         plot()
@@ -834,65 +859,72 @@ function neuralcrn(;DIMS=3)
             # test = val
 
             # # Xor dataset
-            # output_dir  = "xor_final"
+            # output_dir  = "xor_zinit-0"
             # t0 = 0.0
-            # t1 = 0.9
+            # t1 = 0.03
             # AUGVAL = 0.2
-            # train = create_xor_dataset(100)
-            # val = create_xor_dataset(30)
-            # test = []
+            # NEG = 0.0
+            # POS = 100.0
+            # THRESHOLD = NEG + (POS - NEG)/2
+
+            # train = create_xor_dataset(100, neg=NEG, pos=POS)
+            # val = create_xor_dataset(30, neg=NEG, pos=POS)
+            # test = val
             
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
+            # for i in range(0, 100, 20)
+            #     for j in range(0, 100, 20)
             #         x1 = i / 100
             #         x2 = j / 100
             #         x1b = Bool(floor(x1 + 0.5))
             #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b ⊻ x2b)
+            #         y = Float32(x1b ⊻ x2b)*POS
             #         push!(test, [x1 x2 y])
             #     end
             # end
             # Random.shuffle!(train)
 
-            # ## AND dataset set t1 = 0.6
-            # output_dir = "and_final"
-            # t0 = 0.0
-            # t1 = 0.9
-            # AUGVAL = 0.2
-            # train = create_and_dataset(100)
-            # val = create_and_dataset(10)    
-            # test = []
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b & x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
-
-            # OR dataset
-            output_dir = "or_final"
-            train = create_or_dataset(200)
-            val = create_or_dataset(10)
-            test = []
+            ## AND dataset set t1 = 0.6
+            output_dir = "and_whoddunnit"
             t0 = 0.0
-            t1 = 0.9
+            t1 = 0.4
             AUGVAL = 0.2
-            for i in range(0, 100, 40)
-                for j in range(0, 100, 40)
+            NEG = 0.0
+            POS = 100.0
+            THRESHOLD = NEG + (POS - NEG)/2
+            train = create_and_dataset(100, neg=NEG, pos=POS)
+            val = create_and_dataset(100, neg=NEG, pos=POS)    
+            test = []
+            for i in range(0, 100, 20)
+                for j in range(0, 100, 20)
                     x1 = i / 100
                     x2 = j / 100
                     x1b = Bool(floor(x1 + 0.5))
                     x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b | x2b)
+                    y = Float32(x1b & x2b)*POS
                     push!(test, [x1 x2 y])
                 end
             end
             Random.shuffle!(train)
+
+            # # OR dataset
+            # output_dir = "or_final"
+            # train = create_or_dataset(200)
+            # val = create_or_dataset(10)
+            # test = []
+            # t0 = 0.0
+            # t1 = 0.9
+            # AUGVAL = 0.2
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b | x2b)
+            #         push!(test, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
@@ -904,18 +936,14 @@ function neuralcrn(;DIMS=3)
             myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
                 xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
-
-           
-            
-
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.0)
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.1)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=80, dims=DIMS, LR=1.0, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
-            @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=3000, dims=DIMS, LR=1.0, tspan=tspan, augval=AUGVAL, output_dir=output_dir, neg=NEG, pos=POS, threshold=THRESHOLD)
+            # @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end
