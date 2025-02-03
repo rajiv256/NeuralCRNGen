@@ -6,6 +6,7 @@ using ColorSchemes;
 using LaTeXStrings;
 theme(:default);
 palette(:Dark2_5);
+include("datasets.jl")
 # plot(x, y1, label="sin(x)", lw=2, marker=:circle, markersize=4, title="Enhanced Sine Wave", xlabel="x-axis", ylabel="y-axis", legend=:best, grid=false, framestyle=:semi, widen=false)
 # KWARGS = (
 #     "lw" => 2,
@@ -77,7 +78,21 @@ function myscatternogroup(xs, ys; xlabel="", ylabel="", markershape=:xcross, mar
     return gg
 end
 
-# x = [1, 2, 3]
-# y = [2.5, 6.6667, 3.5]
-# y2 = y .^ 2
-# myplot([x, x], [y, y2], ["acwr", "kdff"], xlabel="x", ylabel="y", output_dir="rings", name="test")
+function plot_linear_regression_dataset(train, mini, maxi, func; output_dir="")
+    plot()
+    X1_grid = range(mini -1  , maxi + 1, length=40)
+    X2_grid = range(mini-1, maxi + 1, length=40)
+    Y_grid = [linear_reduced(x1, x2) for x1 in X1_grid, x2 in X2_grid]
+    g = plot!(X1_grid, X2_grid, Y_grid, 
+     st=:surface,
+     alpha=0.3,
+     color=:blues,
+     colorbar=false,
+     label="True plane")
+
+    scatter3d!(g, getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), xlabel=L"$x_1$", ylabel=L"$x_2$", zlabel=L"$y$", markersize=4, legend=false)
+
+    savefig(g, "julia/$output_dir/regplot.png")
+    savefig(g, "julia/$output_dir/regplot.svg")
+end
+

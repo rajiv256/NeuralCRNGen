@@ -10,9 +10,9 @@ rn_dual_node_fwd = @reaction_network rn_dual_node_fwd begin
     # 1.0, P2m + X2p --> Z2m + P2m + X2p
 
     1.0, H1p --> Z1p + H1p
-    1.0, H1m --> Z1m + H1m
+    # 1.0, H1m --> Z1m + H1m
     1.0, H2p --> Z2p + H2p
-    1.0, H2m --> Z2m + H2m
+    # 1.0, H2m --> Z2m + H2m
 
     # 100.0, Z1p + Z1m --> 0
     # 100.0, Z2p + Z2m --> 0

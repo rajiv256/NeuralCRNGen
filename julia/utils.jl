@@ -133,7 +133,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, precision=10)
 end
 
 function create_node_params_reduced(dims; t0=0.0, t1=1.0, precision=10, h=0.2)
-    theta = rand(Normal(0.1, 0.2), dims)
+    theta = rand(Uniform(0.1, 0.5), dims)
     theta = abs.(theta)
 
     params = []

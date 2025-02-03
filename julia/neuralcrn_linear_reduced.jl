@@ -673,35 +673,20 @@ end
 
 
 function neuralcrn(; DIMS=2, output_dir="linear_reduced")
-    THRESHOLD = 2.0
-    POS = 4.0
-    NEG = 0.0
-    MINI = 0.0
-    MAXI = POS
-    LR = 0.01
-    EPOCHS = 5    
+    
+    MINI = 1.0
+    MAXI = 5.0
+    LR = 0.1
+    EPOCHS = 4
     T0 = 0.0
-    T1 = 1.0
+    T1 = 0.5
     TSPAN = (T0, T1)
-    BIAS = 1.0
+    BIAS = 0.1
 
     train = create_linear_regression_dataset(40, linear_reduced, mini=MINI, maxi=MAXI)
     val = create_linear_regression_dataset(100, linear_reduced, mini=MINI, maxi=MAXI)
     test = []
-    print(train)
-    # for i in range(0, Int32(THRESHOLD*100), 60)
-    #     for j in range(0, Int32(THRESHOLD*100), 60)
 
-    #         x1 = i / 100
-    #         x2 = j / 100
-    #         y = NEG
-    #         yval = linear_reduced(x1, x2)
-    #         if yval > THRESHOLD
-    #             y = POS
-    #         end
-    #         push!(test, [x1; x2; y])
-    #     end
-    # end
     if !isdir("julia/$output_dir")
         mkdir("julia/$output_dir")
         if !isdir("julia/$output_dir/images")
@@ -709,21 +694,21 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
         end
     end
 
-    plot_dataset(train, output_dir=output_dir, name="train")
-    # print(getindex.(train, 3))
-    # myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
-    #     xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    plot_linear_regression_dataset(train, MINI, MAXI, linear_reduced, output_dir=output_dir)
+   
 
     params_orig = create_node_params_reduced(DIMS, t0=T0, t1=T1, h=BIAS)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do
             println("===============================")
-            vars = crn_main(params_orig, train, val, EPOCHS=EPOCHS, tspan=TSPAN, output_dir=output_dir, LR=LR, threshold=THRESHOLD, pos=POS, neg=NEG)
+            vars = crn_main(params_orig, train, val, EPOCHS=EPOCHS, tspan=TSPAN, output_dir=output_dir, LR=LR)
             
         end
     end
 end
 
-neuralcrn(output_dir="linear_regression_final")
+neuralcrn(output_dir="linear_regression_final_for_reproducibility")
+
+
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
