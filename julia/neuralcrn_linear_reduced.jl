@@ -679,11 +679,11 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     MINI = 0.0
     MAXI = POS
     LR = 0.01
-    EPOCHS = 5    
+    EPOCHS = 10
     T0 = 0.0
-    T1 = 1.0
+    T1 = 0.5
     TSPAN = (T0, T1)
-    BIAS = 1.0
+    BIAS = 0.1
 
     train = create_linear_regression_dataset(40, linear_reduced, mini=MINI, maxi=MAXI)
     val = create_linear_regression_dataset(100, linear_reduced, mini=MINI, maxi=MAXI)
@@ -724,6 +724,6 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     end
 end
 
-neuralcrn(output_dir="linear_regression_final")
+neuralcrn(output_dir="linear_regression_final_reduced_feb3")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")

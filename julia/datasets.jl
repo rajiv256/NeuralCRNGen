@@ -17,7 +17,7 @@ function linear(x1, x2)
 end
 
 function linear_reduced(x1, x2; h=0.8)
-    return x1 + 2*x2 + 2.45
+    return x1 + 2*x2 + 1.0 + rand(Normal(0.0, 0.4), 1)[1]
 end
 
 function bilinear(x1, x2)
