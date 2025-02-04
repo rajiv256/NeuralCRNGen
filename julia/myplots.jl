@@ -77,6 +77,31 @@ function myscatternogroup(xs, ys; xlabel="", ylabel="", markershape=:xcross, mar
     return gg
 end
 
+function plot_regression_dataset(train, mini, maxi, func; output_dir="")
+    plot()
+    X1_grid = range(mini-0.1  , maxi + 0.1, length=30)
+    X2_grid = range(mini-0.1, maxi + 0.1, length=30)
+    Y_grid = [func(x1, x2) for x1 in X1_grid, x2 in X2_grid]
+
+    # xyzs = [[x1 x2 func(x1, x2)] for x1 in X1_grid for x2 in X2_grid]
+    # for t in train 
+    #     push!(xyzs, [t[1] t[2] t[3]])
+    # end
+    # # sort!(xyzs)
+
+    g = plot!(X1_grid, X2_grid, Y_grid, 
+     st=:surface,
+     alpha=0.4,
+     color=:blues,
+     colorbar=false,
+     label="True plane")
+
+    scatter3d!(g, getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), xlabel=L"$x_1$", ylabel=L"$x_2$", zlabel=L"$y$", markersize=4, legend=false)
+
+    savefig(g, "julia/$output_dir/regplot.png")
+    savefig(g, "julia/$output_dir/regplot.svg")
+end
+
 # x = [1, 2, 3]
 # y = [2.5, 6.6667, 3.5]
 # y2 = y .^ 2

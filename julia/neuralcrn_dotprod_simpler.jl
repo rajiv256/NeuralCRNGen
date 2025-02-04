@@ -843,7 +843,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         if epoch == 1
             plot!(ggcompare, Array([0.0, 8.0]), Array([0.0, 8.0]), linestyle=:dash, label="Perfect prediction", legend=:bottomright)
             scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4, legend=:bottomright)
-        elseif epoch == EPOCHS
+        elseif (epoch == EPOCHS)
            scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4, legend=:bottomright) 
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare_before_after.png")
            savefig(ggcompare, "julia/$(output_dir)/images/val_compare_before_after.svg")
@@ -929,14 +929,16 @@ function neuralcrn(;DIMS=3)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
             t0 = 0.0
-            t1 = 1.0
+            t1 = 0.6
             LR = 0.5
-            AUGVAL = 0.5
-            output_dir = "z2_dotprod_simpler_augval-0.1"
-            train = create_nonlinear_regression_dataset(100, bilinear, mini=0.5, maxi=2.0)
-            val = create_nonlinear_regression_dataset(50, bilinear, mini=0.5, maxi=2.0)
+            AUGVAL = 1.0
+            MINI = 0.5
+            MAXI = 2.0
+            output_dir = "z2_dotprod_simpler_forreproducibility"
+            train = create_nonlinear_regression_dataset(50, bilinear, mini=MINI, maxi=MAXI)
+            val = create_nonlinear_regression_dataset(100, bilinear, mini=MINI, maxi=MAXI)
             test = val
-
+            print(train[1:4])
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
                 if !isdir("julia/$output_dir/images")
@@ -944,14 +946,16 @@ function neuralcrn(;DIMS=3)
                 end
             end
 
-            plot_dataset(train, output_dir=output_dir, name="train")
+            # plot_dataset(train, output_dir=output_dir, name="train")
+            plot_regression_dataset(train, MINI, MAXI, bilinear, output_dir=output_dir) 
+            return; 
             tspan = (t0, t1)
             params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.0)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=400, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=60, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end
