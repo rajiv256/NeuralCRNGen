@@ -668,6 +668,7 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
         end
     end
     print(getindex.(train, 3))
+    plot()
     myscatter(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), output_dir=output_dir, name="train",
         xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
 
