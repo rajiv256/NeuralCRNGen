@@ -828,31 +828,31 @@ function neuralcrn(;DIMS=3)
             # t0 = 0.0
             # t1 = 0.9
             # AUGVAL = 0.2
-            # output_dir = "rings_final"
-            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            # output_dir = "rings_forreproducibility"
+            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.45, mb=0.5, ub=1.0)
+            # val = create_annular_rings_dataset(200, lub=0.0, lb=0.45, mb=0.5, ub=1.0)
             # test = val
 
-            # # Xor dataset
-            # output_dir  = "xor_final"
-            # t0 = 0.0
-            # t1 = 0.9
-            # AUGVAL = 0.2
-            # train = create_xor_dataset(100)
-            # val = create_xor_dataset(30)
-            # test = []
+            # Xor dataset
+            output_dir  = "xor_forreproducibility"
+            t0 = 0.0
+            t1 = 0.9
+            AUGVAL = 0.2
+            train = create_xor_dataset(100)
+            val = create_xor_dataset(30)
+            test = []
             
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b ⊻ x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            for i in range(0, 100, 40)
+                for j in range(0, 100, 40)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b ⊻ x2b)
+                    push!(test, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             # ## AND dataset set t1 = 0.6
             # output_dir = "and_final"
@@ -874,25 +874,25 @@ function neuralcrn(;DIMS=3)
             # end
             # Random.shuffle!(train)
 
-            # OR dataset
-            output_dir = "or_final"
-            train = create_or_dataset(200)
-            val = create_or_dataset(10)
-            test = []
-            t0 = 0.0
-            t1 = 0.9
-            AUGVAL = 0.2
-            for i in range(0, 100, 40)
-                for j in range(0, 100, 40)
-                    x1 = i / 100
-                    x2 = j / 100
-                    x1b = Bool(floor(x1 + 0.5))
-                    x2b = Bool(floor(x2 + 0.5))
-                    y = Float32(x1b | x2b)
-                    push!(test, [x1 x2 y])
-                end
-            end
-            Random.shuffle!(train)
+            # # OR dataset
+            # output_dir = "or_final"
+            # train = create_or_dataset(200)
+            # val = create_or_dataset(10)
+            # test = []
+            # t0 = 0.0
+            # t1 = 0.9
+            # AUGVAL = 0.2
+            # for i in range(0, 100, 40)
+            #     for j in range(0, 100, 40)
+            #         x1 = i / 100
+            #         x2 = j / 100
+            #         x1b = Bool(floor(x1 + 0.5))
+            #         x2b = Bool(floor(x2 + 0.5))
+            #         y = Float32(x1b | x2b)
+            #         push!(test, [x1 x2 y])
+            #     end
+            # end
+            # Random.shuffle!(train)
 
             if !isdir("julia/$output_dir")
                 mkdir("julia/$output_dir")
