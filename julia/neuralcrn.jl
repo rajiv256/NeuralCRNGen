@@ -828,7 +828,7 @@ function neuralcrn(;DIMS=3)
            
             # Rings 
             t0 = 0.0
-            t1 = 0.9
+            t1 = 0.6
             AUGVAL = 0.2
             output_dir = "rings_final"
             train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
