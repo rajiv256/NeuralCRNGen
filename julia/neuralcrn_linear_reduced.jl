@@ -27,6 +27,28 @@ include("linear_reduced2D.jl")
 # include("neuralode.jl")
 include("myplots.jl")
 
+theme(:default);
+palette(:Dark2_5);
+
+
+# Set global font sizes
+default(
+    legendfontsize=18,            # legend font size
+    tickfontsize=16,              # tick font size
+    guidefontsize=18,             # axis label font size
+    titlefontsize=14,             # title font size
+    # Optional: you can also set font family
+    fontfamily="Arial",  # or "Helvetica", "Times New Roman", etc.,
+    # Option 3: Using hex colors
+    palette=["#4477AA", "#EE6677", "#228833", "#CCBB44", "#AA3377", 
+           "#66CCEE", "#BBBBBB", "#EE3377", "#000000", "#CC6677",], 
+    markersize=2,
+    framestyle=:semi,
+    # widen=false,
+    lw=2, 
+    size=(600, 450),  # Wider figure
+    bottom_margin=3Plots.mm, # Add global margin
+)
 
 function _convert_species2var(sp)
     ret = string(sp)
@@ -205,7 +227,7 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=2, output_
     myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}", markershape=:square)
     plot()
     gg = myscatter(xs, ys, outputs, output_dir=output_dir, name="$(tag)_outputs", markersize=4, markershape=:square)
-    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors", output_dir=output_dir, name="$(tag)_outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
+    gg = myscatternogroup(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markersize=4, label="errors", output_dir=output_dir, name="$(tag)_outputs_with_wrongs", xlabel=L"\mathbf{\mathrm{x_1}}", ylabel=L"\mathbf{\mathrm{x_2}}")
     # gg = scatter!(getindex.(wrongs, 1), getindex.(wrongs, 2), markershape=:xcross, markercolor="black", markersize=4, label="errors",
     #     xtickfontsize=12, ytickfontsize=12,
     #     legendfontsize=12, fontfamily="Arial", grid=false,
@@ -614,11 +636,11 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     NEG = 0.0
     MINI = 0.0
     MAXI = THRESHOLD
-    LR = 1.0
+    LR = 0.01
     EPOCHS = 10
-    TSPAN = (0.0, 0.6)
+    TSPAN = (0.0, 0.8)
     T0 = 0.0
-    T1 = 1.0
+    T1 = 0.8
     BIAS = 0.0
 
     train = create_linearly_separable_dataset_reduced(100, linear_reduced, threshold=THRESHOLD, pos=POS, neg=NEG, mini=MINI, maxi=MAXI)
@@ -660,6 +682,6 @@ function neuralcrn(; DIMS=2, output_dir="linear_reduced")
     end
 end
 
-neuralcrn(output_dir="linear_reduced_sqloss_jan23_etatowards1")
+neuralcrn(output_dir="linear_reduced_forreproducibility")
 
 # _filter_rn_species(rn_dual_node_fwd, prefix="Z")
