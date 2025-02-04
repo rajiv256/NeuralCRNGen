@@ -826,39 +826,42 @@ function neuralcrn(;DIMS=3)
             # train_set = create_linearly_separable_dataset(100, linear, threshold=0.0)
             # val_set = create_linearly_separable_dataset(40, linear, threshold=0.0)
            
-            # Rings 
+            # # Rings 
+            # t0 = 0.0
+            # t1 = 0.4
+            # NEG = 0.0
+            # POS = 2.0
+            # THRESHOLD = 1.0
+
+            # AUGVAL = 1.0
+            # output_dir = "rings_final_v2"
+            # train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0, neg=NEG, pos=POS)
+            # val = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0, neg=NEG, pos=POS)
+            # test = val
+
+            # Xor dataset
+            output_dir  = "xor_final"
             t0 = 0.0
             t1 = 0.4
+            AUGVAL = 0.2
             NEG = 0.0
-            POS = 2.0
-            THRESHOLD = 1.0
-
-            AUGVAL = 1.0
-            output_dir = "rings_final"
-            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0, neg=NEG, pos=POS)
-            val = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0, neg=NEG, pos=POS)
-            test = val
-
-            # # Xor dataset
-            # output_dir  = "xor_final"
-            # t0 = 0.0
-            # t1 = 0.9
-            # AUGVAL = 0.2
-            # train = create_xor_dataset(100)
-            # val = create_xor_dataset(30)
-            # test = []
+            POS = 1.0
+            THRESHOLD = 0.5
+            train = create_xor_dataset(100, neg=NEG, pos=POS, threshold=THRESHOLD)
+            val = create_xor_dataset(30, neg=NEG, pos=POS, threshold=THRESHOLD)
+            test = []
             
-            # for i in range(0, 100, 40)
-            #     for j in range(0, 100, 40)
-            #         x1 = i / 100
-            #         x2 = j / 100
-            #         x1b = Bool(floor(x1 + 0.5))
-            #         x2b = Bool(floor(x2 + 0.5))
-            #         y = Float32(x1b ⊻ x2b)
-            #         push!(test, [x1 x2 y])
-            #     end
-            # end
-            # Random.shuffle!(train)
+            for i in range(0, 100, 40)
+                for j in range(0, 100, 40)
+                    x1 = i / 100
+                    x2 = j / 100
+                    x1b = Bool(floor(x1 + 0.5))
+                    x2b = Bool(floor(x2 + 0.5))
+                    y = Float32(x1b ⊻ x2b)*POS
+                    push!(test, [x1 x2 y])
+                end
+            end
+            Random.shuffle!(train)
 
             # ## AND dataset set t1 = 0.6
             # output_dir = "and_final"
