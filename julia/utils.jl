@@ -125,6 +125,7 @@ function create_node_params(dims; t0=0.0, t1=1.0, h=0.5, precision=10)
     # theta = rand(Normal(0.5, 0.1), dims^2)
     theta = rand(Normal(0.0, 1.0), dims^2)
     theta = theta/sqrt(dims)
+    theta = abs.(theta)
 
     append!(params, theta)
     beta = ones(dims)*0.1 

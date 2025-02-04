@@ -46,16 +46,16 @@ rn_dual_node_relu_fwd = @reaction_network rn_dual_node_relu_fwd begin
     1.0, P33m + X3p --> Z3m + P33m + X3p
 
     # Not sure if this is hacky
-    0.5, 2Z1p --> Z1p 
-    0.5, 2Z1m --> Z1m 
+    0.3, 2Z1p --> Z1p 
+    0.3, 2Z1m --> Z1m 
     100.0, Z1p + Z1m --> 0
 
-    0.5, 2Z2p --> Z2p
-    0.5, 2Z2m --> Z2m
+    0.3, 2Z2p --> Z2p
+    0.3, 2Z2m --> Z2m
     100.0, Z2p + Z2m --> 0
 
-    0.5, 2Z3p --> Z3p
-    0.5, 2Z3m --> Z3m
+    0.3, 2Z3p --> Z3p
+    0.3, 2Z3m --> Z3m
     100.0, Z3p + Z3m --> 0
 
 end
@@ -109,54 +109,54 @@ rn_dual_node_relu_bwd = @reaction_network rn_dual_node_relu_bwd begin
     1.0, P33p + X3p --> Z3m + P33p + X3p
     1.0, P33m + X3m --> Z3m + P33m + X3m
 
-    # dz_i/dt = -z_i^3
-    # Not sure if this is hacky
-    0.5, 2Z1p --> 3Z1p
-    0.5, 2Z1m --> 3Z1m
-    100.0, Z1p + Z1m --> 0 
+    # # dz_i/dt = -z_i^3
+    # # Not sure if this is hacky
+    # 0.3, 2Z1p --> 3Z1p
+    # 0.3, 2Z1m --> 3Z1m
+    # 100.0, Z1p + Z1m --> 0 
 
-    0.5, 2Z2p --> 3Z2p
-    0.5, 2Z2m --> 3Z2m
-    100.0, Z2p + Z2m --> 0
+    # 0.3, 2Z2p --> 3Z2p
+    # 0.3, 2Z2m --> 3Z2m
+    # 100.0, Z2p + Z2m --> 0
 
-    0.5, 2Z3p --> 3Z3p
-    0.5, 2Z3m --> 3Z3m
-    100.0, Z3p + Z3m --> 0
+    # 0.3, 2Z3p --> 3Z3p
+    # 0.3, 2Z3m --> 3Z3m
+    # 100.0, Z3p + Z3m --> 0
 
     100.0, A1p + A1m --> 0
     100.0, A2p + A2m --> 0
     100.0, A3p + A3m --> 0
 
     # # da_i/dt = -a_i z_i z_i
-    # 0.5, A1p + Z1p + Z1m --> A1p + A1p + Z1p + Z1m
-    0.5, A1p + Z1m --> Z1m
-    # 0.5, A1p + Z1m + Z1p --> A1p + A1p + Z1m + Z1p
-    0.5, A1p + Z1p --> Z1p
+    # 0.3, A1p + Z1p + Z1m --> A1p + A1p + Z1p + Z1m
+    0.3, A1p + Z1m --> Z1m
+    # 0.3, A1p + Z1m + Z1p --> A1p + A1p + Z1m + Z1p
+    0.3, A1p + Z1p --> Z1p
     
-    0.5, A1m + Z1p --> Z1p
-    # 0.5, A1m + Z1m + Z1p --> A1m + A1m + Z1m + Z1p
-    0.5, A1m + Z1m --> Z1m
-    # 0.5, A1m + Z1p + Z1m --> A1m + A1m + Z1p + Z1m
+    0.3, A1m + Z1p --> Z1p
+    # 0.3, A1m + Z1m + Z1p --> A1m + A1m + Z1m + Z1p
+    0.3, A1m + Z1m --> Z1m
+    # 0.3, A1m + Z1p + Z1m --> A1m + A1m + Z1p + Z1m
 
-     # 0.5, A1p + Z1p + Z1m --> A1p + A1p + Z1p + Z1m
-    0.5, A2p + Z2m --> Z2m
-    # 0.5, A1p + Z1m + Z1p --> A1p + A1p + Z1m + Z1p
-    0.5, A2p + Z2p --> Z2p
+     # 0.3, A1p + Z1p + Z1m --> A1p + A1p + Z1p + Z1m
+    0.3, A2p + Z2m --> Z2m
+    # 0.3, A1p + Z1m + Z1p --> A1p + A1p + Z1m + Z1p
+    0.3, A2p + Z2p --> Z2p
     
-    0.5, A2m + Z2p --> Z2p
-    # 0.5, A1m + Z1m + Z1p --> A1m + A1m + Z1m + Z1p
-    0.5, A2m + Z2m --> Z2m
-    # 0.5, A1m + Z1p + Z1m --> A1m + A1m + Z1p + Z1m
+    0.3, A2m + Z2p --> Z2p
+    # 0.3, A1m + Z1m + Z1p --> A1m + A1m + Z1m + Z1p
+    0.3, A2m + Z2m --> Z2m
+    # 0.3, A1m + Z1p + Z1m --> A1m + A1m + Z1p + Z1m
 
-     # 0.5, A1p + Z1p + Z1m --> A1p + A1p + Z1p + Z1m
-    0.5, A3p + Z3m --> Z3m
-    # 0.5, A1p + Z1m + Z1p --> A1p + A1p + Z1m + Z1p
-    0.5, A3p + Z3p --> Z3p
+     # 0.3, A1p + Z1p + Z1m --> A1p + A1p + Z1p + Z1m
+    0.3, A3p + Z3m --> Z3m
+    # 0.3, A1p + Z1m + Z1p --> A1p + A1p + Z1m + Z1p
+    0.3, A3p + Z3p --> Z3p
     
-    0.5, A3m + Z3p --> Z3p
-    # 0.5, A1m + Z1m + Z1p --> A1m + A1m + Z1m + Z1p
-    0.5, A3m + Z3m --> Z3m
-    # 0.5, A1m + Z1p + Z1m --> A1m + A1m + Z1p + Z1m
+    0.3, A3m + Z3p --> Z3p
+    # 0.3, A1m + Z1m + Z1p --> A1m + A1m + Z1m + Z1p
+    0.3, A3m + Z3m --> Z3m
+    # 0.3, A1m + Z1p + Z1m --> A1m + A1m + Z1p + Z1m
 
     
     # dg_ij/dt = a x

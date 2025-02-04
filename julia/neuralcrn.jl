@@ -291,7 +291,7 @@ function plot_augmented_state(varscopy, dataset; tspan=(0.0, 1.0), dims=3, thres
 end
 
 
-function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.0, markers=[:circle, :rect], augval=1.0, output_dir="")
+function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, threshold=0.5, markers=[:circle, :rect], augval=1.0, output_dir="", neg=0.0, pos=1.0)
     acc = 0
     preds2d = []
     wrongs = []
@@ -328,9 +328,9 @@ function calculate_accuracy(dataset, varscopy; tspan=(0.0, 1.0), dims=3, thresho
         varscopy["Op"] = yhat[1]
         varscopy["Om"] = yhat[2]
         
-        output = 0.0
+        output = neg
         if varscopy["Op"] - varscopy["Om"] >= threshold # TODO: CHECK BEFORE
-            output = 1.0
+            output = pos
         end
         
         # Casting a float into an integer
@@ -505,15 +505,15 @@ function crn_dual_node_fwd(rn, vars; tspan=(0.0, 1.0), reltol=1e-4, abstol=1e-6,
             push!(zindices, i)
         end
     end
-    plot()
-    gsol = plot(sol, idxs=zindices)
-    savefig(gsol, "julia/zplot.png")
+    # plot()
+    # gsol = plot(sol, idxs=zindices)
+    # savefig(gsol, "julia/zplot.png")
     _print_vars(vars, "Z", title="CRN | z at t=T |")
 end
 
 
 function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001, 
-    tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="")
+    tspan=(0.0, 1.0), threshold=0.5, augval=1.0, output_dir="", neg=0.0, pos=1.0)
 
     # Initialize a dictionary to track concentrations of all the species
     vars = Dict();
@@ -784,9 +784,9 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         plot()
         myplot([Array(range(1, length(tr_losses))), Array(range(1, length(val_losses)))], [tr_losses, val_losses], ["train_loss", "val_loss"],
             output_dir=output_dir, name="crn_train_lossplts", xlabel="epoch", ylabel="loss")
-        plot()
-        plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
-        @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        # plot()
+        # plot_augmented_state(copy(vars), val, tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir)
+        @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=dims, threshold=threshold, augval=augval, output_dir=output_dir, neg=neg, pos=pos)
 
         # Plot the tracking parameters.
         plot()
@@ -828,11 +828,15 @@ function neuralcrn(;DIMS=3)
            
             # Rings 
             t0 = 0.0
-            t1 = 0.6
-            AUGVAL = 0.2
+            t1 = 0.4
+            NEG = 0.0
+            POS = 2.0
+            THRESHOLD = 1.0
+
+            AUGVAL = 1.0
             output_dir = "rings_final"
-            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
-            val = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0)
+            train = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0, neg=NEG, pos=POS)
+            val = create_annular_rings_dataset(100, lub=0.0, lb=0.4, mb=0.6, ub=1.0, neg=NEG, pos=POS)
             test = val
 
             # # Xor dataset
@@ -912,8 +916,8 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=80, dims=DIMS, LR=1.0, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
-            @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, threshold=0.5, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=80, dims=DIMS, LR=1.0, tspan=tspan, augval=AUGVAL, output_dir=output_dir, pos=POS, neg=NEG, threshold=THRESHOLD)
+            @show calculate_accuracy(test, copy(vars), tspan=tspan, dims=DIMS, pos=POS, neg=NEG, threshold=THRESHOLD, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end
