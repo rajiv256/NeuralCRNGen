@@ -79,17 +79,15 @@ end
 
 function plot_regression_dataset(train, mini, maxi, func; output_dir="")
     plot()
-    X1_grid = range(mini-0.1  , maxi + 0.1, length=30)
-    X2_grid = range(mini-0.1, maxi + 0.1, length=30)
-    Y_grid = [func(x1, x2) for x1 in X1_grid, x2 in X2_grid]
+    X = range(mini , maxi, length=90)
+    grid = []
+    for i in eachindex(X)
+        for j in eachindex(X)
+            push!(grid, [X[i] X[j] func(X[i], X[j])])
+        end
+    end
 
-    # xyzs = [[x1 x2 func(x1, x2)] for x1 in X1_grid for x2 in X2_grid]
-    # for t in train 
-    #     push!(xyzs, [t[1] t[2] t[3]])
-    # end
-    # # sort!(xyzs)
-
-    g = plot!(X1_grid, X2_grid, Y_grid, 
+    g = plot!(getindex.(grid, 1), getindex.(grid, 2), getindex.(grid, 3),
      st=:surface,
      alpha=0.4,
      color=:blues,
