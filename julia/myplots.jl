@@ -80,14 +80,15 @@ end
 
 function plot_regression_dataset(train, mini, maxi, func; output_dir="")
     plot()
-    X= range(mini-0.5, maxi+0.5, length=100)
-    Y = range(mini-0.5, maxi+0.5, length=100)
+    X= range(mini-0.4, maxi+0.4, length=30)
+    Y = range(mini-0.4, maxi+0.4, length=30)
     Z = [func(x1, x2) for x1 in X, x2 in Y]
     
     g = surface(X, Y, Z,
-     alpha=0.8,
+     alpha=0.3,
      color=:blues,
-     colorbar=false)
+     colorbar=false,
+     camera=(-15, 30))
     # g = plot_mesh_grid(mini, maxi, func, train)
     
 
