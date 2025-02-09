@@ -880,62 +880,20 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
     return vars    
 end
 
-function plot_dataset(dataset; output_dir="", name="train")
-    # Extract data points
-    x1d = getindex.(dataset, 1)
-    x2d = getindex.(dataset, 2)
-    yd = getindex.(dataset, 3)
-    yy = [bilinear(c1, c2) for (c1, c2) in zip(x1d, x2d)]
-    t = []
-    
-    for i in eachindex(x1d)
-        push!(t, [x1d[i], x2d[i], bilinear(x1d[i], x2d[i])])
-    end
-    
-    sort!(t)
-    
-    # Calculate surface points z = xy + y^2
-    z = [bilinear(x1i, x2j) for x1i in x1d, x2j in x2d]
-    
-    # Create 3D plot
-    gg = plot(getindex.(t, 1), getindex.(t, 2), getindex.(t,3),
-        st=:surface,
-        alpha=0.3,
-        color=:blues,
-        colorbar=false,
-        camera=(30, 30),
-        label="z = xy + y²",
-        xlabel="x",
-        ylabel="y",
-        zlabel="z")
-    
-    # Add scattered points
-    scatter!(gg, x1d, x2d, yd,
-        label="Data Points",
-        marker=:circle,
-        markersize=4,
-        camera=(30, 30),
-        color=:red)
-    
-    savefig(gg, "julia/$output_dir/images/$name.png")
-    savefig(gg, "julia/$output_dir/images/$name.svg")
-    
-    return gg
-end
-
-
-
 function neuralcrn(;DIMS=3)
 
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
             t0 = 0.0
-            t1 = 0.4
-            LR = 0.2
+            t1 = 0.5
+            LR = 0.6
+            MINI = 0.5
+            MAXI = 2.0
             AUGVAL = 1.0
-            output_dir = "z2_dotprod"
-            train = create_nonlinear_regression_dataset(100, bilinear, mini=0.5, maxi=2.0)
-            val = create_nonlinear_regression_dataset(100, bilinear, mini=0.5, maxi=2.0)
+            FUNC = bilinear
+            output_dir = "z2_dotprod_bilinear_forreproducibility"
+            train = create_nonlinear_regression_dataset(50, FUNC, mini=MINI, maxi=MAXI)
+            val = create_nonlinear_regression_dataset(100, FUNC, mini=MINI, maxi=MAXI)
             test = val
 
             if !isdir("julia/$output_dir")
@@ -945,14 +903,14 @@ function neuralcrn(;DIMS=3)
                 end
             end
 
-            plot_dataset(train, output_dir=output_dir, name="train")
+            plot_regression_dataset(train, MINI, MAXI, FUNC, output_dir=output_dir)
             tspan = (t0, t1)
-            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.1)
+            params_orig = create_node_params(DIMS, t0=t0, t1=t1, h=0.0)
             
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=80, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end

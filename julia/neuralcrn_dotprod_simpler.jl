@@ -841,7 +841,7 @@ function crn_main(params, train, val, test; dims=nothing, EPOCHS=10, LR=0.001,
         # Compare first and last epochs
        
         if epoch == 1
-            plot!(ggcompare, Array([0.0, 8]), Array([0.0, 8]), linestyle=:dash, label="Perfect prediction", legend=:bottomright)
+            plot!(ggcompare, Array([0.0, 5]), Array([0.0, 5]), linestyle=:dash, label="Perfect prediction", legend=:bottomright)
             scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="Before training", markershape=:xcross, markersize=4, legend=:bottomright)
         elseif (epoch == EPOCHS)
            scatter!(ggcompare, getindex.(val_ys, 1), getindex.(val_ys, 2), xlabel="Predicted", ylabel="Target", label="After training", markershape=:circle, markersize=4, legend=:bottomright) 
@@ -931,24 +931,24 @@ function neuralcrn(;DIMS=3)
     open("julia/neuralcrn.log", "w") do fileio  # Write to logs. 
         redirect_stdout(fileio) do 
             
-            t0 = 0.0
-            t1 = 1.0
-            LR = 0.6
-            AUGVAL = 1.0
-            MINI = 0.5
-            MAXI = 2.0
-            output_dir = "z2_dotprod_simpler_bilinear_forreproducibility"
-            FUNC = bilinear
-            
-            
             # t0 = 0.0
-            # t1 = 0.6
+            # t1 = 1.0
             # LR = 0.6
             # AUGVAL = 1.0
             # MINI = 0.5
             # MAXI = 2.0
-            # output_dir = "z2_dotprod_simpler_sinxx2_forreproducibility"
-            # FUNC = sinxx2
+            # output_dir = "z2_dotprod_simpler_bilinear_forreproducibility"
+            # FUNC = bilinear
+            
+            
+            t0 = 0.0
+            t1 = 0.6
+            LR = 0.6
+            AUGVAL = 1.0
+            MINI = 0.5
+            MAXI = 2.0
+            output_dir = "z2_dotprod_simpler_sinxx2_forreproducibility"
+            FUNC = sinxx2
             # FUNC = bilinear
             train = create_nonlinear_regression_dataset(50, FUNC, mini=MINI, maxi=MAXI)
             val = create_nonlinear_regression_dataset(100, FUNC, mini=MINI, maxi=MAXI)

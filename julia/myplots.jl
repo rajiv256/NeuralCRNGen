@@ -88,7 +88,7 @@ function plot_regression_dataset(train, mini, maxi, func; output_dir="")
      alpha=0.3,
      color=:blues,
      colorbar=false,
-     camera=(-15, 30))
+     camera=(-40, 40))
     # g = plot_mesh_grid(mini, maxi, func, train)
     
 
