@@ -932,13 +932,13 @@ function neuralcrn(;DIMS=3)
         redirect_stdout(fileio) do 
             t0 = 0.0
             t1 = 1.0
-            LR = 1.0
-            AUGVAL = 0.1
+            LR = 0.6
+            AUGVAL = 1.0
             MINI = 0.5
             MAXI = 2.0
-            output_dir = "z2_dotprod_simpler_bilinear_forreproducibility"
-            # FUNC = sinxx2
-            FUNC = bilinear
+            output_dir = "z2_dotprod_simpler_sinxx2_forreproducibility"
+            FUNC = sinxx2
+            # FUNC = bilinear
             train = create_nonlinear_regression_dataset(50, FUNC, mini=MINI, maxi=MAXI)
             val = create_nonlinear_regression_dataset(100, FUNC, mini=MINI, maxi=MAXI)
             test = val
@@ -957,7 +957,7 @@ function neuralcrn(;DIMS=3)
             @show params_orig
 
             println("===============================")
-            vars = crn_main(params_orig, train, val, test, EPOCHS=200, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
+            vars = crn_main(params_orig, train, val, test, EPOCHS=50, dims=DIMS, LR=LR, tspan=tspan, augval=AUGVAL, output_dir=output_dir)
         end
     end
 end

@@ -77,22 +77,19 @@ function myscatternogroup(xs, ys; xlabel="", ylabel="", markershape=:xcross, mar
     return gg
 end
 
+
 function plot_regression_dataset(train, mini, maxi, func; output_dir="")
     plot()
-    X = range(mini , maxi, length=90)
-    grid = []
-    for i in eachindex(X)
-        for j in eachindex(X)
-            push!(grid, [X[i] X[j] func(X[i], X[j])])
-        end
-    end
-
-    g = plot!(getindex.(grid, 1), getindex.(grid, 2), getindex.(grid, 3),
-     st=:surface,
-     alpha=0.4,
+    X= range(mini-0.5, maxi+0.5, length=100)
+    Y = range(mini-0.5, maxi+0.5, length=100)
+    Z = [func(x1, x2) for x1 in X, x2 in Y]
+    
+    g = surface(X, Y, Z,
+     alpha=0.8,
      color=:blues,
-     colorbar=false,
-     label="True plane")
+     colorbar=false)
+    # g = plot_mesh_grid(mini, maxi, func, train)
+    
 
     scatter3d!(g, getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), xlabel=L"$x_1$", ylabel=L"$x_2$", zlabel=L"$y$", markersize=4, legend=false)
 
@@ -100,7 +97,14 @@ function plot_regression_dataset(train, mini, maxi, func; output_dir="")
     savefig(g, "julia/$output_dir/regplot.svg")
 end
 
-# x = [1, 2, 3]
-# y = [2.5, 6.6667, 3.5]
-# y2 = y .^ 2
-# myplot([x, x], [y, y2], ["acwr", "kdff"], xlabel="x", ylabel="y", output_dir="rings", name="test")
+
+using Plots
+
+# Define the function to calculate z
+function plot_mesh_grid(mini, maxi, func, train)
+    
+    g = surface(getindex.(train, 1), getindex.(train, 2), getindex.(train, 3), xlabel="x1", ylabel="x2", zlabel="z", color=:blues, alpha=0.4, colorbar=false)
+    
+
+    return g
+end

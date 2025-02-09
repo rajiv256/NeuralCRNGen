@@ -261,7 +261,7 @@ function create_nonlinear_regression_dataset(n, yfunc; mini=0.2, maxi=1.0)
     for i in 1:n
         x1 = rand(Uniform(mini, maxi), 1)[1]
         x2 = rand(Uniform(mini, maxi), 1)[1]
-        y = convert(Float64, yfunc(x1, x2)) + rand(Normal(0.0, 0.1), 1)[1]
+        y = yfunc(x1, x2) + rand(Normal(0.0, 0.1), 1)[1]
         data_item = Vector{Float64}()
         append!(data_item, [x1, x2, y])
         data_item = reshape(data_item, (length(data_item), 1))
