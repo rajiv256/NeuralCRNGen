@@ -7,7 +7,7 @@ Make sure you have `Julia v1.11.0` or above installed.
 To execute, navigate to the root directory `NeuralCRNGen/` and execute
 
 ```
-julia julia/neuralcrn.jl
+julia julia/neuralcrn_linear_reduced.jl
 ```
 
 _Note: If you don't have certain packages installed, execution might throw an error. In that case, uncomment the `Pkg.add("DifferentialEquations")` (for example) at the top of the file._
