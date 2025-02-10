@@ -24,3 +24,15 @@ This command executes the `neuralcrn()` function. One important parameter that n
 # Important functions
 
 - The code for training the Neural CRN model is in `crn_main(...)` function. 
+
+# First-order approximation of gradients
+
+A simpler backpropagation CRN could be obtained by removing the adjoint and hidden state backpropagation CRNs from the feedback phase. The results of this experiments are as follows. 
+
+To execute, navigate to the root directory `NeuralCRNGen/` and execute
+
+```
+julia julia/neuralcrn_dotprod_simpler.jl
+```
+
+The CRN file for this could be found at `julia/reactions_dotprod_simpler.jl`. Notice that the adjoint and hidden state backpropagations would be commented out in the `[rn_dual_node_relu_bwd](https://github.com/rajiv256/NeuralCRNGen/blob/nonlinear_regression_z2_dotprod/julia/reactions_dotprod_simpler.jl#L64)` CRN.  
